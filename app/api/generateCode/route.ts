@@ -1,7 +1,4 @@
-import {
-  TogetherAIStream,
-  TogetherAIStreamPayload,
-} from "@/utils/TogetherAIStream";
+import { LangChainStream, LangChainStreamPayload } from "@/utils/LangChainStream";
 
 export const runtime = "edge";
 
@@ -20,7 +17,7 @@ You are an expert frontend React engineer who is also a great UI/UX designer. Fo
 export async function POST(req: Request) {
   let { messages, model } = await req.json();
 
-  const payload: TogetherAIStreamPayload = {
+  const payload: LangChainStreamPayload = {
     model,
     messages: [
       {
@@ -30,15 +27,14 @@ export async function POST(req: Request) {
       ...messages.map((message: any) => {
         if (message.role === "user") {
           message.content +=
-            "\nPlease ONLY return code, NO backticks or language names.";
+            "\nPlease ONLY return code, NO backticks or language names. DO NOT return anything else other than code. The code you output will be directly run as it is, make sure it is executable";
         }
         return message;
       }),
     ],
-    stream: true,
-    temperature: 0.2,
+    temperature: 0.0,
   };
-  const stream = await TogetherAIStream(payload);
+  const stream = await LangChainStream(payload);
 
   return new Response(stream, {
     headers: new Headers({

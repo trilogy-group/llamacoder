@@ -250,17 +250,16 @@ export default function Home() {
                     <Select.Viewport className="p-2">
                       {[
                         {
-                          label: "Llama 3.1 405B",
-                          value:
-                            "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
+                          label: "GPT-3.5 Turbo",
+                          value: "gpt-3.5-turbo",
                         },
                         {
-                          label: "Llama 3.1 70B",
-                          value: "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+                          label: "GPT-4",
+                          value: "gpt-4",
                         },
                         {
-                          label: "Gemma 2 27B",
-                          value: "google/gemma-2-27b-it",
+                          label: "GPT-4 Turbo",
+                          value: "gpt-4-1106-preview",
                         },
                       ].map((model) => (
                         <Select.Item
