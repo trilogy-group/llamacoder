@@ -19,40 +19,51 @@ export async function LangChainStream(payload: LangChainStreamPayload) {
   const { model, messages, temperature } = payload;
 
   let chat;
-  if (model.startsWith("claude")) {
-    chat = new ChatAnthropic({
-      modelName: model,
-      temperature: temperature,
-      streaming: true,
-    });
-  } else {
-    chat = new ChatOpenAI({
-      modelName: model,
-      temperature: temperature,
-      streaming: true,
-    });
-  }
-
-  const langChainMessages = messages.map((message) => {
-    switch (message.role) {
-      case "system":
-        return new SystemMessage(message.content);
-      case "user":
-        return new HumanMessage(message.content);
-      case "assistant":
-        return new AIMessage(message.content);
+  try {
+    if (model.startsWith("claude")) {
+      chat = new ChatAnthropic({
+        modelName: model,
+        temperature: temperature,
+        streaming: true,
+        anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      });
+    } else {
+      chat = new ChatOpenAI({
+        modelName: model,
+        temperature: temperature,
+        streaming: true,
+      });
     }
-  });
 
-  const stream = await chat.stream(langChainMessages);
-
-  return new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const text = chunk.content;
-        controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ text })}\n\n`));
+    const langChainMessages = messages.map((message) => {
+      switch (message.role) {
+        case "system":
+          return new SystemMessage(message.content);
+        case "user":
+          return new HumanMessage(message.content);
+        case "assistant":
+          return new AIMessage(message.content);
       }
-      controller.close();
-    },
-  });
+    });
+
+    const stream = await chat.stream(langChainMessages);
+
+    return new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            const text = chunk.content;
+            controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ text })}\n\n`));
+          }
+          controller.close();
+        } catch (error) {
+          console.error("Error in stream processing:", error);
+          controller.error(error);
+        }
+      },
+    });
+  } catch (error) {
+    console.error("Error in LangChainStream:", error);
+    throw error;
+  }
 }

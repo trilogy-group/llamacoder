@@ -15,30 +15,45 @@ You are an expert frontend React engineer who is also a great UI/UX designer. Fo
 `;
 
 export async function POST(req: Request) {
-  let { messages, model } = await req.json();
+  try {
+    let { messages, model } = await req.json();
 
-  const payload: LangChainStreamPayload = {
-    model,
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      ...messages.map((message: any) => {
-        if (message.role === "user") {
-          message.content +=
-            "\nPlease ONLY return code, NO backticks or language names. DO NOT return anything else other than code. The code you output will be directly run as it is, make sure it is executable";
-        }
-        return message;
+    // Ensure the first message is the system message
+    if (messages[0].role !== "system") {
+      messages = [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ];
+    }
+
+    // Ensure alternating user and assistant messages
+    const validatedMessages = messages.reduce((acc, message, index) => {
+      if (index === 0 || (message.role !== acc[acc.length - 1].role)) {
+        acc.push(message);
+      }
+      return acc;
+    }, []);
+
+    const payload: LangChainStreamPayload = {
+      model,
+      messages: validatedMessages,
+      temperature: 0.0,
+    };
+
+    const stream = await LangChainStream(payload);
+
+    return new Response(stream, {
+      headers: new Headers({
+        "Cache-Control": "no-cache",
       }),
-    ],
-    temperature: 0.0,
-  };
-  const stream = await LangChainStream(payload);
-
-  return new Response(stream, {
-    headers: new Headers({
-      "Cache-Control": "no-cache",
-    }),
-  });
+    });
+  } catch (error) {
+    console.error("Error in POST /api/generateCode:", error);
+    return new Response(JSON.stringify({ error: "An error occurred while processing your request" }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 }

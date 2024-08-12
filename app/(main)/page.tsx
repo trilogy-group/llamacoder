@@ -114,16 +114,35 @@ export default function Home() {
 
   async function modifyCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
+  
     setStatus("updating");
-
+  
     let formData = new FormData(e.currentTarget);
     let prompt = formData.get("prompt");
-    if (typeof prompt !== "string") {
+    if (typeof prompt !== "string" || prompt.trim() === "") {
+      toast.error("Please enter a valid prompt");
+      setStatus("created");
       return;
     }
-    let newMessages = [...messages, { role: "user", content: prompt }];
-
+  
+    // Filter out empty messages
+    const filteredMessages = messages.filter(msg => msg.content.trim() !== "");
+  
+    // Ensure we have alternating user and assistant messages
+    let newMessages = [];
+    let lastRole = "assistant";
+  
+    for (let i = filteredMessages.length - 1; i >= 0; i--) {
+      if (filteredMessages[i].role !== lastRole) {
+        newMessages.unshift(filteredMessages[i]);
+        lastRole = filteredMessages[i].role;
+        if (newMessages.length >= 2) break; // We only need the last user-assistant pair
+      }
+    }
+  
+    // Add the new user prompt
+    newMessages.push({ role: "user", content: prompt });
+  
     setGeneratedCode("");
     const chatRes = await fetch("/api/generateCode", {
       method: "POST",
@@ -135,10 +154,13 @@ export default function Home() {
         model: modelUsedForInitialCode,
       }),
     });
+  
     if (!chatRes.ok) {
-      throw new Error(chatRes.statusText);
+      toast.error("An error occurred while generating code");
+      setStatus("created");
+      return;
     }
-
+  
     // This data is a ReadableStream
     const data = chatRes.body;
     if (!data) {
@@ -155,13 +177,13 @@ export default function Home() {
         }
       }
     };
-
+  
     // https://web.dev/streams/#the-getreader-and-read-methods
     const reader = data.getReader();
     const decoder = new TextDecoder();
     const parser = createParser(onParse);
     let done = false;
-
+  
     while (!done) {
       const { value, done: doneReading } = await reader.read();
       done = doneReading;
@@ -169,11 +191,8 @@ export default function Home() {
       parser.feed(chunkValue);
     }
 
-    newMessages = [
-      ...newMessages,
-      { role: "assistant", content: generatedCode },
-    ];
-
+    newMessages.push({ role: "assistant", content: generatedCode });
+  
     setMessages(newMessages);
     setStatus("updated");
   }
@@ -248,36 +267,40 @@ export default function Home() {
                 <Select.Portal>
                   <Select.Content className="overflow-hidden rounded-md bg-white shadow-lg">
                     <Select.Viewport className="p-2">
-                      {[
-                        {
-                          label: "GPT-3.5 Turbo",
-                          value: "gpt-3.5-turbo",
-                        },
-                        {
-                          label: "GPT-4",
-                          value: "gpt-4",
-                        },
-                        {
-                          label: "GPT-4 Turbo",
-                          value: "gpt-4-1106-preview",
-                        },
-                      ].map((model) => (
-                        <Select.Item
-                          key={model.value}
-                          value={model.value}
-                          className="flex cursor-pointer items-center rounded-md px-3 py-2 text-sm data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none"
-                        >
-                          <Select.ItemText asChild>
-                            <span className="inline-flex items-center gap-2 text-gray-500">
-                              <div className="size-2 rounded-full bg-green-500" />
-                              {model.label}
-                            </span>
-                          </Select.ItemText>
-                          <Select.ItemIndicator className="ml-auto">
-                            <CheckIcon className="size-5 text-blue-600" />
-                          </Select.ItemIndicator>
-                        </Select.Item>
-                      ))}
+                    {[
+                      {
+                        label: "GPT-3.5 Turbo",
+                        value: "gpt-3.5-turbo",
+                      },
+                      {
+                        label: "GPT-4",
+                        value: "gpt-4",
+                      },
+                      {
+                        label: "GPT-4 Turbo",
+                        value: "gpt-4-1106-preview",
+                      },
+                      {
+                        label: "Claude Sonnet 3.5",
+                        value: "claude-3-sonnet-20240229",
+                      },
+                    ].map((model) => (
+                      <Select.Item
+                        key={model.value}
+                        value={model.value}
+                        className="flex cursor-pointer items-center rounded-md px-3 py-2 text-sm data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none"
+                      >
+                        <Select.ItemText asChild>
+                          <span className="inline-flex items-center gap-2 text-gray-500">
+                            <div className="size-2 rounded-full bg-green-500" />
+                            {model.label}
+                          </span>
+                        </Select.ItemText>
+                        <Select.ItemIndicator className="ml-auto">
+                          <CheckIcon className="size-5 text-blue-600" />
+                        </Select.ItemIndicator>
+                      </Select.Item>
+                    ))}
                     </Select.Viewport>
                     <Select.ScrollDownButton />
                     <Select.Arrow />
