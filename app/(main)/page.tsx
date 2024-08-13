@@ -212,27 +212,22 @@ export default function Home() {
       <Header />
 
       <main className="mt-12 flex w-full flex-1 flex-col items-center px-4 text-center sm:mt-20">
-        <a
-          className="mb-4 inline-flex h-7 shrink-0 items-center gap-[9px] rounded-[50px] border-[0.5px] border-solid border-[#E6E6E6] bg-[rgba(234,238,255,0.65)] bg-gray-100 px-7 py-5 shadow-[0px_1px_1px_0px_rgba(0,0,0,0.25)]"
-          href="https://dub.sh/together-ai/?utm_source=example-app&utm_medium=llamacoder&utm_campaign=llamacoder-app-signup"
-          target="_blank"
-        >
-          <span className="text-center">
-            Powered by <span className="font-medium">Llama 3.1</span> and{" "}
-            <span className="font-medium">Together AI</span>
-          </span>
-        </a>
         <h1 className="my-6 max-w-3xl text-4xl font-bold text-gray-800 sm:text-6xl">
           Turn your <span className="text-blue-600">idea</span>
-          <br /> into an <span className="text-blue-600">app</span>
+          <br /> into an Ar<span className="text-blue-600">TI</span>fact
         </h1>
 
-        <div className="mb-4">
-          <input
-            type="file"
-            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            className="w-full rounded-lg border border-gray-300 p-2"
-          />
+        <div className="mb-4 w-full max-w-sm">
+          <div className="relative">
+            <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
+            <div className="relative flex rounded-3xl bg-white shadow-sm">
+              <input
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="w-full rounded-3xl bg-transparent px-4 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 file:mr-3 file:rounded-full file:border-0 file:bg-blue-500 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-400"
+              />
+            </div>
+          </div>
         </div>
 
         <form className="w-full max-w-xl" onSubmit={(e) => {
@@ -268,7 +263,7 @@ export default function Home() {
               <p className="text-xs text-gray-500">Model:</p>
               <Select.Root
                 name="model"
-                defaultValue="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
+                defaultValue="gpt-4o"
                 disabled={loading}
               >
                 <Select.Trigger className="group flex w-full max-w-xs items-center rounded-2xl border-[6px] border-gray-300 bg-white px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
@@ -281,6 +276,10 @@ export default function Home() {
                   <Select.Content className="overflow-hidden rounded-md bg-white shadow-lg">
                     <Select.Viewport className="p-2">
                     {[
+                      {
+                        label: "GPT-4o",
+                        value: "gpt-4o",
+                      },
                       {
                         label: "GPT-3.5 Turbo",
                         value: "gpt-3.5-turbo",
@@ -315,8 +314,6 @@ export default function Home() {
                       </Select.Item>
                     ))}
                     </Select.Viewport>
-                    <Select.ScrollDownButton />
-                    <Select.Arrow />
                   </Select.Content>
                 </Select.Portal>
               </Select.Root>
