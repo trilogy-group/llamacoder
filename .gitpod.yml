@@ -1,0 +1,35 @@
+tasks:
+  - command: |
+      nvm install --lts &&     
+      npm install &&
+      gp sync-done bundle
+  - name: backend
+    command: |
+      gp sync-await bundle
+      nvm use --lts
+      export AWS_REGION=us-east-1
+      # if the env variable AD_PASSWORD is set then run saml2aws login --password $AD_PASSWORD
+      if [ -n "$AD_PASSWORD" ]; then
+      saml2aws login --password $AD_PASSWORD
+      else 
+      saml2aws login  
+      fi
+
+      Arch=$(uname -m)
+      if [[ "$Arch" == "x86_64" || "$Arch" == "amd64" ]]; then
+        PLATFORM=linux            
+      elif [[ "$Arch" == "aarch64" || "$Arch" == "arm64" ]]; then
+        PLATFORM=linux-arm64            
+      else 
+        echo "Unsupported platform"
+        exit 1
+      fi
+      curl -fLo copilot "https://github.com/aws/copilot-cli/releases/latest/download/copilot-$PLATFORM" \
+        && chmod +x copilot \
+        && sudo mv copilot /usr/local/bin/copilot \
+        && copilot --help
+vscode:
+  extensions:
+    - github.copilot
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
