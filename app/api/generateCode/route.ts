@@ -29,12 +29,12 @@ export async function POST(req: Request) {
       ];
     }
 
-    const fileContentMessage = messages.find((m: { content: string }) => m.content.startsWith("File content:"));
-    if (fileContentMessage) {
-      const fileContent = fileContentMessage.content.replace("File content: ", "");
-      messages = messages.filter((m: { role: string; content: string }) => m !== fileContentMessage);
-      messages.push({ role: "user", content: `Here's the content of the uploaded file:\n\n${fileContent}\n\nPlease use this content to inform your response.` });
-      console.log("File content added to messages:", fileContent.substring(0, 100) + "...");
+    const fileContentMessages = messages.filter((m: { content: string }) => m.content.startsWith("File content:"));
+    if (fileContentMessages.length > 0) {
+      const fileContents = fileContentMessages.map((m: { content: string }) => m.content.replace("File content: ", ""));
+      messages = messages.filter((m: { role: string; content: string }) => !fileContentMessages.includes(m));
+      messages.push({ role: "user", content: `Here are the contents of the uploaded files:\n\n${fileContents.join("\n\n")}\n\nPlease use this content to inform your response.` });
+      console.log("File contents added to messages:", fileContents.map((content: string) => content.substring(0, 100) + "...").join("\n"));
     }
 
     const combinedMessages = messages.reduce((acc: any[], message: any) => {

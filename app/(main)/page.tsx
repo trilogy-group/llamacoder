@@ -37,7 +37,7 @@ export default function Home() {
     [],
   );
   let [isPublishing, setIsPublishing] = useState(false);
-  let [selectedFile, setSelectedFile] = useState<File | null>(null);
+  let [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   let loading = status === "creating" || status === "updating";
 
@@ -60,9 +60,11 @@ export default function Home() {
   
     let newMessages = [{ role: "user", content: prompt }];
   
-    if (selectedFile) {
-      const fileContent = await readFileContent(selectedFile);
-      newMessages.push({ role: "user", content: `File content: ${fileContent}` });
+    if (selectedFiles.length > 0) {
+      for (const file of selectedFiles) {
+        const fileContent = await readFileContent(file);
+        newMessages.push({ role: "user", content: `File content: ${fileContent}` });
+      }
     }
   
     await sendRequest(newMessages, model);
@@ -221,11 +223,12 @@ export default function Home() {
           <div className="relative">
             <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
             <div className="relative flex rounded-3xl bg-white shadow-sm">
-              <input
-                type="file"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                className="w-full rounded-3xl bg-transparent px-4 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 file:mr-3 file:rounded-full file:border-0 file:bg-blue-500 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-400"
-              />
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
+              className="w-full rounded-3xl bg-transparent px-4 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 file:mr-3 file:rounded-full file:border-0 file:bg-blue-500 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-400"
+            />
             </div>
           </div>
         </div>
