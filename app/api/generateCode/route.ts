@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     }
 
     // Ensure alternating user and assistant messages
-    const validatedMessages = messages.reduce((acc, message, index) => {
+    const validatedMessages = messages.reduce((acc: any[], message: { role: any; }, index: number) => {
       if (index === 0 || (message.role !== acc[acc.length - 1].role)) {
         acc.push(message);
       }
