@@ -21,6 +21,7 @@
     "@vercel/og": "^0.6.2",
     "axios": "^1.7.3",
     "eventsource-parser": "^1.1.2",
+    "file-saver": "^2.0.5",
     "framer-motion": "^11.3.19",
     "langchain": "^0.1.0",
     "next": "14.2.5",
@@ -30,6 +31,7 @@
     "sonner": "^1.5.0"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

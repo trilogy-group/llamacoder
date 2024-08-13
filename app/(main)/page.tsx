@@ -7,6 +7,7 @@ import { useScrollTo } from "@/hooks/use-scroll-to";
 import { Sandpack } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { CheckIcon } from "@heroicons/react/16/solid";
+import { ArrowDownIcon } from "@heroicons/react/20/solid";
 import {
   ArrowLongRightIcon,
   ChevronDownIcon,
@@ -25,6 +26,7 @@ import { FormEvent, useEffect, useState } from "react";
 import LoadingDots from "../../components/loading-dots";
 import { shareApp } from "./actions";
 import { domain } from "@/utils/domain";
+import { saveAs } from 'file-saver';
 
 export default function Home() {
   let [status, setStatus] = useState<
@@ -40,6 +42,12 @@ export default function Home() {
   let [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   let loading = status === "creating" || status === "updating";
+
+
+  function downloadCode() {
+    const blob = new Blob([generatedCode], { type: "text/plain;charset=utf-8" });
+    saveAs(blob, "generatedComponent.tsx");
+  }
 
   async function generateCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -429,6 +437,18 @@ export default function Home() {
                   </Tooltip.Root>
                 </Tooltip.Provider>
               </div>
+              <button
+                onClick={downloadCode}
+                className="inline-flex h-[68px] items-center justify-center gap-2 rounded-3xl bg-green-500 transition"
+                style={{ width: '280px' }}
+              >
+                <span className="relative">
+                  <ArrowDownIcon className="size-5 text-xl text-white" />
+                </span>
+                <p className="text-lg font-medium text-white">
+                  Download Code
+                </p>
+              </button>
             </div>
             <div className="relative mt-8 w-full overflow-hidden">
               <div className="isolate">
