@@ -26,17 +26,28 @@ export async function POST(req: Request) {
       ];
     }
 
-    // Ensure alternating user and assistant messages
-    const validatedMessages = messages.reduce((acc: any[], message: { role: any; }, index: number) => {
-      if (index === 0 || (message.role !== acc[acc.length - 1].role)) {
-        acc.push(message);
+    const fileContentMessage = messages.find(m => m.content.startsWith("File content:"));
+    if (fileContentMessage) {
+      const fileContent = fileContentMessage.content.replace("File content: ", "");
+      messages = messages.filter(m => m !== fileContentMessage);
+      messages.push({ role: "user", content: `Here's the content of the uploaded file:\n\n${fileContent}\n\nPlease use this content to inform your response.` });
+      console.log("File content added to messages:", fileContent.substring(0, 100) + "...");
+    }
+
+    const combinedMessages = messages.reduce((acc: any[], message: any) => {
+      if (acc.length > 0 && acc[acc.length - 1].role === message.role) {
+        acc[acc.length - 1].content += "\n\n" + message.content;
+      } else {
+        acc.push({ ...message });
       }
       return acc;
-    }, []);
+    }, [] as { role: string; content: string }[]);
+
+    console.log("Combined messages:", combinedMessages);
 
     const payload: LangChainStreamPayload = {
       model,
-      messages: validatedMessages,
+      messages: combinedMessages,
       temperature: 0.0,
     };
 

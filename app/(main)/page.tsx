@@ -37,46 +37,67 @@ export default function Home() {
     [],
   );
   let [isPublishing, setIsPublishing] = useState(false);
+  let [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   let loading = status === "creating" || status === "updating";
 
   async function generateCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
+  
     if (status !== "initial") {
       scrollTo({ delay: 0.5 });
     }
-
+  
     setStatus("creating");
     setGeneratedCode("");
-
+  
     let formData = new FormData(e.currentTarget);
     let model = formData.get("model");
     let prompt = formData.get("prompt");
     if (typeof prompt !== "string" || typeof model !== "string") {
       return;
     }
+  
     let newMessages = [{ role: "user", content: prompt }];
-
+  
+    if (selectedFile) {
+      const fileContent = await readFileContent(selectedFile);
+      newMessages.push({ role: "user", content: `File content: ${fileContent}` });
+    }
+  
+    await sendRequest(newMessages, model);
+  }
+  
+  function readFileContent(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target?.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+    });
+  }
+  
+  async function sendRequest(messages: { role: string; content: string }[], model: string) {
     const chatRes = await fetch("/api/generateCode", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: newMessages,
+        messages,
         model,
       }),
     });
+  
     if (!chatRes.ok) {
       throw new Error(chatRes.statusText);
     }
-
-    // This data is a ReadableStream
+  
     const data = chatRes.body;
     if (!data) {
       return;
     }
+  
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
@@ -88,27 +109,21 @@ export default function Home() {
         }
       }
     };
-
-    // https://web.dev/streams/#the-getreader-and-read-methods
+  
     const reader = data.getReader();
     const decoder = new TextDecoder();
     const parser = createParser(onParse);
     let done = false;
-
+  
     while (!done) {
       const { value, done: doneReading } = await reader.read();
       done = doneReading;
       const chunkValue = decoder.decode(value);
       parser.feed(chunkValue);
     }
-
-    newMessages = [
-      ...newMessages,
-      { role: "assistant", content: generatedCode },
-    ];
-
+  
     setModelUsedForInitialCode(model);
-    setMessages(newMessages);
+    setMessages([...messages, { role: "assistant", content: generatedCode }]);
     setStatus("created");
   }
 
@@ -125,23 +140,8 @@ export default function Home() {
       return;
     }
   
-    // Filter out empty messages
-    const filteredMessages = messages.filter(msg => msg.content.trim() !== "");
-  
-    // Ensure we have alternating user and assistant messages
-    let newMessages = [];
-    let lastRole = "assistant";
-  
-    for (let i = filteredMessages.length - 1; i >= 0; i--) {
-      if (filteredMessages[i].role !== lastRole) {
-        newMessages.unshift(filteredMessages[i]);
-        lastRole = filteredMessages[i].role;
-        if (newMessages.length >= 2) break; // We only need the last user-assistant pair
-      }
-    }
-  
-    // Add the new user prompt
-    newMessages.push({ role: "user", content: prompt });
+    // Add the new user prompt to the existing messages
+    let updatedMessages = [...messages, { role: "user", content: prompt }];
   
     setGeneratedCode("");
     const chatRes = await fetch("/api/generateCode", {
@@ -150,7 +150,7 @@ export default function Home() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: newMessages,
+        messages: updatedMessages,
         model: modelUsedForInitialCode,
       }),
     });
@@ -166,6 +166,7 @@ export default function Home() {
     if (!data) {
       return;
     }
+  
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
@@ -190,10 +191,11 @@ export default function Home() {
       const chunkValue = decoder.decode(value);
       parser.feed(chunkValue);
     }
-
-    newMessages.push({ role: "assistant", content: generatedCode });
   
-    setMessages(newMessages);
+    // Add the assistant's response to the messages
+    updatedMessages.push({ role: "assistant", content: generatedCode });
+  
+    setMessages(updatedMessages);
     setStatus("updated");
   }
 
@@ -225,7 +227,18 @@ export default function Home() {
           <br /> into an <span className="text-blue-600">app</span>
         </h1>
 
-        <form className="w-full max-w-xl" onSubmit={generateCode}>
+        <div className="mb-4">
+          <input
+            type="file"
+            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            className="w-full rounded-lg border border-gray-300 p-2"
+          />
+        </div>
+
+        <form className="w-full max-w-xl" onSubmit={(e) => {
+            e.preventDefault();
+            generateCode(e);
+          }}>
           <fieldset disabled={loading} className="disabled:opacity-75">
             <div className="relative mt-5">
               <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
