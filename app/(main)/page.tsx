@@ -459,7 +459,10 @@ export default function Home() {
                     dependencies: {
                       "lucide-react": "latest",
                       recharts: "2.9.0",
+                      "axios": "latest",
+                      "react-dom": "latest",
                       "react-router-dom": "latest",
+                      "react-ui": "latest",
                     },
                   }}
                 />
