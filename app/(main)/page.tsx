@@ -439,7 +439,8 @@ export default function Home() {
               </div>
               <button
                 onClick={downloadCode}
-                className="inline-flex h-[68px] items-center justify-center gap-2 rounded-3xl bg-green-500 transition"
+                disabled={loading}
+                className="inline-flex h-[68px] items-center justify-center gap-2 rounded-3xl bg-green-500 transition disabled:grayscale"
                 style={{ width: '280px' }}
               >
                 <span className="relative">
