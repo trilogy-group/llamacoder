@@ -14,7 +14,13 @@ You are an expert frontend React engineer who is also a great UI/UX designer. Fo
 - NO OTHER LIBRARIES (e.g. zod, hookform) ARE INSTALLED OR ABLE TO BE IMPORTED.
 - Please ONLY return the full React code starting with the imports, nothing else. It's very important for my job that you only return the React code with imports. DO NOT START WITH \`\`\`typescript or \`\`\`javascript or \`\`\`tsx or \`\`\`.
 
+First think about the following in <THOUGHTS> tags.
+<THOUGHTS>
+  ## What is the best approach?
+  ## How do I make this work without any libraires other than lucide-react, react-dom, recharts, axios, react-router-dom?  
+</THOUGHTS>
 
+ Then start coding in the <CODE> tags. Good luck!
 `;
 
 export async function POST(req: Request) {
@@ -46,8 +52,6 @@ export async function POST(req: Request) {
       return acc;
     }, [] as { role: string; content: string }[]);
 
-    // console.log("Combined messages:", combinedMessages);
-
     const payload: LangChainStreamPayload = {
       model,
       messages: combinedMessages,
@@ -56,8 +60,51 @@ export async function POST(req: Request) {
 
     const stream = await LangChainStream(payload);
 
-    return new Response(stream, {
+    // Capture the stream and store it in a variable
+    const reader = stream.getReader();
+    let result = '';
+    let done = false;
+    const decoder = new TextDecoder();
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const decodedValue = decoder.decode(value, { stream: true });
+        const lines = decodedValue.split('\n');
+        for (const line of lines) {
+          if (line.trim().startsWith('data:')) {
+            const json = line.replace('data: ', '');
+            try {
+              const parsed = JSON.parse(json);
+              if (parsed.text) {
+                result += parsed.text;
+              }
+            } catch (e) {
+              console.error('Failed to parse JSON:', json);
+            }
+          }
+        }
+      }
+    }
+
+    // Print the captured stream
+    console.log("Captured stream:", result);
+
+    // Create a ReadableStream to stream the response
+    const streamResponse = new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+        const codeMatch = result.match(/<CODE>([\s\S]*?)<\/CODE>/);
+        const code = codeMatch ? codeMatch[1] : "No code found";
+        const jsonResponse = JSON.stringify({ text: code });
+        controller.enqueue(encoder.encode("data: " + jsonResponse + "\n\n"));
+        controller.close();
+      }
+    });
+
+    return new Response(streamResponse, {
       headers: new Headers({
+        "Content-Type": "text/plain",
         "Cache-Control": "no-cache",
       }),
     });
