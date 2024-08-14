@@ -36,8 +36,12 @@ export default function CodeViewer({ code }: { code: string }) {
       customSetup={{
         dependencies: {
           "lucide-react": "latest",
-          recharts: "2.9.0",
+          "react": "latest",
+          "react-dom": "latest",
+          "axios": "latest",
+          "recharts": "2.9.0",
           "react-router-dom": "latest",
+          
         },
       }}
     >

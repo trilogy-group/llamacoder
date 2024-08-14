@@ -1,7 +1,4 @@
-import {
-  TogetherAIStream,
-  TogetherAIStreamPayload,
-} from "@/utils/TogetherAIStream";
+import { LangChainStream, LangChainStreamPayload } from "@/utils/LangChainStream";
 
 export const runtime = "edge";
 
@@ -13,36 +10,64 @@ You are an expert frontend React engineer who is also a great UI/UX designer. Fo
 - Use TypeScript as the language for the React component
 - Use Tailwind classes for styling. DO NOT USE ARBITRARY VALUES (e.g. \`h-[600px]\`). Make sure to use a consistent color palette.
 - ONLY IF the user asks for a dashboard, graph or chart, the recharts library is available to be imported, e.g. \`import { LineChart, XAxis, ... } from "recharts"\` & \`<LineChart ...><XAxis dataKey="name"> ...\`. Please only use this when needed.
+- Use Axios if you need to make an API request. 
 - NO OTHER LIBRARIES (e.g. zod, hookform) ARE INSTALLED OR ABLE TO BE IMPORTED.
 - Please ONLY return the full React code starting with the imports, nothing else. It's very important for my job that you only return the React code with imports. DO NOT START WITH \`\`\`typescript or \`\`\`javascript or \`\`\`tsx or \`\`\`.
+
+
 `;
 
 export async function POST(req: Request) {
-  let { messages, model } = await req.json();
+  try {
+    let { messages, model } = await req.json();
 
-  const payload: TogetherAIStreamPayload = {
-    model,
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      ...messages.map((message: any) => {
-        if (message.role === "user") {
-          message.content +=
-            "\nPlease ONLY return code, NO backticks or language names.";
-        }
-        return message;
+    // Ensure the first message is the system message
+    if (messages[0].role !== "system") {
+      messages = [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ];
+    }
+
+    const fileContentMessages = messages.filter((m: { content: string }) => m.content.startsWith("File content:"));
+    if (fileContentMessages.length > 0) {
+      const fileContents = fileContentMessages.map((m: { content: string }) => m.content.replace("File content: ", ""));
+      messages = messages.filter((m: { role: string; content: string }) => !fileContentMessages.includes(m));
+      messages.push({ role: "user", content: `Here are the contents of the uploaded files:\n\n${fileContents.join("\n\n")}\n\nPlease use this content to inform your response.` });
+      console.log("File contents added to messages:", fileContents.map((content: string) => content.substring(0, 100) + "...").join("\n"));
+    }
+
+    const combinedMessages = messages.reduce((acc: any[], message: any) => {
+      if (acc.length > 0 && acc[acc.length - 1].role === message.role) {
+        acc[acc.length - 1].content += "\n\n" + message.content;
+      } else {
+        acc.push({ ...message });
+      }
+      return acc;
+    }, [] as { role: string; content: string }[]);
+
+    // console.log("Combined messages:", combinedMessages);
+
+    const payload: LangChainStreamPayload = {
+      model,
+      messages: combinedMessages,
+      temperature: 0.0,
+    };
+
+    const stream = await LangChainStream(payload);
+
+    return new Response(stream, {
+      headers: new Headers({
+        "Cache-Control": "no-cache",
       }),
-    ],
-    stream: true,
-    temperature: 0.2,
-  };
-  const stream = await TogetherAIStream(payload);
-
-  return new Response(stream, {
-    headers: new Headers({
-      "Cache-Control": "no-cache",
-    }),
-  });
+    });
+  } catch (error) {
+    console.error("Error in POST /api/generateCode:", error);
+    return new Response(JSON.stringify({ error: "An error occurred while processing your request" }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 }

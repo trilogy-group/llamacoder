@@ -7,6 +7,7 @@ import { useScrollTo } from "@/hooks/use-scroll-to";
 import { Sandpack } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { CheckIcon } from "@heroicons/react/16/solid";
+import { ArrowDownIcon } from "@heroicons/react/20/solid";
 import {
   ArrowLongRightIcon,
   ChevronDownIcon,
@@ -25,6 +26,7 @@ import { FormEvent, useEffect, useState } from "react";
 import LoadingDots from "../../components/loading-dots";
 import { shareApp } from "./actions";
 import { domain } from "@/utils/domain";
+import { saveAs } from 'file-saver';
 
 export default function Home() {
   let [status, setStatus] = useState<
@@ -37,46 +39,75 @@ export default function Home() {
     [],
   );
   let [isPublishing, setIsPublishing] = useState(false);
+  let [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   let loading = status === "creating" || status === "updating";
 
+
+  function downloadCode() {
+    const blob = new Blob([generatedCode], { type: "text/plain;charset=utf-8" });
+    saveAs(blob, "generatedComponent.tsx");
+  }
+
   async function generateCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
+  
     if (status !== "initial") {
       scrollTo({ delay: 0.5 });
     }
-
+  
     setStatus("creating");
     setGeneratedCode("");
-
+  
     let formData = new FormData(e.currentTarget);
     let model = formData.get("model");
     let prompt = formData.get("prompt");
     if (typeof prompt !== "string" || typeof model !== "string") {
       return;
     }
+  
     let newMessages = [{ role: "user", content: prompt }];
-
+  
+    if (selectedFiles.length > 0) {
+      for (const file of selectedFiles) {
+        const fileContent = await readFileContent(file);
+        newMessages.push({ role: "user", content: `File content: ${fileContent}` });
+      }
+    }
+  
+    await sendRequest(newMessages, model);
+  }
+  
+  function readFileContent(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target?.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+    });
+  }
+  
+  async function sendRequest(messages: { role: string; content: string }[], model: string) {
     const chatRes = await fetch("/api/generateCode", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: newMessages,
+        messages,
         model,
       }),
     });
+  
     if (!chatRes.ok) {
       throw new Error(chatRes.statusText);
     }
-
-    // This data is a ReadableStream
+  
     const data = chatRes.body;
     if (!data) {
       return;
     }
+  
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
@@ -88,42 +119,40 @@ export default function Home() {
         }
       }
     };
-
-    // https://web.dev/streams/#the-getreader-and-read-methods
+  
     const reader = data.getReader();
     const decoder = new TextDecoder();
     const parser = createParser(onParse);
     let done = false;
-
+  
     while (!done) {
       const { value, done: doneReading } = await reader.read();
       done = doneReading;
       const chunkValue = decoder.decode(value);
       parser.feed(chunkValue);
     }
-
-    newMessages = [
-      ...newMessages,
-      { role: "assistant", content: generatedCode },
-    ];
-
+  
     setModelUsedForInitialCode(model);
-    setMessages(newMessages);
+    setMessages([...messages, { role: "assistant", content: generatedCode }]);
     setStatus("created");
   }
 
   async function modifyCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
+  
     setStatus("updating");
-
+  
     let formData = new FormData(e.currentTarget);
     let prompt = formData.get("prompt");
-    if (typeof prompt !== "string") {
+    if (typeof prompt !== "string" || prompt.trim() === "") {
+      toast.error("Please enter a valid prompt");
+      setStatus("created");
       return;
     }
-    let newMessages = [...messages, { role: "user", content: prompt }];
-
+  
+    // Add the new user prompt to the existing messages
+    let updatedMessages = [...messages, { role: "user", content: prompt }];
+  
     setGeneratedCode("");
     const chatRes = await fetch("/api/generateCode", {
       method: "POST",
@@ -131,19 +160,23 @@ export default function Home() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: newMessages,
+        messages: updatedMessages,
         model: modelUsedForInitialCode,
       }),
     });
+  
     if (!chatRes.ok) {
-      throw new Error(chatRes.statusText);
+      toast.error("An error occurred while generating code");
+      setStatus("created");
+      return;
     }
-
+  
     // This data is a ReadableStream
     const data = chatRes.body;
     if (!data) {
       return;
     }
+  
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
@@ -155,26 +188,24 @@ export default function Home() {
         }
       }
     };
-
+  
     // https://web.dev/streams/#the-getreader-and-read-methods
     const reader = data.getReader();
     const decoder = new TextDecoder();
     const parser = createParser(onParse);
     let done = false;
-
+  
     while (!done) {
       const { value, done: doneReading } = await reader.read();
       done = doneReading;
       const chunkValue = decoder.decode(value);
       parser.feed(chunkValue);
     }
-
-    newMessages = [
-      ...newMessages,
-      { role: "assistant", content: generatedCode },
-    ];
-
-    setMessages(newMessages);
+  
+    // Add the assistant's response to the messages
+    updatedMessages.push({ role: "assistant", content: generatedCode });
+  
+    setMessages(updatedMessages);
     setStatus("updated");
   }
 
@@ -191,22 +222,29 @@ export default function Home() {
       <Header />
 
       <main className="mt-12 flex w-full flex-1 flex-col items-center px-4 text-center sm:mt-20">
-        <a
-          className="mb-4 inline-flex h-7 shrink-0 items-center gap-[9px] rounded-[50px] border-[0.5px] border-solid border-[#E6E6E6] bg-[rgba(234,238,255,0.65)] bg-gray-100 px-7 py-5 shadow-[0px_1px_1px_0px_rgba(0,0,0,0.25)]"
-          href="https://dub.sh/together-ai/?utm_source=example-app&utm_medium=llamacoder&utm_campaign=llamacoder-app-signup"
-          target="_blank"
-        >
-          <span className="text-center">
-            Powered by <span className="font-medium">Llama 3.1</span> and{" "}
-            <span className="font-medium">Together AI</span>
-          </span>
-        </a>
         <h1 className="my-6 max-w-3xl text-4xl font-bold text-gray-800 sm:text-6xl">
           Turn your <span className="text-blue-600">idea</span>
-          <br /> into an <span className="text-blue-600">app</span>
+          <br /> into an Ar<span className="text-blue-600">TI</span>fact
         </h1>
 
-        <form className="w-full max-w-xl" onSubmit={generateCode}>
+        <div className="mb-4 w-full max-w-sm">
+          <div className="relative">
+            <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
+            <div className="relative flex rounded-3xl bg-white shadow-sm">
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
+              className="w-full rounded-3xl bg-transparent px-4 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 file:mr-3 file:rounded-full file:border-0 file:bg-blue-500 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-400"
+            />
+            </div>
+          </div>
+        </div>
+
+        <form className="w-full max-w-xl" onSubmit={(e) => {
+            e.preventDefault();
+            generateCode(e);
+          }}>
           <fieldset disabled={loading} className="disabled:opacity-75">
             <div className="relative mt-5">
               <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
@@ -236,7 +274,7 @@ export default function Home() {
               <p className="text-xs text-gray-500">Model:</p>
               <Select.Root
                 name="model"
-                defaultValue="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
+                defaultValue="gpt-4o"
                 disabled={loading}
               >
                 <Select.Trigger className="group flex w-full max-w-xs items-center rounded-2xl border-[6px] border-gray-300 bg-white px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
@@ -248,40 +286,45 @@ export default function Home() {
                 <Select.Portal>
                   <Select.Content className="overflow-hidden rounded-md bg-white shadow-lg">
                     <Select.Viewport className="p-2">
-                      {[
-                        {
-                          label: "Llama 3.1 405B",
-                          value:
-                            "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
-                        },
-                        {
-                          label: "Llama 3.1 70B",
-                          value: "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
-                        },
-                        {
-                          label: "Gemma 2 27B",
-                          value: "google/gemma-2-27b-it",
-                        },
-                      ].map((model) => (
-                        <Select.Item
-                          key={model.value}
-                          value={model.value}
-                          className="flex cursor-pointer items-center rounded-md px-3 py-2 text-sm data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none"
-                        >
-                          <Select.ItemText asChild>
-                            <span className="inline-flex items-center gap-2 text-gray-500">
-                              <div className="size-2 rounded-full bg-green-500" />
-                              {model.label}
-                            </span>
-                          </Select.ItemText>
-                          <Select.ItemIndicator className="ml-auto">
-                            <CheckIcon className="size-5 text-blue-600" />
-                          </Select.ItemIndicator>
-                        </Select.Item>
-                      ))}
+                    {[
+                      {
+                        label: "GPT-4o",
+                        value: "gpt-4o",
+                      },
+                      {
+                        label: "GPT-3.5 Turbo",
+                        value: "gpt-3.5-turbo",
+                      },
+                      {
+                        label: "GPT-4",
+                        value: "gpt-4",
+                      },
+                      {
+                        label: "GPT-4 Turbo",
+                        value: "gpt-4-1106-preview",
+                      },
+                      {
+                        label: "Claude Sonnet 3.5",
+                        value: "claude-3-sonnet-20240229",
+                      },
+                    ].map((model) => (
+                      <Select.Item
+                        key={model.value}
+                        value={model.value}
+                        className="flex cursor-pointer items-center rounded-md px-3 py-2 text-sm data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none"
+                      >
+                        <Select.ItemText asChild>
+                          <span className="inline-flex items-center gap-2 text-gray-500">
+                            <div className="size-2 rounded-full bg-green-500" />
+                            {model.label}
+                          </span>
+                        </Select.ItemText>
+                        <Select.ItemIndicator className="ml-auto">
+                          <CheckIcon className="size-5 text-blue-600" />
+                        </Select.ItemIndicator>
+                      </Select.Item>
+                    ))}
                     </Select.Viewport>
-                    <Select.ScrollDownButton />
-                    <Select.Arrow />
                   </Select.Content>
                 </Select.Portal>
               </Select.Root>
@@ -394,6 +437,19 @@ export default function Home() {
                   </Tooltip.Root>
                 </Tooltip.Provider>
               </div>
+              <button
+                onClick={downloadCode}
+                disabled={loading}
+                className="inline-flex h-[68px] items-center justify-center gap-2 rounded-3xl bg-green-500 transition disabled:grayscale"
+                style={{ width: '280px' }}
+              >
+                <span className="relative">
+                  <ArrowDownIcon className="size-5 text-xl text-white" />
+                </span>
+                <p className="text-lg font-medium text-white">
+                  Download Code
+                </p>
+              </button>
             </div>
             <div className="relative mt-8 w-full overflow-hidden">
               <div className="isolate">
@@ -427,7 +483,10 @@ export default function Home() {
                     dependencies: {
                       "lucide-react": "latest",
                       recharts: "2.9.0",
+                      "axios": "latest",
+                      "react-dom": "latest",
                       "react-router-dom": "latest",
+                      "react-ui": "latest",
                     },
                   }}
                 />
