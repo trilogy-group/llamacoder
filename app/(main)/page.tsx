@@ -4,7 +4,8 @@ import { Toaster, toast } from "sonner";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { useScrollTo } from "@/hooks/use-scroll-to";
-import { Sandpack } from "@codesandbox/sandpack-react";
+import { Sandpack, useSandpack} from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackLayout, SandpackCodeEditor, SandpackPreview } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { CheckIcon } from "@heroicons/react/16/solid";
 import { ArrowDownIcon } from "@heroicons/react/20/solid";
@@ -28,6 +29,32 @@ import { shareApp } from "./actions";
 import { domain } from "@/utils/domain";
 import { saveAs } from 'file-saver';
 
+const CodeDownloader = ({ loading }: { loading: boolean }) => {
+  const { sandpack } = useSandpack();
+  const { files, activeFile } = sandpack;
+ 
+  const code = files[activeFile].code;
+
+  function downloadCode() {
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+    saveAs(blob, "generatedComponent.tsx");
+  }
+
+  return ( <button
+    onClick={downloadCode}
+    disabled={loading}
+    className="inline-flex h-[40px] items-center justify-center gap-2 rounded-2xl bg-green-500 transition disabled:grayscale"
+    style={{ width: '120px' }}
+  >
+    <span className="relative">
+      <ArrowDownIcon className="size-5 text-xl text-white" />
+    </span>
+    <p className="text-lg font-small text-white">
+      Code
+    </p>
+  </button>);
+};
+
 export default function Home() {
   let [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
@@ -40,6 +67,29 @@ export default function Home() {
   );
   let [isPublishing, setIsPublishing] = useState(false);
   let [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const [files, setFiles] = useState({
+    "App.tsx": generatedCode,
+    "/public/index.html": `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </head>
+      <body>
+        <div id="root"></div>
+      </body>
+    </html>`,
+  });
+
+  useEffect(() => {
+    setFiles((prevFiles) => ({
+      ...prevFiles,
+      "App.tsx": generatedCode,
+    }));
+  }, [generatedCode]);
 
   let loading = status === "creating" || status === "updating";
 
@@ -437,59 +487,37 @@ export default function Home() {
                   </Tooltip.Root>
                 </Tooltip.Provider>
               </div>
-              <button
-                onClick={downloadCode}
-                disabled={loading}
-                className="inline-flex h-[68px] items-center justify-center gap-2 rounded-3xl bg-green-500 transition disabled:grayscale"
-                style={{ width: '280px' }}
-              >
-                <span className="relative">
-                  <ArrowDownIcon className="size-5 text-xl text-white" />
-                </span>
-                <p className="text-lg font-medium text-white">
-                  Download Code
-                </p>
-              </button>
             </div>
             <div className="relative mt-8 w-full overflow-hidden">
               <div className="isolate">
-                <Sandpack
-                  theme={draculaTheme}
+              <SandpackProvider
+                  template="react-ts"
                   options={{
-                    showNavigator: true,
                     externalResources: [
                       "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
-                    ],
-                    editorHeight: "80vh",
-                    showTabs: false,
+                    ]
                   }}
-                  files={{
-                    "App.tsx": generatedCode,
-                    "/public/index.html": `<!DOCTYPE html>
-                    <html lang="en">
-                      <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Document</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
-                      </head>
-                      <body>
-                        <div id="root"></div>
-                      </body>
-                    </html>`,
-                  }}
-                  template="react-ts"
+                  theme={draculaTheme}
                   customSetup={{
                     dependencies: {
                       "lucide-react": "latest",
-                      recharts: "2.9.0",
+                      "recharts": "2.9.0",
                       "axios": "latest",
                       "react-dom": "latest",
                       "react-router-dom": "latest",
                       "react-ui": "latest",
                     },
                   }}
-                />
+                  files={files}
+                  
+                >
+                  <CodeDownloader loading={loading} />
+                  <SandpackLayout >
+                    <SandpackCodeEditor style={{ height: "80vh" }}/>
+                    <SandpackPreview style={{ height: "80vh" }}/>
+                  </SandpackLayout>
+                  
+                </SandpackProvider>
               </div>
 
               <AnimatePresence>
