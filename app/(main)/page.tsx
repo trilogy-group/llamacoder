@@ -363,7 +363,7 @@ export default function Home() {
                       },
                       {
                         label: "Claude Sonnet 3.5",
-                        value: "claude-3-sonnet-20240229",
+                        value: "claude-3-5-sonnet-20240620",
                       },
                     ].map((model) => (
                       <Select.Item
@@ -522,14 +522,20 @@ export default function Home() {
                       "react-dom": "latest",
                       "react-router-dom": "latest",
                       "react-ui": "latest",
+                      "@mui/material": "latest",
+                      "@emotion/react": "latest",
+                      "@emotion/styled": "latest",
+                      "@mui/icons-material": "latest",
                     },
                   }}
                   files={files}
                   
                 >
-                  <CodeDownloader loading={loading} />
+                  <div className="mb-4">
+                    <CodeDownloader loading={loading} />
+                  </div>
                   <SandpackLayout >
-                    <SandpackCodeEditor style={{ height: "80vh" }}/>
+                    <SandpackCodeEditor style={{ height: "80vh" }} showRunButton={true} showInlineErrors={true} wrapContent={true}/>
                     <SandpackPreview style={{ height: "80vh" }}/>
                   </SandpackLayout>
                   
