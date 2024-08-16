@@ -296,30 +296,38 @@ export default function Home() {
             generateCode(e);
           }}>
           <fieldset disabled={loading} className="disabled:opacity-75">
-            <div className="relative mt-5">
-              <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
-              <div className="relative flex rounded-3xl bg-white shadow-sm">
-                <div className="relative flex flex-grow items-stretch focus-within:z-10">
-                  <input
-                    required
-                    name="prompt"
-                    className="w-full rounded-l-3xl bg-transparent px-6 py-5 text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
-                    placeholder="Build me a calculator app..."
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-3xl px-3 py-2 text-sm font-semibold text-blue-500 hover:text-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:text-gray-900"
-                >
-                  {status === "creating" ? (
-                    <LoadingDots color="black" style="large" />
-                  ) : (
-                    <ArrowLongRightIcon className="-ml-0.5 size-6" />
-                  )}
-                </button>
+          <div className="relative mt-5">
+            <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
+            <div className="relative flex rounded-3xl bg-white shadow-sm">
+              <div className="relative flex flex-grow items-stretch focus-within:z-10">
+                <textarea
+                  required
+                  name="prompt"
+                  className="w-full rounded-l-3xl bg-transparent px-6 py-5 text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+                  placeholder="Build me a calculator app..."
+                  rows={4} // Adjust the number of rows as needed
+                  style={{ height: '150px', overflowY: 'auto' }} // Fixed height and scrollable
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      (e.currentTarget.form as HTMLFormElement).requestSubmit();
+                    }
+                  }}
+                />
               </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-3xl px-3 py-2 text-sm font-semibold text-blue-500 hover:text-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:text-gray-900"
+              >
+                {status === "creating" ? (
+                  <LoadingDots color="black" style="large" />
+                ) : (
+                  <ArrowLongRightIcon className="-ml-0.5 size-6" />
+                )}
+              </button>
             </div>
+          </div>
             <div className="mt-6 flex items-center justify-center gap-3">
               <p className="text-xs text-gray-500">Model:</p>
               <Select.Root
@@ -399,31 +407,39 @@ export default function Home() {
           >
             <div className="mt-5 flex gap-4">
               <form className="w-full" onSubmit={modifyCode}>
-                <fieldset disabled={loading} className="group">
-                  <div className="relative">
-                    <div className="relative flex rounded-3xl bg-white shadow-sm group-disabled:bg-gray-50">
-                      <div className="relative flex flex-grow items-stretch focus-within:z-10">
-                        <input
-                          required
-                          name="prompt"
-                          className="w-full rounded-l-3xl bg-transparent px-6 py-5 text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed"
-                          placeholder="Make changes to your app here"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-3xl px-3 py-2 text-sm font-semibold text-blue-500 hover:text-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:text-gray-900"
-                      >
-                        {loading ? (
-                          <LoadingDots color="black" style="large" />
-                        ) : (
-                          <ArrowLongRightIcon className="-ml-0.5 size-6" />
-                        )}
-                      </button>
+              <fieldset disabled={loading} className="group">
+                <div className="relative">
+                  <div className="relative flex rounded-3xl bg-white shadow-sm group-disabled:bg-gray-50">
+                    <div className="relative flex flex-grow items-stretch focus-within:z-10">
+                      <textarea
+                        required
+                        name="prompt"
+                        className="w-full rounded-l-3xl bg-transparent px-6 py-5 text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed"
+                        placeholder="Make changes to your app here"
+                        rows={4} // Adjust the number of rows as needed
+                        style={{ height: '70px', overflowY: 'auto' }} // Fixed height and scrollable
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            (e.currentTarget.form as HTMLFormElement).requestSubmit();
+                          }
+                        }}
+                      />
                     </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-3xl px-3 py-2 text-sm font-semibold text-blue-500 hover:text-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:text-gray-900"
+                    >
+                      {loading ? (
+                        <LoadingDots color="black" style="large" />
+                      ) : (
+                        <ArrowLongRightIcon className="-ml-0.5 size-6" />
+                      )}
+                    </button>
                   </div>
-                </fieldset>
+                </div>
+              </fieldset>
               </form>
               <div>
                 <Toaster invert={true} />
