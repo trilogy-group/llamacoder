@@ -158,12 +158,15 @@ export default function Home() {
       return;
     }
   
+    let newGeneratedCode = ""; // Temporary variable to accumulate generated code
+  
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
         try {
           const text = JSON.parse(data).text ?? "";
-          setGeneratedCode((prev) => prev + text);
+          newGeneratedCode += text; // Accumulate the generated code
+          setGeneratedCode(newGeneratedCode); // Update state with accumulated code
         } catch (e) {
           console.error(e);
         }
@@ -183,10 +186,10 @@ export default function Home() {
     }
   
     setModelUsedForInitialCode(model);
-    setMessages([...messages, { role: "assistant", content: generatedCode }]);
+    setMessages([...messages, { role: "assistant", content: newGeneratedCode }]); // Use accumulated code
     setStatus("created");
   }
-
+  
   async function modifyCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
   
@@ -200,7 +203,6 @@ export default function Home() {
       return;
     }
   
-    // Add the new user prompt to the existing messages
     let updatedMessages = [...messages, { role: "user", content: prompt }];
   
     setGeneratedCode("");
@@ -221,25 +223,26 @@ export default function Home() {
       return;
     }
   
-    // This data is a ReadableStream
     const data = chatRes.body;
     if (!data) {
       return;
     }
+  
+    let newGeneratedCode = ""; // Temporary variable to accumulate generated code
   
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
         try {
           const text = JSON.parse(data).text ?? "";
-          setGeneratedCode((prev) => prev + text);
+          newGeneratedCode += text; // Accumulate the generated code
+          setGeneratedCode(newGeneratedCode); // Update state with accumulated code
         } catch (e) {
           console.error(e);
         }
       }
     };
   
-    // https://web.dev/streams/#the-getreader-and-read-methods
     const reader = data.getReader();
     const decoder = new TextDecoder();
     const parser = createParser(onParse);
@@ -252,8 +255,7 @@ export default function Home() {
       parser.feed(chunkValue);
     }
   
-    // Add the assistant's response to the messages
-    updatedMessages.push({ role: "assistant", content: generatedCode });
+    updatedMessages.push({ role: "assistant", content: newGeneratedCode }); // Use accumulated code
   
     setMessages(updatedMessages);
     setStatus("updated");
