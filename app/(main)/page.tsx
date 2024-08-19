@@ -4,7 +4,7 @@ import { Toaster, toast } from "sonner";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { useScrollTo } from "@/hooks/use-scroll-to";
-import { Sandpack, useSandpack} from "@codesandbox/sandpack-react";
+import { Sandpack, useSandpack, useSandpackClient} from "@codesandbox/sandpack-react";
 import { SandpackProvider, SandpackLayout, SandpackCodeEditor, SandpackPreview } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { CheckIcon } from "@heroicons/react/16/solid";
@@ -53,6 +53,92 @@ const CodeDownloader = ({ loading }: { loading: boolean }) => {
       Code
     </p>
   </button>);
+};
+
+const SandpackContent = ({ loading }: { loading: boolean }) => {
+  const { sandpack } = useSandpack();
+  const { listen } = useSandpackClient();
+  const [progressMessage, setProgressMessage] = useState("");
+
+  useEffect(() => {
+    const updateProgressMessage = () => {
+      console.log("Current sandpack status:", sandpack.status);
+      switch (sandpack.status) {
+        case "initial":
+          setProgressMessage("Initializing preview...");
+          break;
+        case "idle":
+          setProgressMessage("Preview ready.");
+          break;
+        case "running":
+          setProgressMessage("Running preview...");
+          break;
+        case "timeout":
+          setProgressMessage("Preview timed out. Please try again.");
+          break;
+        case "done":
+          setProgressMessage("Preview loaded successfully.");
+          break;
+        default:
+          setProgressMessage("");
+      }
+    };
+
+    updateProgressMessage();
+
+    const unsubscribe = listen((message) => {
+      console.log("Sandpack message received:", message);
+      
+      if (message.type === "start") {
+        setProgressMessage("Starting bundler...");
+      } else if (message.type === "status") {
+        updateProgressMessage();
+      } else if (message.type === "compile") {
+        setProgressMessage("Compiling...");
+      } else if (message.type === "done") {
+        setProgressMessage("Compilation complete. Loading preview...");
+      } else if (message.type === "action" && message.action === "show-error") {
+        setProgressMessage("Error occurred. Check console for details.");
+      } else if (message.type === "success") {
+        setProgressMessage("Preview loaded successfully.");
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [sandpack, listen]);
+
+
+  return (
+    <>
+      <div className="flex items-center gap-4 p-4">
+        <CodeDownloader loading={loading} />
+        {progressMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center space-x-2 rounded-full bg-white/50 backdrop-blur-sm px-4 py-2 text-sm font-medium text-gray-700 shadow-sm border border-gray-200"
+          >
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span>{progressMessage}</span>
+          </motion.div>
+        )}
+      </div>
+      <SandpackLayout>
+        <SandpackCodeEditor 
+          style={{ height: "80vh" }} 
+          showRunButton={true} 
+          showInlineErrors={true} 
+          wrapContent={true}
+        />
+        <SandpackPreview 
+          style={{ height: "80vh" }}
+        />
+      </SandpackLayout>
+    </>
+  );
 };
 
 export default function Home() {
@@ -549,8 +635,8 @@ export default function Home() {
                   files={files}
                   
                 >
-                  
-                  <div className="flex items-center gap-4 p-4">
+                  <SandpackContent loading={loading}/>
+                  {/* <div className="flex items-center gap-4 p-4">
                     <CodeDownloader loading={loading} />
                     {progressMessage && (
                       <motion.div
@@ -574,7 +660,7 @@ export default function Home() {
                     <SandpackPreview 
                       style={{ height: "80vh" }}
                     />
-                  </SandpackLayout>
+                  </SandpackLayout> */}
                   
                 </SandpackProvider>
               </div>
