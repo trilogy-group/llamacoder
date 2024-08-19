@@ -67,6 +67,7 @@ export default function Home() {
   );
   let [isPublishing, setIsPublishing] = useState(false);
   let [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [progressMessage, setProgressMessage] = useState("");
 
   const [files, setFiles] = useState({
     "App.tsx": generatedCode,
@@ -108,6 +109,7 @@ export default function Home() {
   
     setStatus("creating");
     setGeneratedCode("");
+    setProgressMessage("Initializing code generation...");
   
     let formData = new FormData(e.currentTarget);
     let model = formData.get("model");
@@ -138,6 +140,7 @@ export default function Home() {
   }
   
   async function sendRequest(messages: { role: string; content: string }[], model: string) {
+    setProgressMessage("Sending request to AI model...");
     const chatRes = await fetch("/api/generateCode", {
       method: "POST",
       headers: {
@@ -158,15 +161,15 @@ export default function Home() {
       return;
     }
   
-    let newGeneratedCode = ""; // Temporary variable to accumulate generated code
+    let newGeneratedCode = "";
   
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
         try {
           const text = JSON.parse(data).text ?? "";
-          newGeneratedCode += text; // Accumulate the generated code
-          setGeneratedCode(newGeneratedCode); // Update state with accumulated code
+          newGeneratedCode += text;
+          setGeneratedCode(newGeneratedCode);
         } catch (e) {
           console.error(e);
         }
@@ -186,8 +189,9 @@ export default function Home() {
     }
   
     setModelUsedForInitialCode(model);
-    setMessages([...messages, { role: "assistant", content: newGeneratedCode }]); // Use accumulated code
+    setMessages([...messages, { role: "assistant", content: newGeneratedCode }]);
     setStatus("created");
+    setProgressMessage("Code generation complete. Preparing preview...");
   }
   
   async function modifyCode(e: FormEvent<HTMLFormElement>) {
@@ -228,15 +232,15 @@ export default function Home() {
       return;
     }
   
-    let newGeneratedCode = ""; // Temporary variable to accumulate generated code
+    let newGeneratedCode = "";
   
     const onParse = (event: ParsedEvent | ReconnectInterval) => {
       if (event.type === "event") {
         const data = event.data;
         try {
           const text = JSON.parse(data).text ?? "";
-          newGeneratedCode += text; // Accumulate the generated code
-          setGeneratedCode(newGeneratedCode); // Update state with accumulated code
+          newGeneratedCode += text;
+          setGeneratedCode(newGeneratedCode);
         } catch (e) {
           console.error(e);
         }
@@ -255,7 +259,7 @@ export default function Home() {
       parser.feed(chunkValue);
     }
   
-    updatedMessages.push({ role: "assistant", content: newGeneratedCode }); // Use accumulated code
+    updatedMessages.push({ role: "assistant", content: newGeneratedCode });
   
     setMessages(updatedMessages);
     setStatus("updated");
@@ -268,6 +272,17 @@ export default function Home() {
       el.scrollTo({ top: end });
     }
   }, [loading, generatedCode]);
+
+
+  useEffect(() => {
+    if (status === "created" || status === "updated") {
+      let previewTimer = setTimeout(() => {
+        setProgressMessage("Preview is still being generated. Please wait...");
+      }, 8000);
+
+      return () => clearTimeout(previewTimer);
+    }
+  }, [status]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
@@ -508,6 +523,7 @@ export default function Home() {
             </div>
             <div className="relative mt-8 w-full overflow-hidden">
               <div className="isolate">
+              
               <SandpackProvider
                   template="react-ts"
                   options={{
@@ -533,12 +549,31 @@ export default function Home() {
                   files={files}
                   
                 >
-                  <div className="mb-4">
+                  
+                  <div className="flex items-center gap-4 p-4">
                     <CodeDownloader loading={loading} />
+                    {progressMessage && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex items-center space-x-2 rounded-full bg-white/50 backdrop-blur-sm px-4 py-2 text-sm font-medium text-gray-700 shadow-sm border border-gray-200"
+                      >
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span>{progressMessage}</span>
+                      </motion.div>
+                    )}
                   </div>
-                  <SandpackLayout >
-                    <SandpackCodeEditor style={{ height: "80vh" }} showRunButton={true} showInlineErrors={true} wrapContent={true}/>
-                    <SandpackPreview style={{ height: "80vh" }}/>
+                  <SandpackLayout>
+                    <SandpackCodeEditor 
+                      style={{ height: "80vh" }} 
+                      showRunButton={true} 
+                      showInlineErrors={true} 
+                      wrapContent={true}
+                    />
+                    <SandpackPreview 
+                      style={{ height: "80vh" }}
+                    />
                   </SandpackLayout>
                   
                 </SandpackProvider>
