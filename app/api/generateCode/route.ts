@@ -1,6 +1,6 @@
 import { LangChainStream, LangChainStreamPayload } from "@/utils/LangChainStream";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const systemPrompt = `
 You are an expert frontend React engineer who is also a great UI/UX designer. Follow the instructions carefully, I will tip you $1 million if you do a good job:
