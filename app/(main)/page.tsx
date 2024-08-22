@@ -28,6 +28,133 @@ import LoadingDots from "../../components/loading-dots";
 import { shareApp } from "./actions";
 import { domain } from "@/utils/domain";
 import { saveAs } from 'file-saver';
+import { AmplifyClient, CreateAppCommand, CreateBranchCommand, StartDeploymentCommand, Platform} from "@aws-sdk/client-amplify";
+import { v4 as uuidv4 } from 'uuid';
+import dotenv from 'dotenv';
+dotenv.config();
+
+
+async function publishApp(generatedCode: string) {
+  const config = {
+    region: 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      sessionToken: process.env.AWS_SESSION_TOKEN,
+    },
+  };
+
+  const amplifyClient = new AmplifyClient(config);
+  const uniqueAppName = `GeneratedApp-${uuidv4()}`;
+
+  const createAppParams = {
+    name: uniqueAppName,
+    platform: 'WEB' as Platform,
+  };
+
+  try {
+    const createAppCommand = new CreateAppCommand(createAppParams);
+    const app = await amplifyClient.send(createAppCommand);
+
+    const createBranchParams = {
+      appId: app.app?.appId,
+      branchName: uniqueAppName,
+    };
+
+    const createBranchCommand = new CreateBranchCommand(createBranchParams);
+    await amplifyClient.send(createBranchCommand);
+
+    const fileMap = {
+      'public/index.html': `
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Document</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body>
+            <div id="root"></div>
+          </body>
+        </html>`,
+      'src/index.tsx': `
+        import React, { StrictMode } from "react";
+        import { createRoot } from "react-dom/client";
+        import "./styles.css";
+        import App from "./App";
+        const root = createRoot(document.getElementById("root"));
+        root.render(
+          <StrictMode>
+            <App />
+          </StrictMode>
+        );`,
+      'src/App.tsx': generatedCode,
+      'src/styles.css': `
+        body {
+          font-family: sans-serif;
+          -webkit-font-smoothing: auto;
+          -moz-font-smoothing: auto;
+          -moz-osx-font-smoothing: grayscale;
+          font-smoothing: auto;
+          text-rendering: optimizeLegibility;
+          font-smooth: always;
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+        }
+        h1 {
+          font-size: 1.5rem;
+        }`,
+      'tsconfig.json': JSON.stringify({
+        "include": [
+          "./**/*"
+        ],
+        "compilerOptions": {
+          "strict": true,
+          "esModuleInterop": true,
+          "lib": [ "dom", "es2015" ],
+          "jsx": "react-jsx"
+        }
+      }, null, 2),
+      'package.json': JSON.stringify({
+        "dependencies": {
+          "react": "^18.0.0",
+          "react-dom": "latest",
+          "react-scripts": "^4.0.0",
+          "lucide-react": "latest",
+          "recharts": "2.9.0",
+          "axios": "latest",
+          "react-router-dom": "latest",
+          "react-ui": "latest",
+          "@mui/material": "latest",
+          "@emotion/react": "latest",
+          "@emotion/styled": "latest",
+          "@mui/icons-material": "latest"
+        },
+        "devDependencies": {
+          "@types/react": "^18.0.0",
+          "@types/react-dom": "^18.0.0",
+          "typescript": "^4.0.0"
+        },
+        "main": "/index.tsx"
+      }, null, 2),
+    };
+
+    const startDeploymentParams = {
+      appId: app.app?.appId,
+      branchName: uniqueAppName,
+      sourceUrl: `data:application/zip;base64,${Buffer.from(JSON.stringify(fileMap)).toString('base64')}`,
+    };
+
+    const startDeploymentCommand = new StartDeploymentCommand(startDeploymentParams);
+    await amplifyClient.send(startDeploymentCommand);
+
+    return `https://${uniqueAppName}.${app.app?.defaultDomain}`;
+  } catch (error) {
+    console.error('Error in publishApp:', error);
+    throw error;
+  }
+}
 
 const CodeDownloader = ({ loading }: { loading: boolean }) => {
   const { sandpack } = useSandpack();
@@ -382,6 +509,10 @@ export default function Home() {
                         label: "Claude Sonnet 3.5",
                         value: "claude-3-5-sonnet-20240620",
                       },
+                      {
+                        label: "Bedrock Claude",
+                        value: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                      },
                     ].map((model) => (
                       <Select.Item
                         key={model.value}
@@ -463,50 +594,54 @@ export default function Home() {
                 <Tooltip.Provider>
                   <Tooltip.Root delayDuration={0}>
                     <Tooltip.Trigger asChild>
-                      <button
-                        disabled={loading || isPublishing}
-                        onClick={async () => {
-                          setIsPublishing(true);
-                          let userMessages = messages.filter(
-                            (message) => message.role === "user",
-                          );
-                          let prompt =
-                            userMessages[userMessages.length - 1].content;
+                    <button
+                      disabled={loading || isPublishing}
+                      onClick={async () => {
+                        setIsPublishing(true);
+                        let userMessages = messages.filter(
+                          (message) => message.role === "user",
+                        );
+                        let prompt =
+                          userMessages[userMessages.length - 1].content;
 
-                          const appId = await minDelay(
-                            shareApp({
-                              generatedCode,
-                              prompt,
-                              model: modelUsedForInitialCode,
-                            }),
-                            1000,
-                          );
+                        // const appId = await minDelay(
+                        //   shareApp({
+                        //     generatedCode,
+                        //     prompt,
+                        //     model: modelUsedForInitialCode,
+                        //   }),
+                        //   1000,
+                        // );
+
+                        try {
+                          const liveUrl = await publishApp(generatedCode);
+                          toast.success(`Your app has been published! Live URL: ${liveUrl}`);
+                          navigator.clipboard.writeText(liveUrl);
+                        } catch (error) {
+                          console.error('Error publishing app:', error);
+                          toast.error("An error occurred while publishing the app");
+                        } finally {
                           setIsPublishing(false);
-                          toast.success(
-                            `Your app has been published & copied to your clipboard! llamacoder.io/share/${appId}`,
-                          );
-                          navigator.clipboard.writeText(
-                            `${domain}/share/${appId}`,
-                          );
-                        }}
-                        className="inline-flex h-[68px] w-40 items-center justify-center gap-2 rounded-3xl bg-blue-500 transition disabled:grayscale"
-                      >
-                        <span className="relative">
-                          {isPublishing && (
-                            <span className="absolute inset-0 flex items-center justify-center">
-                              <LoadingDots color="white" style="large" />
-                            </span>
-                          )}
+                        }
+                      }}
+                      className="inline-flex h-[68px] w-40 items-center justify-center gap-2 rounded-3xl bg-blue-500 transition disabled:grayscale"
+                    >
+                      <span className="relative">
+                        {isPublishing && (
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <LoadingDots color="white" style="large" />
+                          </span>
+                        )}
 
-                          <ArrowUpOnSquareIcon
-                            className={`${isPublishing ? "invisible" : ""} size-5 text-xl text-white`}
-                          />
-                        </span>
+                        <ArrowUpOnSquareIcon
+                          className={`${isPublishing ? "invisible" : ""} size-5 text-xl text-white`}
+                        />
+                      </span>
 
-                        <p className="text-lg font-medium text-white">
-                          Publish app
-                        </p>
-                      </button>
+                      <p className="text-lg font-medium text-white">
+                        Publish app
+                      </p>
+                    </button>
                     </Tooltip.Trigger>
                     <Tooltip.Portal>
                       <Tooltip.Content

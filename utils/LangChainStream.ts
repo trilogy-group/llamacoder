@@ -1,6 +1,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { AIMessage, HumanMessage, SystemMessage } from "langchain/schema";
+import { BedrockChat } from "langchain/chat_models/bedrock";
 
 export type ChatGPTAgent = "user" | "system" | "assistant";
 
@@ -26,6 +27,18 @@ export async function LangChainStream(payload: LangChainStreamPayload) {
         temperature: temperature,
         streaming: true,
         anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      });
+    } else if (model.startsWith("anthropic")) {
+      chat = new BedrockChat({
+        model: model,
+        region: process.env.AWS_REGION,
+        // credentials: {
+        //   accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        //   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        // },
+        temperature: temperature,
+        streaming: true,
+        maxTokens: 8000
       });
     } else {
       chat = new ChatOpenAI({
