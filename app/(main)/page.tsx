@@ -16,11 +16,15 @@ import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
 
 export default function Home() {
-  const [status, setStatus] = useState<"initial" | "creating" | "created" | "updating" | "updated">("initial");
+  const [status, setStatus] = useState<
+    "initial" | "creating" | "created" | "updating" | "updated"
+  >("initial");
   const [generatedCode, setGeneratedCode] = useState("");
   const [modelUsedForInitialCode, setModelUsedForInitialCode] = useState("");
   const [ref, scrollTo] = useScrollTo();
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
+    [],
+  );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [progressMessage, setProgressMessage] = useState("");
   const [files, setFiles] = useState({
@@ -66,16 +70,27 @@ export default function Home() {
     if (selectedFiles.length > 0) {
       for (const file of selectedFiles) {
         const fileContent = await readFileContent(file);
-        newMessages.push({ role: "user", content: `File content: ${fileContent}` });
+        newMessages.push({
+          role: "user",
+          content: `File content: ${fileContent}`,
+        });
       }
     }
 
     setProgressMessage("Sending request to AI model...");
-    const newGeneratedCode = await generateCode(newMessages, selectedModel, setGeneratedCode, setProgressMessage);
-    
+    const newGeneratedCode = await generateCode(
+      newMessages,
+      selectedModel,
+      setGeneratedCode,
+      setProgressMessage,
+    );
+
     setModelUsedForInitialCode(selectedModel);
     if (newGeneratedCode) {
-      setMessages([...newMessages, { role: "assistant", content: newGeneratedCode }]);
+      setMessages([
+        ...newMessages,
+        { role: "assistant", content: newGeneratedCode },
+      ]);
       setStatus("created");
     } else {
       setStatus("initial");
@@ -101,8 +116,13 @@ export default function Home() {
     let updatedMessages = [...messages, { role: "user", content: prompt }];
 
     setGeneratedCode("");
-    const newGeneratedCode = await modifyCode(updatedMessages, modelUsedForInitialCode, setGeneratedCode, setProgressMessage);
-    
+    const newGeneratedCode = await modifyCode(
+      updatedMessages,
+      modelUsedForInitialCode,
+      setGeneratedCode,
+      setProgressMessage,
+    );
+
     if (newGeneratedCode) {
       updatedMessages.push({ role: "assistant", content: newGeneratedCode });
       setMessages(updatedMessages);
@@ -174,7 +194,7 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
-              <div className="w-3/5 mb-8">
+              <div className="mb-8 w-3/5">
                 <UpdatePromptForm
                   loading={loading}
                   onUpdate={handleModifyCode}
@@ -189,7 +209,10 @@ export default function Home() {
                   generatedCode={generatedCode}
                   progressMessage={progressMessage}
                 >
-                  <CodeDownloader loading={loading} generatedCode={generatedCode} />
+                  <CodeDownloader
+                    loading={loading}
+                    generatedCode={generatedCode}
+                  />
                 </CodeEditor>
                 <div className="mt-4 flex justify-end">
                   <PublishButton

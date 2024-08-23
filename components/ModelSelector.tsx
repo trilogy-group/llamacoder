@@ -1,7 +1,6 @@
 import * as Select from "@radix-ui/react-select";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { CheckIcon } from "@heroicons/react/16/solid";
-import { useState } from "react";
 
 interface ModelSelectorProps {
   loading: boolean;
@@ -15,10 +14,17 @@ const models = [
   { label: "GPT-4", value: "gpt-4" },
   { label: "GPT-4 Turbo", value: "gpt-4-1106-preview" },
   { label: "Claude Sonnet 3.5", value: "claude-3-5-sonnet-20240620" },
-  { label: "Bedrock Claude", value: "anthropic.claude-3-5-sonnet-20240620-v1:0" },
+  {
+    label: "Bedrock Claude",
+    value: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+  },
 ];
 
-export default function ModelSelector({ loading, selectedModel, setSelectedModel }: ModelSelectorProps) {
+export default function ModelSelector({
+  loading,
+  selectedModel,
+  setSelectedModel,
+}: ModelSelectorProps) {
   return (
     <div className="mt-6 flex items-center justify-center gap-3">
       <p className="text-xs text-gray-500">Model:</p>

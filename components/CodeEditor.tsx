@@ -1,4 +1,9 @@
-import { SandpackProvider, SandpackLayout, SandpackCodeEditor, SandpackPreview } from "@codesandbox/sandpack-react";
+import {
+  SandpackProvider,
+  SandpackLayout,
+  SandpackCodeEditor,
+  SandpackPreview,
+} from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { motion } from "framer-motion";
 
@@ -11,7 +16,14 @@ interface CodeEditorProps {
   children?: React.ReactNode;
 }
 
-export default function CodeEditor({ loading, status, files, generatedCode, progressMessage, children }: CodeEditorProps) {
+export default function CodeEditor({
+  loading,
+  status,
+  files,
+  generatedCode,
+  progressMessage,
+  children,
+}: CodeEditorProps) {
   return (
     <div className="relative mt-8 w-full overflow-hidden">
       <div className="isolate">
@@ -20,14 +32,14 @@ export default function CodeEditor({ loading, status, files, generatedCode, prog
           options={{
             externalResources: [
               "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
-            ]
+            ],
           }}
           theme={draculaTheme}
           customSetup={{
             dependencies: {
               "lucide-react": "latest",
-              "recharts": "2.9.0",
-              "axios": "latest",
+              recharts: "2.9.0",
+              axios: "latest",
               "react-dom": "latest",
               "react-router-dom": "latest",
               "react-ui": "latest",
@@ -46,23 +58,21 @@ export default function CodeEditor({ loading, status, files, generatedCode, prog
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex items-center space-x-2 rounded-full bg-white/50 backdrop-blur-sm px-4 py-2 text-sm font-medium text-gray-700 shadow-sm border border-gray-200"
+                className="flex items-center space-x-2 rounded-full border border-gray-200 bg-white/50 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm backdrop-blur-sm"
               >
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
                 <span>{progressMessage}</span>
               </motion.div>
             )}
           </div>
           <SandpackLayout>
-            <SandpackCodeEditor 
-              style={{ height: "80vh" }} 
-              showRunButton={true} 
-              showInlineErrors={true} 
+            <SandpackCodeEditor
+              style={{ height: "80vh" }}
+              showRunButton={true}
+              showInlineErrors={true}
               wrapContent={true}
             />
-            <SandpackPreview 
-              style={{ height: "80vh" }}
-            />
+            <SandpackPreview style={{ height: "80vh" }} />
           </SandpackLayout>
         </SandpackProvider>
       </div>

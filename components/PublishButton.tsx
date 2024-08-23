@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { ArrowUpOnSquareIcon } from "@heroicons/react/20/solid";
 import LoadingDots from "./loading-dots";
@@ -13,10 +13,10 @@ interface PublishButtonProps {
 
 async function publishApp(generatedCode: string) {
   try {
-    const response = await fetch('/api/publish', {
-      method: 'POST',
+    const response = await fetch("/api/publish", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ generatedCode }),
     });
@@ -24,22 +24,25 @@ async function publishApp(generatedCode: string) {
     if (data.success) {
       return data.url;
     } else {
-      throw new Error('Failed to publish app');
+      throw new Error("Failed to publish app");
     }
   } catch (error) {
-    console.error('Error publishing app:', error);
+    console.error("Error publishing app:", error);
     throw error;
   }
 }
 
-export default function PublishButton({ loading, generatedCode, messages, modelUsedForInitialCode }: PublishButtonProps) {
+export default function PublishButton({
+  loading,
+  generatedCode,
+  messages,
+  modelUsedForInitialCode,
+}: PublishButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
 
   const handlePublish = async () => {
     setIsPublishing(true);
-    let userMessages = messages.filter(
-      (message) => message.role === "user",
-    );
+    let userMessages = messages.filter((message) => message.role === "user");
     let prompt = userMessages[userMessages.length - 1].content;
 
     try {
@@ -47,7 +50,7 @@ export default function PublishButton({ loading, generatedCode, messages, modelU
       toast.success(`Your app has been published! Live URL: ${liveUrl}`);
       navigator.clipboard.writeText(liveUrl);
     } catch (error) {
-      console.error('Error publishing app:', error);
+      console.error("Error publishing app:", error);
       toast.error("An error occurred while publishing the app");
     } finally {
       setIsPublishing(false);
@@ -73,9 +76,7 @@ export default function PublishButton({ loading, generatedCode, messages, modelU
                 className={`${isPublishing ? "invisible" : ""} size-5 text-xl text-white`}
               />
             </span>
-            <p className="text-lg font-medium text-white">
-              Publish app
-            </p>
+            <p className="text-lg font-medium text-white">Publish app</p>
           </button>
         </Tooltip.Trigger>
         <Tooltip.Portal>
