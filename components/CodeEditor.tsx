@@ -8,6 +8,8 @@ import {
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import CircularProgress from '@mui/material/CircularProgress';
+import { AnimatePresence } from "framer-motion";
 
 interface CodeEditorProps {
   loading: boolean;
@@ -67,9 +69,11 @@ export default function CodeEditor({
   files,
   children,
 }: CodeEditorProps) {
+  const randomMessage = "Brewing code magic...";
+
   return (
     <div className="relative mt-8 w-full overflow-hidden">
-      <div className="isolate">
+      <AnimatePresence>
         <SandpackProvider
           template="react-ts"
           options={{
@@ -94,33 +98,26 @@ export default function CodeEditor({
           }}
           files={files}
         >
-          <SandpackContent
-          >
-            {children}
-          </SandpackContent>
-        </SandpackProvider>
-      </div>
+          <div className="relative">
+            <SandpackContent>
+              {children}
+            </SandpackContent>
 
-      {loading && (
-        <motion.div
-          initial={status === "updating" ? { x: "100%" } : undefined}
-          animate={status === "updating" ? { x: "0%" } : undefined}
-          exit={{ x: "100%" }}
-          transition={{
-            type: "spring",
-            bounce: 0,
-            duration: 0.85,
-            delay: 0.5,
-          }}
-          className="absolute inset-x-0 bottom-0 top-1/2 flex items-center justify-center rounded-r border border-gray-400 bg-gradient-to-br from-gray-100 to-gray-300 md:inset-y-0 md:left-1/2 md:right-0"
-        >
-          <p className="animate-pulse text-3xl font-bold">
-            {status === "creating"
-              ? "Building your app..."
-              : "Updating your app..."}
-          </p>
-        </motion.div>
-      )}
+            {(status === "creating" || status === "updating") && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-10 backdrop-blur-[0.5px] z-10"
+              >
+                <CircularProgress size={60} thickness={4} color="primary" />
+                <p className="mt-4 text-xl font-bold text-white">{randomMessage}</p>
+              </motion.div>
+            )}
+          </div>
+        </SandpackProvider>
+      </AnimatePresence>
     </div>
   );
 }
