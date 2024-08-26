@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent, useCallback } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Toaster, toast } from "sonner";
 import { useScrollTo } from "@/hooks/use-scroll-to";
 import { motion } from "framer-motion";
@@ -16,45 +16,86 @@ import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
 import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
+import { CircularProgress } from "@mui/material";
 
 export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
   >("initial");
-  const [codesandboxStatus, setCodesandboxStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
-  const [modelUsedForInitialCode, setModelUsedForInitialCode] = useState("");
   const [ref, scrollTo] = useScrollTo();
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
     [],
   );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [progressMessage, setProgressMessage] = useState("");
-  const [files, setFiles] = useState({
-    "App.tsx": generatedCode,
-    "/public/index.html": `<!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Document</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body>
-        <div id="root"></div>
-      </body>
-    </html>`,
-  });
+  const [files, setFiles] = useState<Record<string, string> | null>(null);
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
-
-  const loading = status === "creating" || status === "updating";
+  const [loading, setLoading] = useState(true);
+  const [initialPrompt, setInitialPrompt] = useState<string>("");
 
   useEffect(() => {
-    setFiles((prevFiles) => ({
-      ...prevFiles,
-      "App.tsx": generatedCode,
-    }));
+    const loadData = () => {
+      const storedFiles = localStorage.getItem('codeFiles');
+      const storedModel = localStorage.getItem('selectedModel');
+      const storedPrompt = localStorage.getItem('initialPrompt');
+      const storedGeneratedCode = localStorage.getItem('generatedCode');
+      
+      if (storedFiles) {
+        try {
+          const parsedFiles = JSON.parse(storedFiles);
+          setFiles(parsedFiles);
+          setStatus('created');
+        } catch (error) {
+          console.error("Error parsing stored files:", error);
+        }
+      }
+      
+      if (storedModel) {
+        setSelectedModel(storedModel);
+      }
+      
+      if (storedPrompt) {
+        setInitialPrompt(storedPrompt);
+      }
+
+      if (storedGeneratedCode) {
+        setGeneratedCode(storedGeneratedCode);
+      }
+      
+      // Update messages if we have both the initial prompt and generated code
+      if (storedPrompt && storedGeneratedCode) {
+        setMessages([
+          { role: "user", content: storedPrompt },
+          { role: "assistant", content: storedGeneratedCode }
+        ]);
+      }
+      
+      setLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      if (files) {
+        localStorage.setItem('codeFiles', JSON.stringify(files));
+      }
+      localStorage.setItem('selectedModel', selectedModel);
+      localStorage.setItem('initialPrompt', initialPrompt);
+      localStorage.setItem('generatedCode', generatedCode);
+    }
+  }, [files, selectedModel, initialPrompt, generatedCode, loading]);
+
+  useEffect(() => {
+    if (generatedCode) {
+      setFiles((prevFiles) => ({
+        ...(prevFiles || {}),
+        "App.tsx": generatedCode,
+      }));
+    }
   }, [generatedCode]);
 
   const handleGenerateCode = async (e: FormEvent<HTMLFormElement>) => {
@@ -68,6 +109,7 @@ export default function Home() {
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
+    setInitialPrompt(prompt);
 
     let newMessages = [{ role: "user", content: prompt }];
 
@@ -90,13 +132,27 @@ export default function Home() {
       setGeneratedCode,
     );
 
-    setModelUsedForInitialCode(selectedModel);
     if (newGeneratedCode) {
       setMessages([
         ...newMessages,
         { role: "assistant", content: newGeneratedCode },
       ]);
       setStatus("created");
+      setFiles({
+        "App.tsx": newGeneratedCode,
+        "/public/index.html": `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`,
+      });
     } else {
       setStatus("initial");
       toast.error("Oops! The code genie got a bit confused. Let's try again!");
@@ -126,9 +182,10 @@ export default function Home() {
     setProgressMessage(
       "Sent your update wishes to the code genie. Waiting for the response...",
     );
+    console.log("Updated messages: ", updatedMessages, selectedModel);
     const newGeneratedCode = await modifyCode(
       updatedMessages,
-      modelUsedForInitialCode,
+      selectedModel,
       setGeneratedCode,
     );
 
@@ -153,7 +210,15 @@ export default function Home() {
     });
   };
 
-  const isStatusVisible = status === "creating" || status === "updating" || codesandboxStatus !== "";
+  const isStatusVisible = status === "creating" || status === "updating";
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <CircularProgress size={60} thickness={4} />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
@@ -174,6 +239,7 @@ export default function Home() {
           loading={loading}
           onSubmit={handleGenerateCode}
           status={status}
+          initialPrompt={initialPrompt}
         />
 
         <ModelSelector
@@ -184,7 +250,7 @@ export default function Home() {
 
         <hr className="border-1 mb-20 h-px bg-gray-700 dark:bg-gray-700" />
 
-        {status !== "initial" && (
+        {status !== "initial" && files && (
           <motion.div
             initial={{ height: 0 }}
             animate={{
@@ -205,29 +271,32 @@ export default function Home() {
                 />
               </div>
 
-              <div className="w-full">
-                <CodeEditor
-                  loading={loading}
-                  status={status}
-                  files={files}
-                >
-                  <CodeDownloader
+              {status !== "creating" && (
+                <div className="w-full">
+                  <CodeEditor
+                    loading={loading}
+                    status={status}
+                    files={files}
+                  >
+                    <CodeDownloader
+                      loading={loading}
+                      generatedCode={generatedCode}
+                    />
+                  </CodeEditor>
+                </div>
+              )}
+              {status !== "creating" && status !== "updating" && (
+                <div className="mt-8 w-full max-w-md">
+                  <PublishButton
                     loading={loading}
                     generatedCode={generatedCode}
+                    messages={messages}
+                    modelUsedForInitialCode={selectedModel}
+                    onPublish={(url) => setPublishedUrl(url)}
                   />
-                </CodeEditor>
-              </div>
-
-              <div className="mt-8 w-full max-w-md">
-                <PublishButton
-                  loading={loading}
-                  generatedCode={generatedCode}
-                  messages={messages}
-                  modelUsedForInitialCode={modelUsedForInitialCode}
-                  onPublish={(url) => setPublishedUrl(url)}
-                />
-                <PublishedAppLink url={publishedUrl} />
-              </div>
+                  <PublishedAppLink url={publishedUrl} />
+                </div>
+              )}
             </div>
           </motion.div>
         )}
