@@ -67,19 +67,19 @@ export default function PublishButton({
           <button
             disabled={loading || isPublishing}
             onClick={handlePublish}
-            className="inline-flex h-[90px] w-45 items-center justify-center gap-2 rounded-3xl bg-blue-500 transition disabled:grayscale"
+            className="inline-flex h-12 px-4 items-center justify-center gap-2 rounded-full bg-blue-500 transition disabled:grayscale"
           >
             <span className="relative">
               {isPublishing && (
                 <span className="absolute inset-0 flex items-center justify-center">
-                  <LoadingDots color="white" style="large" />
+                  <LoadingDots color="white" style="small" />
                 </span>
               )}
               <ArrowUpOnSquareIcon
-                className={`${isPublishing ? "invisible" : ""} size-5 text-xl text-white`}
+                className={`${isPublishing ? "invisible" : ""} h-5 w-5 text-white`}
               />
             </span>
-            <p className="text-lg font-medium text-white">Publish app</p>
+            <p className="text-base font-medium text-white">Publish app</p>
           </button>
         </Tooltip.Trigger>
         <Tooltip.Portal>
