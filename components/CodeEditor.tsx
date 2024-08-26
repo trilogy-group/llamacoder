@@ -23,11 +23,10 @@ interface CodeEditorProps {
 
 function SandpackContent({ children }: { children: React.ReactNode }) {
   const { sandpack, listen } = useSandpack();
-  const { activeFile } = sandpack;
+  const { activeFile, updateFile } = sandpack;
   const { code } = useActiveCode();
 
   useEffect(() => {
-    console.log(`File ${activeFile} updated: `, code);
     const files: Record<
       string,
       { code: string; active: boolean; hidden: boolean; readOnly: boolean }
@@ -44,6 +43,10 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       localStorage.setItem("generatedCode", code);
     }
   }, [code]);
+
+  useEffect(() => {
+    updateFile("/App.tsx", code);
+  }, [activeFile, code]);
 
   useEffect(() => {
     // listens for any message dispatched between sandpack and the bundler
