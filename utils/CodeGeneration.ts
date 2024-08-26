@@ -5,9 +5,7 @@ export const generateCode = async (
     messages: { role: string; content: string }[],
     model: string,
     setGeneratedCode: (code: string) => void,
-    setProgressMessage: (message: string) => void
 ) => {
-    setProgressMessage("Sending request to AI model...");
     console.log("Messages:", JSON.stringify(messages));
     console.log("Model:", model);
     console.log("Messages length:", messages.length);
@@ -34,8 +32,6 @@ export const generateCode = async (
 
         let newGeneratedCode = "";
 
-        setProgressMessage("Processing AI response...");
-
         const onParse = (event: ParsedEvent | ReconnectInterval) => {
             if (event.type === "event") {
                 const data = event.data;
@@ -61,11 +57,9 @@ export const generateCode = async (
             parser.feed(chunkValue);
         }
 
-        setProgressMessage("Code generation complete.");
         return newGeneratedCode;
     } catch (error: any) {
         console.error("Error in generateCode:", error);
-        setProgressMessage(`Error: ${error.message}`);
         throw error;
     }
 }
@@ -74,10 +68,7 @@ export const modifyCode = async (
     messages: { role: string; content: string }[],
     model: string,
     setGeneratedCode: (code: string) => void,
-    setProgressMessage: (message: string) => void
 ) => {
-    console.log("setProgressMessage", setProgressMessage);
-    setProgressMessage("Sending code modification request...");
     try {
         const chatRes = await fetch("/api/generateCode", {
             method: "POST",
@@ -101,8 +92,6 @@ export const modifyCode = async (
 
         let newGeneratedCode = "";
 
-        setProgressMessage("Receiving and processing modified code...");
-
         const onParse = (event: ParsedEvent | ReconnectInterval) => {
             if (event.type === "event") {
                 const data = event.data;
@@ -128,11 +117,9 @@ export const modifyCode = async (
             parser.feed(chunkValue);
         }
 
-        setProgressMessage("Code modification complete.");
         return newGeneratedCode;
     } catch (error: any) {
         console.error("Error in modifyCode:", error);
-        setProgressMessage(`Error: ${error.message}`);
         toast.error("An error occurred while modifying code");
         throw error;
     }

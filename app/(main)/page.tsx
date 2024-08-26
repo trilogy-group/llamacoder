@@ -73,7 +73,7 @@ export default function Home() {
     }
     setStatus("creating");
     setGeneratedCode("");
-    setProgressMessage("Initializing code generation...");
+    setProgressMessage("Warming up the code genie...");
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
@@ -90,12 +90,11 @@ export default function Home() {
       }
     }
 
-    setProgressMessage("Sending request to AI model...");
+    setProgressMessage("Sent your wishes to the code genie. Waiting for the response...");
     const newGeneratedCode = await generateCode(
       newMessages,
       selectedModel,
       setGeneratedCode,
-      setProgressMessage,
     );
 
     setModelUsedForInitialCode(selectedModel);
@@ -107,15 +106,15 @@ export default function Home() {
       setStatus("created");
     } else {
       setStatus("initial");
-      toast.error("Failed to generate code. Please try again.");
+      toast.error("Oops! The code genie got a bit confused. Let's try again!");
     }
-    setProgressMessage("Code generation complete. Preparing preview...");
+    setProgressMessage("Ta-da! The code genie has worked its magic! Preparing preview...");
   };
 
   const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("updating");
-    setProgressMessage("Updating code...");
+    setProgressMessage("Warming up the code genie for modifications...");
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
@@ -129,11 +128,11 @@ export default function Home() {
     let updatedMessages = [...messages, { role: "user", content: prompt }];
 
     setGeneratedCode("");
+    setProgressMessage("Sent your update wishes to the code genie. Waiting for the response...");
     const newGeneratedCode = await modifyCode(
       updatedMessages,
       modelUsedForInitialCode,
       setGeneratedCode,
-      setProgressMessage,
     );
 
     if (newGeneratedCode) {
@@ -143,6 +142,7 @@ export default function Home() {
     } else {
       setStatus("created");
     }
+    setProgressMessage("Ta-da! The code genie has worked its magic! Preparing preview...");
   };
 
   const readFileContent = (file: File): Promise<string> => {
@@ -198,23 +198,11 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
-              <div className="mb-8 w-full flex flex-col md:flex-row gap-4 items-start">
-                <div className="w-full md:w-3/4">
-                  <UpdatePromptForm
-                    loading={loading}
-                    onUpdate={handleModifyCode}
-                  />
-                </div>
-                <div className="w-full md:w-1/4 flex flex-col items-stretch">
-                  <PublishButton
-                    loading={loading}
-                    generatedCode={generatedCode}
-                    messages={messages}
-                    modelUsedForInitialCode={modelUsedForInitialCode}
-                    onPublish={(url) => setPublishedUrl(url)}
-                  />
-                  <PublishedAppLink url={publishedUrl} />
-                </div>
+              <div className="mb-8 w-3/5 mx-auto">
+                <UpdatePromptForm
+                  loading={loading}
+                  onUpdate={handleModifyCode}
+                />
               </div>
 
               <div className="w-full">
@@ -230,6 +218,17 @@ export default function Home() {
                   />
                 </CodeEditor>
               </div>
+
+              <div className="mt-8 w-full max-w-md">
+                <PublishButton
+                  loading={loading}
+                  generatedCode={generatedCode}
+                  messages={messages}
+                  modelUsedForInitialCode={modelUsedForInitialCode}
+                  onPublish={(url) => setPublishedUrl(url)}
+                />
+                <PublishedAppLink url={publishedUrl} />
+              </div>
             </div>
           </motion.div>
         )}
@@ -244,7 +243,7 @@ export default function Home() {
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-md shadow-lg"
           >
-            {status === "creating" ? "Creating..." : "Updating..."}
+            { progressMessage }
           </motion.div>
         )}
       </AnimatePresence>
