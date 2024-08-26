@@ -112,17 +112,19 @@ export default function Home() {
     }
     setStatus("creating");
     setGeneratedCode("");
+    setFiles(null);
     setProgressMessage("Warming up the code genie...");
+
+    // Reset localStorage
+    localStorage.removeItem('generatedCode');
+    localStorage.removeItem('codeFiles');
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
     setInitialPrompt(prompt);
 
-    const activeFile = getActiveFile();
-    const activeFileContent = getFileContent(activeFile);
-
     setProgressMessage(
-      "Sent your wishes to the code genie. Waiting for the response...",
+      "Sent your wishes to the code genie. Waiting for the magic...",
     );
     const newGeneratedCode = await generateCode(
       [
@@ -153,7 +155,7 @@ export default function Home() {
       toast.error("Oops! The code genie got a bit confused. Let's try again!");
     }
     setProgressMessage(
-      "Ta-da! The code genie has worked its magic! Preparing preview...",
+      "Ta-da! The code genie has worked its magic! Preparing preview... "
     );
   };
 
@@ -175,7 +177,7 @@ export default function Home() {
     const activeFileContent = getFileContent(activeFile);
 
     setProgressMessage(
-      "Sent your update wishes to the code genie. Waiting for the response...",
+      "Sent your update wishes to the code genie. Waiting for the magic...",
     );
     const currentMessages = [
       { role: "user", content: initialPrompt },
@@ -197,7 +199,7 @@ export default function Home() {
       toast.error("Failed to update the code. Please try again.");
     }
     setProgressMessage(
-      "Ta-da! The code genie has worked its magic! Preparing preview...",
+      "Ta-da! The code genie has worked its magic! Preparing preview... ✨"
     );
   };
 
