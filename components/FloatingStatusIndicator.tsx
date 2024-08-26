@@ -20,7 +20,7 @@ const FloatingStatusIndicator: React.FC<FloatingStatusIndicatorProps> = ({ messa
             transition={{ repeat: Infinity, duration: 1.5 }}
             className="text-xl text-blue-500"
           >
-            🔄
+            ✨
           </motion.div>
           <span>{message}</span>
         </motion.div>
