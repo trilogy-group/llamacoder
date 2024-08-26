@@ -2,7 +2,6 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { Toaster, toast } from "sonner";
-import Link from 'next/link';
 import { useScrollTo } from "@/hooks/use-scroll-to";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
