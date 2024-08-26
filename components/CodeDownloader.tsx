@@ -1,4 +1,4 @@
-import { ArrowDownIcon } from "@heroicons/react/20/solid";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { saveAs } from "file-saver";
 
 interface CodeDownloaderProps {
@@ -21,13 +21,10 @@ const CodeDownloader: React.FC<CodeDownloaderProps> = ({
     <button
       onClick={downloadCode}
       disabled={loading}
-      className="inline-flex h-[40px] items-center justify-center gap-2 rounded-2xl bg-green-500 transition disabled:grayscale"
-      style={{ width: "120px" }}
+      className="inline-flex h-[40px] items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2 text-white shadow-md transition-all hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      <span className="relative">
-        <ArrowDownIcon className="size-5 text-xl text-white" />
-      </span>
-      <p className="font-small text-lg text-white">Code</p>
+      <ArrowDownTrayIcon className="h-5 w-5" />
+      <span className="font-medium">Download Code</span>
     </button>
   );
 };

@@ -7,7 +7,6 @@ interface PromptFormProps {
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   status: string;
   placeholder?: string;
-  buttonText?: string;
 }
 
 export default function PromptForm({
@@ -15,7 +14,6 @@ export default function PromptForm({
   onSubmit,
   status,
   placeholder = "Build me a calculator app...",
-  buttonText = "",
 }: PromptFormProps) {
   return (
     <form className="w-full max-w-xl" onSubmit={onSubmit}>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { Toaster, toast } from "sonner";
-import Link from 'next/link';
 import { useScrollTo } from "@/hooks/use-scroll-to";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -15,8 +14,8 @@ import CodeDownloader from "../../components/CodeDownloader";
 import { generateCode, modifyCode } from "../../utils/CodeGeneration";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
+import { AnimatePresence } from "framer-motion";
 import PublishedAppLink from "../../components/PublishedAppLink";
-
 
 export default function Home() {
   const [status, setStatus] = useState<
@@ -44,6 +43,15 @@ export default function Home() {
         <div id="root"></div>
       </body>
     </html>`,
+    "/public/abc.txt": "Hello",
+    "/public/def.txt": "World",
+    "/public/ghi.txt": "Hello",
+    "/public/jkl.txt": "World",
+    "/public/mno.txt": "Hello",
+    "/public/pqr.txt": "World",
+    "/public/stu.txt": "Hello",
+    "/public/vwx.txt": "World",
+    "/public/yz.txt": "Hello",
   });
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
@@ -64,7 +72,7 @@ export default function Home() {
     }
     setStatus("creating");
     setGeneratedCode("");
-    setProgressMessage("Initializing code generation...");
+    setProgressMessage("Warming up the code genie...");
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
@@ -81,12 +89,13 @@ export default function Home() {
       }
     }
 
-    setProgressMessage("Sending request to AI model...");
+    setProgressMessage(
+      "Sent your wishes to the code genie. Waiting for the response...",
+    );
     const newGeneratedCode = await generateCode(
       newMessages,
       selectedModel,
       setGeneratedCode,
-      setProgressMessage,
     );
 
     setModelUsedForInitialCode(selectedModel);
@@ -98,15 +107,17 @@ export default function Home() {
       setStatus("created");
     } else {
       setStatus("initial");
-      toast.error("Failed to generate code. Please try again.");
+      toast.error("Oops! The code genie got a bit confused. Let's try again!");
     }
-    setProgressMessage("Code generation complete. Preparing preview...");
+    setProgressMessage(
+      "Ta-da! The code genie has worked its magic! Preparing preview...",
+    );
   };
 
   const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("updating");
-    setProgressMessage("Updating code...");
+    setProgressMessage("Warming up the code genie for modifications...");
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
@@ -120,11 +131,13 @@ export default function Home() {
     let updatedMessages = [...messages, { role: "user", content: prompt }];
 
     setGeneratedCode("");
+    setProgressMessage(
+      "Sent your update wishes to the code genie. Waiting for the response...",
+    );
     const newGeneratedCode = await modifyCode(
       updatedMessages,
       modelUsedForInitialCode,
       setGeneratedCode,
-      setProgressMessage,
     );
 
     if (newGeneratedCode) {
@@ -134,6 +147,9 @@ export default function Home() {
     } else {
       setStatus("created");
     }
+    setProgressMessage(
+      "Ta-da! The code genie has worked its magic! Preparing preview...",
+    );
   };
 
   const readFileContent = (file: File): Promise<string> => {
@@ -145,16 +161,7 @@ export default function Home() {
     });
   };
 
-  useEffect(() => {
-    if (status === "created" || status === "updated") {
-      let previewTimer = setTimeout(() => {
-        setProgressMessage("Preview is still being generated. Please wait...");
-      }, 8000);
-
-      return () => clearTimeout(previewTimer);
-    }
-  }, [status]);
-
+  console.log("Status : ", status);
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
       <Header />
@@ -225,8 +232,7 @@ export default function Home() {
                   loading={loading}
                   status={status}
                   files={files}
-                  generatedCode={generatedCode}
-                  progressMessage={progressMessage}
+                  setProgressMessage={setProgressMessage}
                 >
                   <CodeDownloader
                     loading={loading}
@@ -234,12 +240,42 @@ export default function Home() {
                   />
                 </CodeEditor>
               </div>
+
+              <div className="mt-8 w-full max-w-md">
+                <PublishButton
+                  loading={loading}
+                  generatedCode={generatedCode}
+                  messages={messages}
+                  modelUsedForInitialCode={modelUsedForInitialCode}
+                  onPublish={(url) => setPublishedUrl(url)}
+                />
+                <PublishedAppLink url={publishedUrl} />
+              </div>
             </div>
           </motion.div>
         )}
       </main>
       <Footer />
       <Toaster invert={true} />
+      <AnimatePresence>
+        {(status === "creating" || status === "updating") && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-4 right-4 flex items-center space-x-3 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-800 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="text-xl text-blue-500"
+            >
+              {status === "creating" ? "✨" : "🔄"}
+            </motion.div>
+            <span>{progressMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
