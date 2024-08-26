@@ -14,6 +14,7 @@ import CodeDownloader from "../../components/CodeDownloader";
 import { generateCode, modifyCode } from "../../utils/CodeGeneration";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
+import { AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [status, setStatus] = useState<
@@ -41,6 +42,15 @@ export default function Home() {
         <div id="root"></div>
       </body>
     </html>`,
+    "/public/abc.txt": "Hello",
+    "/public/def.txt": "World",
+    "/public/ghi.txt": "Hello",
+    "/public/jkl.txt": "World",
+    "/public/mno.txt": "Hello",
+    "/public/pqr.txt": "World",
+    "/public/stu.txt": "Hello",
+    "/public/vwx.txt": "World",
+    "/public/yz.txt": "Hello",
   });
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
 
@@ -141,16 +151,7 @@ export default function Home() {
     });
   };
 
-  useEffect(() => {
-    if (status === "created" || status === "updated") {
-      let previewTimer = setTimeout(() => {
-        setProgressMessage("Preview is still being generated. Please wait...");
-      }, 8000);
-
-      return () => clearTimeout(previewTimer);
-    }
-  }, [status]);
-
+  console.log("Status : ", status);
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
       <Header />
@@ -206,8 +207,7 @@ export default function Home() {
                   loading={loading}
                   status={status}
                   files={files}
-                  generatedCode={generatedCode}
-                  progressMessage={progressMessage}
+                  setProgressMessage={setProgressMessage}
                 >
                   <CodeDownloader
                     loading={loading}
@@ -229,6 +229,18 @@ export default function Home() {
       </main>
       <Footer />
       <Toaster invert={true} />
+      <AnimatePresence>
+        {(status === "creating" || status === "updating") && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-md shadow-lg"
+          >
+            {status === "creating" ? "Creating..." : "Updating..."}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
