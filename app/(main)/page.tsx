@@ -93,7 +93,7 @@ export default function Home() {
     if (generatedCode) {
       setFiles((prevFiles) => ({
         ...(prevFiles || {}),
-        "App.tsx": generatedCode,
+        "/App.tsx": generatedCode,
       }));
     }
   }, [generatedCode]);
@@ -127,7 +127,7 @@ export default function Home() {
       ]);
       setStatus("created");
       setFiles({
-        "App.tsx": newGeneratedCode,
+        "/App.tsx": newGeneratedCode,
         "/public/index.html": `<!DOCTYPE html>
 <html lang="en">
   <head>
