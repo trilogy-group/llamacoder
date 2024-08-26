@@ -19,6 +19,11 @@ import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 import { CircularProgress } from "@mui/material";
 import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
 
+function extractComponentName(code: string): string {
+  const match = code.match(/export default (\w+)/);
+  return match ? match[1] : 'App';
+}
+
 const indexHTML = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -31,6 +36,26 @@ const indexHTML = `<!DOCTYPE html>
     <div id="root"></div>
   </body>
 </html>`;
+
+const calculator = `
+export default function Calculator() {
+  return (
+    <div>
+      <h1>Calculator</h1>
+    </div>
+  );
+}
+`;
+
+const helloWorld = `
+export default function HelloWorld() {
+  return (
+    <div>
+      <h1>Hello World</h1>
+    </div>
+  );
+}
+`;
 
 export default function Home() {
   const [status, setStatus] = useState<
@@ -45,6 +70,7 @@ export default function Home() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
+  const [activeFile, setActiveFile] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = () => {
@@ -97,8 +123,8 @@ export default function Home() {
         ...(prevFiles || {}),
         "/App.tsx": {
           "code": generatedCode,
-          "active": true,
-          "hidden": false,
+          "active": false,
+          "hidden": true,
           "readOnly": true,
         },
       }));
@@ -135,20 +161,30 @@ export default function Home() {
     );
 
     if (newGeneratedCode) {
+      const componentName = extractComponentName(newGeneratedCode);
+      const fileName = `/${componentName}.tsx`;
       setStatus("created");
-      setFiles({
-        "/App.tsx": {
-          "code": newGeneratedCode,
-          "active": true,
-          "hidden": false,
-          "readOnly": true,
-        },
-        "/public/index.html": {
-          "code": indexHTML,
-          "active": false,
-          "hidden": true,
-          "readOnly": true,
-        },
+      setFiles((prevFiles) => {
+        const updatedFiles = Object.entries(prevFiles || {}).reduce((acc, [key, value]) => {
+          acc[key] = { ...value, active: false };
+          return acc;
+        }, {} as Record<string, { code: string, active: boolean, hidden: boolean, readOnly: boolean }>);
+        
+        return {
+          ...updatedFiles,
+          [fileName]: {
+            "code": newGeneratedCode,
+            "active": true,
+            "hidden": false,
+            "readOnly": true,
+          },
+          "/public/index.html": {
+            "code": indexHTML,
+            "active": false,
+            "hidden": true,
+            "readOnly": true,
+          },
+        };
       });
     } else {
       setStatus("initial");
@@ -192,7 +228,25 @@ export default function Home() {
     );
 
     if (newGeneratedCode) {
+      const componentName = extractComponentName(newGeneratedCode);
+      const fileName = `/${componentName}.tsx`;
       setGeneratedCode(newGeneratedCode); // Ensure generatedCode is updated
+      setFiles((prevFiles) => {
+        const updatedFiles = Object.entries(prevFiles || {}).reduce((acc, [key, value]) => {
+          acc[key] = { ...value, active: false };
+          return acc;
+        }, {} as Record<string, { code: string, active: boolean, hidden: boolean, readOnly: boolean }>);
+
+        return {
+          ...updatedFiles,
+          [fileName]: {
+            "code": newGeneratedCode,
+            "active": true,
+            "hidden": false,
+            "readOnly": false,
+          }
+        };
+      });
       setStatus("updated");
     } else {
       setStatus("created");
