@@ -111,30 +111,18 @@ export default function Home() {
     const prompt = formData.get("prompt") as string;
     setInitialPrompt(prompt);
 
-    let newMessages = [{ role: "user", content: prompt }];
-
-    if (selectedFiles.length > 0) {
-      for (const file of selectedFiles) {
-        const fileContent = await readFileContent(file);
-        newMessages.push({
-          role: "user",
-          content: `File content: ${fileContent}`,
-        });
-      }
-    }
-
     setProgressMessage(
       "Sent your wishes to the code genie. Waiting for the response...",
     );
     const newGeneratedCode = await generateCode(
-      newMessages,
+      [{ role: "user", content: prompt }], // Pass only the initial prompt
       selectedModel,
       setGeneratedCode,
     );
 
     if (newGeneratedCode) {
       setMessages([
-        ...newMessages,
+        { role: "user", content: prompt },
         { role: "assistant", content: newGeneratedCode },
       ]);
       setStatus("created");
@@ -176,25 +164,28 @@ export default function Home() {
       return;
     }
 
-    let updatedMessages = [...messages, { role: "user", content: prompt }];
-
-    setGeneratedCode("");
     setProgressMessage(
       "Sent your update wishes to the code genie. Waiting for the response...",
     );
-    console.log("Updated messages: ", updatedMessages, selectedModel);
+    const currentMessages = [
+      { role: "user", content: initialPrompt },
+      { role: "assistant", content: generatedCode },
+      { role: "user", content: prompt }
+    ];
+    console.log("Updated messages: ", currentMessages, selectedModel);
     const newGeneratedCode = await modifyCode(
-      updatedMessages,
+      currentMessages,
       selectedModel,
       setGeneratedCode,
     );
 
     if (newGeneratedCode) {
-      updatedMessages.push({ role: "assistant", content: newGeneratedCode });
-      setMessages(updatedMessages);
+      setMessages([...currentMessages, { role: "assistant", content: newGeneratedCode }]);
+      setGeneratedCode(newGeneratedCode); // Ensure generatedCode is updated
       setStatus("updated");
     } else {
       setStatus("created");
+      toast.error("Failed to update the code. Please try again.");
     }
     setProgressMessage(
       "Ta-da! The code genie has worked its magic! Preparing preview...",
@@ -276,7 +267,6 @@ export default function Home() {
               {status !== "creating" && (
                 <div className="w-full">
                   <CodeEditor
-                    loading={loading}
                     status={status}
                     files={files}
                   >

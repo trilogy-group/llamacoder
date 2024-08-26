@@ -4,6 +4,7 @@ import {
   SandpackCodeEditor,
   SandpackPreview,
   useSandpack,
+  useActiveCode,
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { motion } from "framer-motion";
@@ -12,7 +13,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { AnimatePresence } from "framer-motion";
 
 interface CodeEditorProps {
-  loading: boolean;
   status: string;
   files: Record<string, string>;
   children?: React.ReactNode;
@@ -24,15 +24,19 @@ function SandpackContent({
   children: React.ReactNode;
 }) {
   const { sandpack, listen } = useSandpack();
-
-  const {
-    activeFile: sandpackActiveFile,
-    setActiveFile: setSandpackActiveFile,
-  } = sandpack;
+  const { activeFile } = sandpack;
+  const { code } = useActiveCode();
 
   useEffect(() => {
-    console.log("Active file: ", sandpackActiveFile);
-  }, [sandpackActiveFile]);
+    console.log(`File ${activeFile} updated: `, code);    
+    const files: Record<string, string> = JSON.parse(localStorage.getItem('codeFiles') || '{}');
+    files[activeFile] = code;
+    localStorage.setItem('codeFiles', JSON.stringify(files));
+
+    if (activeFile === '/App.tsx') {
+      localStorage.setItem('generatedCode', code);
+    }
+  }, [code]);
 
   useEffect(() => {
     // listens for any message dispatched between sandpack and the bundler
@@ -64,7 +68,6 @@ function SandpackContent({
 }
 
 export default function CodeEditor({
-  loading,
   status,
   files,
   children,

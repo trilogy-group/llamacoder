@@ -13,7 +13,7 @@ const FloatingStatusIndicator: React.FC<FloatingStatusIndicatorProps> = ({ messa
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-4 right-4 flex items-center space-x-3 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-800 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          className="fixed bottom-4 right-4 flex items-center space-x-3 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-800 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-white z-[9999]"
         >
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
