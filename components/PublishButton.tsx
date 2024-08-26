@@ -9,6 +9,7 @@ interface PublishButtonProps {
   generatedCode: string;
   messages: { role: string; content: string }[];
   modelUsedForInitialCode: string;
+  onPublish: (url: string) => void;
 }
 
 async function publishApp(generatedCode: string) {
@@ -37,6 +38,7 @@ export default function PublishButton({
   generatedCode,
   messages,
   modelUsedForInitialCode,
+  onPublish,
 }: PublishButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -49,6 +51,7 @@ export default function PublishButton({
       const liveUrl = await publishApp(generatedCode);
       toast.success(`Your app has been published! Live URL: ${liveUrl}`);
       navigator.clipboard.writeText(liveUrl);
+      onPublish(liveUrl);
     } catch (error) {
       console.error("Error publishing app:", error);
       toast.error("An error occurred while publishing the app");

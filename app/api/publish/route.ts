@@ -1,5 +1,5 @@
 import { AmplifyClient, CreateAppCommand, CreateBranchCommand, StartDeploymentCommand, Platform } from "@aws-sdk/client-amplify";
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import spawn from 'cross-spawn';
@@ -22,28 +22,9 @@ export async function POST(request: Request) {
                 sessionToken: process.env.AWS_SESSION_TOKEN,
             },
         };
-
-        const amplifyClient = new AmplifyClient(config);
         const s3Client = new S3Client(config);
-        const appName = `GeneratedApp-${uuidv4()}`;
-        const s3Key = `${appName}.zip`;
-
-        const createAppParams = {
-            name: appName,
-            platform: 'WEB' as Platform,
-        };
-
-        const createAppCommand = new CreateAppCommand(createAppParams);
-        const app = await amplifyClient.send(createAppCommand);
-        const appId = app.app?.appId;
-
-        const createBranchParams = {
-            appId: appId,
-            branchName: appName,
-        };
-
-        const createBranchCommand = new CreateBranchCommand(createBranchParams);
-        await amplifyClient.send(createBranchCommand);
+        const appName = `${nanoid(10)}`;
+        const bucketName = process.env.S3_BUCKET_NAME;
 
         // Write the generated code to src/App.tsx
         const appFilePath = path.join(process.cwd(), 'templates/react-simple/src/App.tsx');
@@ -72,60 +53,39 @@ export async function POST(request: Request) {
         });
 
         console.log('Build command completed.');
-
-        // Create a zip file of the build folder
+        
         const buildFolder = path.join(process.cwd(), 'templates/react-simple/build');
-        const zipPath = path.join(process.cwd(), `${appName}.zip`);
-        const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', {
-            zlib: { level: 9 }
-        });
+        const indexPath = path.join(buildFolder, 'index.html');
+        let indexContent = await fs.promises.readFile(indexPath, 'utf-8');
+        indexContent = indexContent.replace(/(src|href)="\/static\//g, `$1="/${appName}/static/`);
+        await fs.promises.writeFile(indexPath, indexContent);
 
-        const zipPromise = new Promise<NextResponse>((resolve, reject) => {
-            output.on('close', async () => {
-                console.log(`Zip file created: ${zipPath} (${archive.pointer()} total bytes)`);
-
-                try {
-                    const zipContent = await fs.promises.readFile(zipPath);
+        const uploadDirectory = async (dirPath: string, s3Path: string) => {
+            const files = await fs.promises.readdir(dirPath);
+            for (const file of files) {
+                const filePath = path.join(dirPath, file);
+                const fileStat = await fs.promises.stat(filePath);
+                if (fileStat.isDirectory()) {
+                    await uploadDirectory(filePath, `${s3Path}/${file}`);
+                } else {
+                    const fileContent = await fs.promises.readFile(filePath);
+                    const contentType = file === 'index.html' ? 'text/html' : 'application/octet-stream';
                     const uploadParams = {
-                        Bucket: process.env.S3_BUCKET_NAME,
-                        Key: s3Key,
-                        Body: zipContent,
-                        ContentType: 'application/zip',
+                        Bucket: bucketName,
+                        Key: `${s3Path}/${file}`,
+                        Body: fileContent,
+                        ContentType: contentType,
                     };
                     await s3Client.send(new PutObjectCommand(uploadParams));
-                    const sourceUrl = `s3://${process.env.S3_BUCKET_NAME}/${s3Key}`;
-
-                    const startDeploymentParams = {
-                        appId: appId,
-                        branchName: appName,
-                        sourceUrl: sourceUrl,
-                    };
-
-                    const startDeploymentCommand = new StartDeploymentCommand(startDeploymentParams);
-                    await amplifyClient.send(startDeploymentCommand);
-
-                    const publishedUrl = `https://${appName}.${app.app?.defaultDomain}`;
-
-                    // Delete the zip file after upload
-                    await fs.promises.unlink(zipPath);
-
-                    resolve(NextResponse.json({ success: true, url: publishedUrl }));
-                } catch (error) {
-                    reject(error);
                 }
-            });
+            }
+        };
 
-            archive.on('error', (err) => {
-                reject(err);
-            });
+        await uploadDirectory(buildFolder, appName);
 
-            archive.pipe(output);
-            archive.directory(buildFolder, false);
-            archive.finalize();
-        });
+        const publishedUrl = `https://apps.ti.trilogy.com/${appName}/index.html`;
 
-        return await zipPromise;
+        return NextResponse.json({ success: true, url: publishedUrl });
     } catch (error) {
         console.error('Error publishing app:', error);
         return NextResponse.json({ success: false, error: 'Failed to publish app' }, { status: 500 });

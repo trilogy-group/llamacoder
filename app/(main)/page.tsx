@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { Toaster, toast } from "sonner";
+import Link from 'next/link';
 import { useScrollTo } from "@/hooks/use-scroll-to";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -14,6 +15,8 @@ import CodeDownloader from "../../components/CodeDownloader";
 import { generateCode, modifyCode } from "../../utils/CodeGeneration";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
+import PublishedAppLink from "../../components/PublishedAppLink";
+
 
 export default function Home() {
   const [status, setStatus] = useState<
@@ -43,6 +46,7 @@ export default function Home() {
     </html>`,
   });
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
 
   const loading = status === "creating" || status === "updating";
 
@@ -194,11 +198,23 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
-              <div className="mb-8 w-3/5">
-                <UpdatePromptForm
-                  loading={loading}
-                  onUpdate={handleModifyCode}
-                />
+              <div className="mb-8 w-full flex flex-col md:flex-row gap-4 items-start">
+                <div className="w-full md:w-3/4">
+                  <UpdatePromptForm
+                    loading={loading}
+                    onUpdate={handleModifyCode}
+                  />
+                </div>
+                <div className="w-full md:w-1/4 flex flex-col items-stretch">
+                  <PublishButton
+                    loading={loading}
+                    generatedCode={generatedCode}
+                    messages={messages}
+                    modelUsedForInitialCode={modelUsedForInitialCode}
+                    onPublish={(url) => setPublishedUrl(url)}
+                  />
+                  <PublishedAppLink url={publishedUrl} />
+                </div>
               </div>
 
               <div className="w-full">
@@ -214,14 +230,6 @@ export default function Home() {
                     generatedCode={generatedCode}
                   />
                 </CodeEditor>
-                <div className="mt-4 flex justify-end">
-                  <PublishButton
-                    loading={loading}
-                    generatedCode={generatedCode}
-                    messages={messages}
-                    modelUsedForInitialCode={modelUsedForInitialCode}
-                  />
-                </div>
               </div>
             </div>
           </motion.div>
