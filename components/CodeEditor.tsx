@@ -3,23 +3,69 @@ import {
   SandpackLayout,
   SandpackCodeEditor,
   SandpackPreview,
+  useSandpack,
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 interface CodeEditorProps {
   loading: boolean;
   status: string;
   files: Record<string, string>;
-  setProgressMessage: (message: string) => void;
   children?: React.ReactNode;
+}
+
+function SandpackContent({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { sandpack, listen } = useSandpack();
+
+  const {
+    activeFile: sandpackActiveFile,
+    setActiveFile: setSandpackActiveFile,
+  } = sandpack;
+
+  useEffect(() => {
+    console.log("Active file: ", sandpackActiveFile);
+  }, [sandpackActiveFile]);
+
+  useEffect(() => {
+    // listens for any message dispatched between sandpack and the bundler
+    const stopListening = listen((msg) => {
+      console.log(msg);
+    });
+
+    return () => {
+      // unsubscribe
+      stopListening();
+    };
+  }, [listen]);
+
+  return (
+    <>
+      <div className="flex items-center gap-4 p-4">{children}</div>
+      <SandpackLayout>
+        <SandpackCodeEditor
+          style={{ height: "80vh" }}
+          showRunButton={true}
+          showInlineErrors={true}
+          wrapContent={true}
+          showLineNumbers={true}
+        />
+        <SandpackPreview style={{ height: "80vh" }} />
+      </SandpackLayout>
+    </>
+  );
 }
 
 export default function CodeEditor({
   loading,
   status,
   files,
-  children
+  children,
 }: CodeEditorProps) {
   return (
     <div className="relative mt-8 w-full overflow-hidden">
@@ -48,19 +94,10 @@ export default function CodeEditor({
           }}
           files={files}
         >
-          <div className="flex items-center gap-4 p-4">
+          <SandpackContent
+          >
             {children}
-          </div>
-          <SandpackLayout>
-            <SandpackCodeEditor
-              style={{ height: "80vh" }}
-              showRunButton={true}
-              showInlineErrors={true}
-              wrapContent={true}
-              showLineNumbers={true}
-            />
-            <SandpackPreview style={{ height: "80vh" }} />
-          </SandpackLayout>
+          </SandpackContent>
         </SandpackProvider>
       </div>
 

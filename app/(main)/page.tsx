@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useCallback } from "react";
 import { Toaster, toast } from "sonner";
 import { useScrollTo } from "@/hooks/use-scroll-to";
 import { motion } from "framer-motion";
@@ -14,13 +14,14 @@ import CodeDownloader from "../../components/CodeDownloader";
 import { generateCode, modifyCode } from "../../utils/CodeGeneration";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
-import { AnimatePresence } from "framer-motion";
 import PublishedAppLink from "../../components/PublishedAppLink";
+import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 
 export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
   >("initial");
+  const [codesandboxStatus, setCodesandboxStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [modelUsedForInitialCode, setModelUsedForInitialCode] = useState("");
   const [ref, scrollTo] = useScrollTo();
@@ -43,15 +44,6 @@ export default function Home() {
         <div id="root"></div>
       </body>
     </html>`,
-    "/public/abc.txt": "Hello",
-    "/public/def.txt": "World",
-    "/public/ghi.txt": "Hello",
-    "/public/jkl.txt": "World",
-    "/public/mno.txt": "Hello",
-    "/public/pqr.txt": "World",
-    "/public/stu.txt": "Hello",
-    "/public/vwx.txt": "World",
-    "/public/yz.txt": "Hello",
   });
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
@@ -161,7 +153,8 @@ export default function Home() {
     });
   };
 
-  console.log("Status : ", status);
+  const isStatusVisible = status === "creating" || status === "updating" || codesandboxStatus !== "";
+
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
       <Header />
@@ -217,7 +210,6 @@ export default function Home() {
                   loading={loading}
                   status={status}
                   files={files}
-                  setProgressMessage={setProgressMessage}
                 >
                   <CodeDownloader
                     loading={loading}
@@ -242,25 +234,10 @@ export default function Home() {
       </main>
       <Footer />
       <Toaster invert={true} />
-      <AnimatePresence>
-        {(status === "creating" || status === "updating") && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-4 right-4 flex items-center space-x-3 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-800 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          >
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="text-xl text-blue-500"
-            >
-              {status === "creating" ? "✨" : "🔄"}
-            </motion.div>
-            <span>{progressMessage}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <FloatingStatusIndicator 
+        message={progressMessage}
+        isVisible={isStatusVisible}
+      />
     </div>
   );
 }
