@@ -264,26 +264,13 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
-              <div className="mb-8 w-full flex flex-col md:flex-row gap-4 items-stretch">
-                <div className="w-full md:w-7/8">
+              <div className="mb-8 w-full flex justify-center">
+                <div className="w-full md:w-3/5">
                   <UpdatePromptForm
                     loading={loading}
                     onUpdate={handleModifyCode}
                   />
                 </div>
-                <div className="w-full md:w-1/4 flex flex-col justify-end">
-                  <PublishButton
-                    loading={loading}
-                    generatedCode={generatedCode}
-                    messages={messages}
-                    modelUsedForInitialCode={modelUsedForInitialCode}
-                    onPublish={(url) => setPublishedUrl(url)}
-                  />
-                </div>
-              </div>
-
-              <div className="mb-8 w-full flex justify-center">
-                <PublishedAppLink url={publishedUrl} />
               </div>
 
               {status !== "creating" && (
@@ -301,7 +288,7 @@ export default function Home() {
                 </div>
               )}
               {status !== "creating" && status !== "updating" && (
-                <div className="mt-8 w-full max-w-md">
+                <div className="mt-8 w-full flex justify-end">
                   <PublishButton
                     loading={loading}
                     generatedCode={generatedCode}
@@ -309,9 +296,9 @@ export default function Home() {
                     modelUsedForInitialCode={selectedModel}
                     onPublish={(url) => setPublishedUrl(url)}
                   />
-                  <PublishedAppLink url={publishedUrl} />
                 </div>
               )}
+              <PublishedAppLink url={publishedUrl} />
             </div>
           </motion.div>
         )}
