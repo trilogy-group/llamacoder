@@ -17,7 +17,6 @@ import PublishButton from "../../components/PublishButton";
 import { AnimatePresence } from "framer-motion";
 import PublishedAppLink from "../../components/PublishedAppLink";
 
-
 export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
@@ -90,7 +89,9 @@ export default function Home() {
       }
     }
 
-    setProgressMessage("Sent your wishes to the code genie. Waiting for the response...");
+    setProgressMessage(
+      "Sent your wishes to the code genie. Waiting for the response...",
+    );
     const newGeneratedCode = await generateCode(
       newMessages,
       selectedModel,
@@ -108,7 +109,9 @@ export default function Home() {
       setStatus("initial");
       toast.error("Oops! The code genie got a bit confused. Let's try again!");
     }
-    setProgressMessage("Ta-da! The code genie has worked its magic! Preparing preview...");
+    setProgressMessage(
+      "Ta-da! The code genie has worked its magic! Preparing preview...",
+    );
   };
 
   const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
@@ -128,7 +131,9 @@ export default function Home() {
     let updatedMessages = [...messages, { role: "user", content: prompt }];
 
     setGeneratedCode("");
-    setProgressMessage("Sent your update wishes to the code genie. Waiting for the response...");
+    setProgressMessage(
+      "Sent your update wishes to the code genie. Waiting for the response...",
+    );
     const newGeneratedCode = await modifyCode(
       updatedMessages,
       modelUsedForInitialCode,
@@ -142,7 +147,9 @@ export default function Home() {
     } else {
       setStatus("created");
     }
-    setProgressMessage("Ta-da! The code genie has worked its magic! Preparing preview...");
+    setProgressMessage(
+      "Ta-da! The code genie has worked its magic! Preparing preview...",
+    );
   };
 
   const readFileContent = (file: File): Promise<string> => {
@@ -198,7 +205,7 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
-              <div className="mb-8 w-3/5 mx-auto">
+              <div className="mx-auto mb-8 w-3/5">
                 <UpdatePromptForm
                   loading={loading}
                   onUpdate={handleModifyCode}
@@ -238,12 +245,19 @@ export default function Home() {
       <AnimatePresence>
         {(status === "creating" || status === "updating") && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-md shadow-lg"
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-4 right-4 flex items-center space-x-3 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-800 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           >
-            { progressMessage }
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="text-xl text-blue-500"
+            >
+              {status === "creating" ? "✨" : "🔄"}
+            </motion.div>
+            <span>{progressMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
