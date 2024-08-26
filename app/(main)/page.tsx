@@ -18,6 +18,19 @@ import PublishedAppLink from "../../components/PublishedAppLink";
 import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 import { CircularProgress } from "@mui/material";
 
+const indexHTML = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
+
 export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
@@ -29,7 +42,7 @@ export default function Home() {
   );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [progressMessage, setProgressMessage] = useState("");
-  const [files, setFiles] = useState<Record<string, string> | null>(null);
+  const [files, setFiles] = useState<Record<string, { code: string, active: boolean, hidden: boolean, readOnly: boolean }> | null>(null);
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +106,12 @@ export default function Home() {
     if (generatedCode) {
       setFiles((prevFiles) => ({
         ...(prevFiles || {}),
-        "/App.tsx": generatedCode,
+        "/App.tsx": {
+          "code": generatedCode,
+          "active": true,
+          "hidden": false,
+          "readOnly": true,
+        },
       }));
     }
   }, [generatedCode]);
@@ -127,19 +145,18 @@ export default function Home() {
       ]);
       setStatus("created");
       setFiles({
-        "/App.tsx": newGeneratedCode,
-        "/public/index.html": `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>`,
+        "/App.tsx": {
+          "code": newGeneratedCode,
+          "active": true,
+          "hidden": false,
+          "readOnly": true,
+        },
+        "/public/index.html": {
+          "code": indexHTML,
+          "active": false,
+          "hidden": true,
+          "readOnly": true,
+        },
       });
     } else {
       setStatus("initial");

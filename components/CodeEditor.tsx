@@ -9,32 +9,39 @@ import {
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
-import CircularProgress from '@mui/material/CircularProgress';
+import CircularProgress from "@mui/material/CircularProgress";
 import { AnimatePresence } from "framer-motion";
 
 interface CodeEditorProps {
   status: string;
-  files: Record<string, string>;
+  files: Record<
+    string,
+    { code: string; active: boolean; hidden: boolean; readOnly: boolean }
+  >;
   children?: React.ReactNode;
 }
 
-function SandpackContent({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function SandpackContent({ children }: { children: React.ReactNode }) {
   const { sandpack, listen } = useSandpack();
   const { activeFile } = sandpack;
   const { code } = useActiveCode();
 
   useEffect(() => {
-    console.log(`File ${activeFile} updated: `, code);    
-    const files: Record<string, string> = JSON.parse(localStorage.getItem('codeFiles') || '{}');
-    files[activeFile] = code;
-    localStorage.setItem('codeFiles', JSON.stringify(files));
+    console.log(`File ${activeFile} updated: `, code);
+    const files: Record<
+      string,
+      { code: string; active: boolean; hidden: boolean; readOnly: boolean }
+    > = JSON.parse(localStorage.getItem("codeFiles") || "{}");
+    files[activeFile] = {
+      code: code,
+      active: true,
+      hidden: false,
+      readOnly: false,
+    };
+    localStorage.setItem("codeFiles", JSON.stringify(files));
 
-    if (activeFile === '/App.tsx') {
-      localStorage.setItem('generatedCode', code);
+    if (activeFile === "/App.tsx") {
+      localStorage.setItem("generatedCode", code);
     }
   }, [code]);
 
@@ -102,9 +109,7 @@ export default function CodeEditor({
           files={files}
         >
           <div className="relative">
-            <SandpackContent>
-              {children}
-            </SandpackContent>
+            <SandpackContent>{children}</SandpackContent>
 
             {(status === "creating" || status === "updating") && (
               <motion.div
@@ -112,10 +117,12 @@ export default function CodeEditor({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-10 backdrop-blur-[0.5px] z-10"
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black bg-opacity-10 backdrop-blur-[0.5px]"
               >
                 <CircularProgress size={60} thickness={4} color="primary" />
-                <p className="mt-4 text-xl font-bold text-white">{randomMessage}</p>
+                <p className="mt-4 text-xl font-bold text-white">
+                  {randomMessage}
+                </p>
               </motion.div>
             )}
           </div>
