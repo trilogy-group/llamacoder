@@ -5,25 +5,25 @@ interface PublishedAppLinkProps {
 }
 
 export default function PublishedAppLink({ url }: PublishedAppLinkProps) {
-  if (!url) return null;
-
-  return (
-    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md shadow-sm">
-      <h3 className="text-sm font-semibold text-green-800 mb-2">Your App is Live!</h3>
-      <div className="flex items-center justify-between">
-        <Link 
-          href={url}
-          className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center group"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span className="truncate max-w-[200px]">{url}</span>
-          <svg
-            className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+    if (!url) return null;
+  
+    return (
+      <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-lg shadow-md">
+        <h3 className="text-lg font-semibold text-green-800 mb-3">Your App is Live!</h3>
+        <div className="flex items-center justify-between">
+          <Link 
+            href={url}
+            className="text-green-600 hover:text-green-800 text-base font-medium flex items-center group"
+            target="_blank"
+            rel="noopener noreferrer"
           >
+            <span className="truncate max-w-[300px]">{url}</span>
+            <svg
+              className="h-5 w-5 ml-2 group-hover:translate-x-0.5 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -34,7 +34,7 @@ export default function PublishedAppLink({ url }: PublishedAppLinkProps) {
         </Link>
         <button
           onClick={() => navigator.clipboard.writeText(url)}
-          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+          className="text-sm px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
         >
           Copy
         </button>

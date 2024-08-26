@@ -1,9 +1,9 @@
-# The manifest for the "llamacoder" service.
+# The manifest for the "app" service.
 # Read the full specification for the "Request-Driven Web Service" type at:
 # https://aws.github.io/copilot-cli/docs/manifest/rd-web-service/
 
 # Your service name will be used in naming your resources like log groups, App Runner services, etc.
-name: llamacoder
+name: app
 # The "architecture" of the service you're running.
 type: Request-Driven Web Service
 
@@ -27,13 +27,15 @@ secrets:
 #     timeout: 5s
 
 # Number of CPU units for the task.
-cpu: 256
+cpu: 512
 # Amount of memory in MiB used by the task.
-memory: 512
+memory: 1024
+
 # Connect your App Runner service to your environment's VPC.
 # network:
 #   vpc:
 #     placement: private
+
 
 # Enable tracing for the service.
 # observability:

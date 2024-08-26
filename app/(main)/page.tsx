@@ -264,11 +264,26 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
-              <div className="mx-auto mb-8 w-3/5">
-                <UpdatePromptForm
-                  loading={loading}
-                  onUpdate={handleModifyCode}
-                />
+              <div className="mb-8 w-full flex flex-col md:flex-row gap-4 items-stretch">
+                <div className="w-full md:w-7/8">
+                  <UpdatePromptForm
+                    loading={loading}
+                    onUpdate={handleModifyCode}
+                  />
+                </div>
+                <div className="w-full md:w-1/4 flex flex-col justify-end">
+                  <PublishButton
+                    loading={loading}
+                    generatedCode={generatedCode}
+                    messages={messages}
+                    modelUsedForInitialCode={modelUsedForInitialCode}
+                    onPublish={(url) => setPublishedUrl(url)}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-8 w-full flex justify-center">
+                <PublishedAppLink url={publishedUrl} />
               </div>
 
               {status !== "creating" && (

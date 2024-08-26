@@ -67,7 +67,7 @@ export default function PublishButton({
           <button
             disabled={loading || isPublishing}
             onClick={handlePublish}
-            className="inline-flex h-[68px] w-40 items-center justify-center gap-2 rounded-3xl bg-blue-500 transition disabled:grayscale"
+            className="inline-flex h-[90px] w-45 items-center justify-center gap-2 rounded-3xl bg-blue-500 transition disabled:grayscale"
           >
             <span className="relative">
               {isPublishing && (

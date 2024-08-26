@@ -15,16 +15,11 @@ export async function POST(request: Request) {
         const { generatedCode } = await request.json();
 
         const config = {
-            region: process.env.AWS_REGION,
-            credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-                sessionToken: process.env.AWS_SESSION_TOKEN,
-            },
+            region: process.env.AWS_REGION || "us-east-1",
         };
         const s3Client = new S3Client(config);
         const appName = `${nanoid(10)}`;
-        const bucketName = process.env.S3_BUCKET_NAME;
+        const bucketName = process.env.S3_BUCKET_NAME || "ti-artifact-apps";
 
         // Write the generated code to src/App.tsx
         const appFilePath = path.join(process.cwd(), 'templates/react-simple/src/App.tsx');
