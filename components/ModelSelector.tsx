@@ -15,7 +15,7 @@ const models = [
   { label: "GPT-4 Turbo", value: "gpt-4-1106-preview" },
   { label: "Claude Sonnet 3.5", value: "claude-3-5-sonnet-20240620" },
   {
-    label: "Bedrock Claude",
+    label: "Bedrock Claude Sonnet 3.5",
     value: "anthropic.claude-3-5-sonnet-20240620-v1:0",
   },
 ];

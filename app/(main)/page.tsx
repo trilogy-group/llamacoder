@@ -240,17 +240,6 @@ export default function Home() {
                   />
                 </CodeEditor>
               </div>
-
-              <div className="mt-8 w-full max-w-md">
-                <PublishButton
-                  loading={loading}
-                  generatedCode={generatedCode}
-                  messages={messages}
-                  modelUsedForInitialCode={modelUsedForInitialCode}
-                  onPublish={(url) => setPublishedUrl(url)}
-                />
-                <PublishedAppLink url={publishedUrl} />
-              </div>
             </div>
           </motion.div>
         )}
