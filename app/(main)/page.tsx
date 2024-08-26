@@ -17,6 +17,7 @@ import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
 import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 import { CircularProgress } from "@mui/material";
+import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
 
 const indexHTML = `<!DOCTYPE html>
 <html lang="en">
@@ -37,9 +38,6 @@ export default function Home() {
   >("initial");
   const [generatedCode, setGeneratedCode] = useState("");
   const [ref, scrollTo] = useScrollTo();
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
-    [],
-  );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [progressMessage, setProgressMessage] = useState("");
   const [files, setFiles] = useState<Record<string, { code: string, active: boolean, hidden: boolean, readOnly: boolean }> | null>(null);
@@ -76,15 +74,6 @@ export default function Home() {
       if (storedGeneratedCode) {
         setGeneratedCode(storedGeneratedCode);
       }
-      
-      // Update messages if we have both the initial prompt and generated code
-      if (storedPrompt && storedGeneratedCode) {
-        setMessages([
-          { role: "user", content: storedPrompt },
-          { role: "assistant", content: storedGeneratedCode }
-        ]);
-      }
-      
       setLoading(false);
     };
 
@@ -129,20 +118,21 @@ export default function Home() {
     const prompt = formData.get("prompt") as string;
     setInitialPrompt(prompt);
 
+    const activeFile = getActiveFile();
+    const activeFileContent = getFileContent(activeFile);
+
     setProgressMessage(
       "Sent your wishes to the code genie. Waiting for the response...",
     );
     const newGeneratedCode = await generateCode(
-      [{ role: "user", content: prompt }], // Pass only the initial prompt
+      [
+        { role: "user", content: prompt }
+      ],
       selectedModel,
       setGeneratedCode,
     );
 
     if (newGeneratedCode) {
-      setMessages([
-        { role: "user", content: prompt },
-        { role: "assistant", content: newGeneratedCode },
-      ]);
       setStatus("created");
       setFiles({
         "/App.tsx": {
@@ -181,12 +171,15 @@ export default function Home() {
       return;
     }
 
+    const activeFile = getActiveFile();
+    const activeFileContent = getFileContent(activeFile);
+
     setProgressMessage(
       "Sent your update wishes to the code genie. Waiting for the response...",
     );
     const currentMessages = [
       { role: "user", content: initialPrompt },
-      { role: "assistant", content: generatedCode },
+      { role: "assistant", content: activeFileContent },
       { role: "user", content: prompt }
     ];
     console.log("Updated messages: ", currentMessages, selectedModel);
@@ -197,7 +190,6 @@ export default function Home() {
     );
 
     if (newGeneratedCode) {
-      setMessages([...currentMessages, { role: "assistant", content: newGeneratedCode }]);
       setGeneratedCode(newGeneratedCode); // Ensure generatedCode is updated
       setStatus("updated");
     } else {
@@ -299,8 +291,6 @@ export default function Home() {
                   <PublishButton
                     loading={loading}
                     generatedCode={generatedCode}
-                    messages={messages}
-                    modelUsedForInitialCode={selectedModel}
                     onPublish={(url) => setPublishedUrl(url)}
                   />
                 </div>

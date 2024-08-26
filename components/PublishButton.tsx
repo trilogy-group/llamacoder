@@ -7,8 +7,6 @@ import { toast } from "sonner";
 interface PublishButtonProps {
   loading: boolean;
   generatedCode: string;
-  messages: { role: string; content: string }[];
-  modelUsedForInitialCode: string;
   onPublish: (url: string) => void;
 }
 
@@ -36,16 +34,12 @@ async function publishApp(generatedCode: string) {
 export default function PublishButton({
   loading,
   generatedCode,
-  messages,
-  modelUsedForInitialCode,
   onPublish,
 }: PublishButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
 
   const handlePublish = async () => {
     setIsPublishing(true);
-    let userMessages = messages.filter((message) => message.role === "user");
-    let prompt = userMessages[userMessages.length - 1].content;
 
     try {
       const liveUrl = await publishApp(generatedCode);
