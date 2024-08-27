@@ -1,6 +1,5 @@
-import { nanoid } from 'nanoid';
 import { NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import spawn from 'cross-spawn';
 import fs from 'fs-extra';
 import path from 'path';
@@ -10,18 +9,20 @@ dotenv.config();
 
 export async function POST(request: Request) {
     try {
-        const { generatedCode } = await request.json();
+        const { generatedCode, artifactId } = await request.json();
 
         const config = {
             region: process.env.AWS_REGION || "us-east-1",
         };
         const s3Client = new S3Client(config);
-        const appName = `${nanoid(10)}`;
+        const appName = artifactId;
         const bucketName = process.env.S3_BUCKET_NAME || "ti-artifact-apps";
 
         // Create a temporary directory
         const tempDir = path.join(process.cwd(), 'temp', appName);
         await fs.ensureDir(tempDir);
+
+        console.log("Copying template files to the temporary directory: ", tempDir);
 
         // Copy the template files to the temporary directory
         await fs.copy(path.join(process.cwd(), 'templates/react-simple'), tempDir);
@@ -62,6 +63,31 @@ export async function POST(request: Request) {
         let indexContent = await fs.readFile(indexPath, 'utf-8');
         indexContent = indexContent.replace(/(src|href)="\/static\//g, `$1="/${appName}/static/`);
         await fs.writeFile(indexPath, indexContent);
+
+        const deleteExistingFiles = async (s3Path: string) => {
+            const listParams = {
+                Bucket: bucketName,
+                Prefix: s3Path,
+            };
+
+            const listedObjects = await s3Client.send(new ListObjectsV2Command(listParams));
+
+            if (listedObjects.Contents && listedObjects.Contents.length > 0) {
+                const deleteParams = {
+                    Bucket: bucketName,
+                    Delete: { Objects: listedObjects.Contents.map(({ Key }) => ({ Key })) }
+                };
+
+                await s3Client.send(new DeleteObjectsCommand(deleteParams));
+
+                if (listedObjects.IsTruncated) {
+                    await deleteExistingFiles(s3Path);
+                }
+            }
+        };
+
+        // Delete existing files before uploading
+        await deleteExistingFiles(appName);
 
         const uploadDirectory = async (dirPath: string, s3Path: string) => {
             const files = await fs.promises.readdir(dirPath);

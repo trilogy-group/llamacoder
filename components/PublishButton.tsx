@@ -34,12 +34,14 @@ async function publishApp() {
         return acc;
       }, {} as Record<string, string>);
 
+    const artifactId = localStorage.getItem('artifactId');
+
     const response = await fetch("/api/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ generatedCode }),
+      body: JSON.stringify({ generatedCode, artifactId }),
     });
     const data = await response.json();
     if (data.success) {
@@ -65,7 +67,6 @@ export default function PublishButton({
     try {
       const liveUrl = await publishApp();
       toast.success(`Your app has been published! Live URL: ${liveUrl}`);
-      navigator.clipboard.writeText(liveUrl);
       onPublish(liveUrl);
     } catch (error) {
       console.error("Error publishing app:", error);

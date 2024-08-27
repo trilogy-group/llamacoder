@@ -19,6 +19,7 @@ import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 import { CircularProgress } from "@mui/material";
 import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
 import { readFileContent } from "../../utils/fileUtils";
+import { v4 as uuidv4 } from 'uuid';
 
 function extractComponentName(code: string): string {
   const match = code.match(/export default (\w+)/);
@@ -122,10 +123,15 @@ export default function Home() {
     setFiles(null);
     setProgressMessage("Warming up the code genie...");
 
+    // Generate a 7-character UUID and save it to local storage
+    const artifactId = uuidv4().slice(0, 7);
+    localStorage.setItem('artifactId', artifactId);
+
     // Reset localStorage
     localStorage.removeItem('generatedCode');
     localStorage.removeItem('codeFiles');
-
+    localStorage.removeItem('activeFile');
+    
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
     setInitialPrompt(prompt);
