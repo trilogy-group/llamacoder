@@ -40,9 +40,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     };
     localStorage.setItem("codeFiles", JSON.stringify(files));
 
-    if (activeFile === "/App.tsx") {
-      localStorage.setItem("generatedCode", code);
-    }
+    localStorage.setItem("generatedCode", code);
   }, [code]);
 
   useEffect(() => {
@@ -82,6 +80,8 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           showInlineErrors={true}
           wrapContent={true}
           showLineNumbers={true}
+          showTabs={true}
+          showReadOnly={true}
         />
         <div className="relative" style={{ height: "80vh", width: "50%" }}>
           <SandpackPreview style={{ height: "100%" }} />

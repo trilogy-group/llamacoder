@@ -1,12 +1,10 @@
 import { Dispatch, SetStateAction } from "react";
 
 interface FileUploaderProps {
-  selectedFiles: File[];
   setSelectedFiles: Dispatch<SetStateAction<File[]>>;
 }
 
 export default function FileUploader({
-  selectedFiles,
   setSelectedFiles,
 }: FileUploaderProps) {
   return (

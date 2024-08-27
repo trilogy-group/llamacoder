@@ -18,6 +18,7 @@ import PublishedAppLink from "../../components/PublishedAppLink";
 import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 import { CircularProgress } from "@mui/material";
 import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
+import { readFileContent } from "../../utils/fileUtils";
 
 function extractComponentName(code: string): string {
   const match = code.match(/export default (\w+)/);
@@ -37,25 +38,6 @@ const indexHTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
-const calculator = `
-export default function Calculator() {
-  return (
-    <div>
-      <h1>Calculator</h1>
-    </div>
-  );
-}
-`;
-
-const helloWorld = `
-export default function HelloWorld() {
-  return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
-  );
-}
-`;
 
 export default function Home() {
   const [status, setStatus] = useState<
@@ -70,7 +52,6 @@ export default function Home() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
-  const [activeFile, setActiveFile] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = () => {
@@ -149,12 +130,24 @@ export default function Home() {
     const prompt = formData.get("prompt") as string;
     setInitialPrompt(prompt);
 
+    // Read content of selected files
+    const fileContents = await Promise.all(selectedFiles.map(async (file) => {
+      const content = await readFileContent(file);
+      return `File: ${file.name}\n\nContent:\n${content}\n\n`;
+    }));
+
+    const fileContext = fileContents.join('\n');
+    var userPrompt = initialPrompt;
+    if (fileContext !== "") {
+      userPrompt = `${initialPrompt}\n\nUse these relevant info wherever needed: \n<relevant_info>\n${fileContext}\n</relevant_info>`;
+    }
+
     setProgressMessage(
       "Sent your wishes to the code genie. Waiting for the magic...",
     );
     const newGeneratedCode = await generateCode(
       [
-        { role: "user", content: prompt }
+        { role: "user", content: userPrompt }
       ],
       selectedModel,
       setGeneratedCode,
@@ -176,7 +169,7 @@ export default function Home() {
             "code": newGeneratedCode,
             "active": true,
             "hidden": false,
-            "readOnly": true,
+            "readOnly": false,
           },
           "/public/index.html": {
             "code": indexHTML,
@@ -212,11 +205,23 @@ export default function Home() {
     const activeFile = getActiveFile();
     const activeFileContent = getFileContent(activeFile);
 
+    // Read content of selected files
+    const fileContents = await Promise.all(selectedFiles.map(async (file) => {
+      const content = await readFileContent(file);
+      return `File: ${file.name}\n\nContent:\n${content}\n\n`;
+    }));
+
+    var fileContext = fileContents.join('\n');
+
     setProgressMessage(
       "Sent your update wishes to the code genie. Waiting for the magic...",
     );
+    var userPrompt = initialPrompt;
+    if (fileContext !== "") {
+      userPrompt = `${initialPrompt}\n\nUse these relevant info wherever needed: \n<relevant_info>\n${fileContext}\n</relevant_info>`;
+    }
     const currentMessages = [
-      { role: "user", content: initialPrompt },
+      { role: "user", content: userPrompt },
       { role: "assistant", content: activeFileContent },
       { role: "user", content: prompt }
     ];
@@ -257,14 +262,7 @@ export default function Home() {
     );
   };
 
-  const readFileContent = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target?.result as string);
-      reader.onerror = (error) => reject(error);
-      reader.readAsText(file);
-    });
-  };
+  // Remove the readFileContent function from here, as we'll move it to a utility file
 
   const isStatusVisible = status === "creating" || status === "updating";
 
@@ -287,7 +285,6 @@ export default function Home() {
         </h1>
 
         <FileUploader
-          selectedFiles={selectedFiles}
           setSelectedFiles={setSelectedFiles}
         />
 
