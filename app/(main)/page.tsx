@@ -20,6 +20,7 @@ import { CircularProgress } from "@mui/material";
 import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
 import { readFileContent } from "../../utils/fileUtils";
 import { v4 as uuidv4 } from 'uuid';
+import { getAllComponents } from "../../utils/codeFileUtils";
 
 function extractComponentName(code: string): string {
   const match = code.match(/export default (\w+)/);
@@ -223,6 +224,43 @@ export default function Home() {
     const activeFile = getActiveFile();
     const activeFileContent = getFileContent(activeFile);
 
+    // Get all available components
+    const availableComponents = getAllComponents(false);
+    var query = `
+  You are helping me build a full fledged web application. Here is the overview of the application:
+  <overview>
+  ${initialPrompt}
+  </overview>
+
+  Note: 
+  - Do not use App for any component's name. It is a reserved keyword in my workspace.
+  - You should always return the complete code for a component irrespective of whether you are updating the given component or creating a new one.
+
+  <custom_components>
+  We have these custom components that you can use in your code:
+  ${availableComponents.map(component => `  - <${component}>`).join('\n')}
+
+  Please use these components where appropriate in your code.
+  Make sure you import them before using them. A custom component can be imported like this:
+  import MyCustomComponent from "./MyCustomComponent";
+
+  Replace the component name with the actual component name.
+  </custom_components>
+
+  <required_changes>
+  I want you to make the following changes:
+  ${prompt}
+
+  Note: This may require you to either modify the code given below or create new components.
+
+  Here is the component I am currently working on (You will have to either modify this or create a new component):
+  ${activeFileContent}
+  
+  Ensure you do not change the component name. Either modify the code given below or create a new component.
+  If you choose to create a new component, make sure you do not use name of any custom components provided above.
+  </required_changes>
+  `;
+
     // Read content of selected files
     const fileContents = await Promise.all(selectedFiles.map(async (file) => {
       const content = await readFileContent(file);
@@ -230,19 +268,20 @@ export default function Home() {
     }));
 
     var fileContext = fileContents.join('\n');
+    
+    if (fileContext !== "") {
+      query = `${query}\n\Here are some relevant content you may need to use (Please use them wherever appropriate):
+  ${fileContext} 
+`
+    }
+
+    const currentMessages = [
+      { role: "user", content: query },
+    ];
 
     setProgressMessage(
       "Sent your update wishes to the code genie. Waiting for the magic...",
     );
-    var userPrompt = initialPrompt;
-    if (fileContext !== "") {
-      userPrompt = `${initialPrompt}\n\nUse these relevant info wherever needed: \n<relevant_info>\n${fileContext}\n</relevant_info>`;
-    }
-    const currentMessages = [
-      { role: "user", content: userPrompt },
-      { role: "assistant", content: activeFileContent },
-      { role: "user", content: prompt }
-    ];
     console.log("Updated messages: ", currentMessages, selectedModel);
     const newGeneratedCode = await modifyCode(
       currentMessages,
