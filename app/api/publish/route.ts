@@ -24,14 +24,24 @@ export async function POST(request: Request) {
 
         console.log("Copying template files to the temporary directory: ", tempDir);
 
-        // Copy the template files to the temporary directory
-        await fs.copy(path.join(process.cwd(), 'templates/react-simple'), tempDir);
+        const templateDir = path.join(process.cwd(), 'templates/react-simple');
+        const templateFiles = await fs.readdir(templateDir);
+        for (const file of templateFiles) {
+            try {
+                await fs.copy(path.join(templateDir, file), path.join(tempDir, file));
+            } catch (error) {
+                console.error(`Error copying file ${file}:`, error);
+            }
+        }
 
-        // Write each generated file to the appropriate location in the temp directory
         for (const [filePath, code] of Object.entries(generatedCode)) {
-            const fullPath = path.join(tempDir, 'src', filePath);
-            await fs.ensureDir(path.dirname(fullPath));
-            await fs.writeFile(fullPath, code as string);
+            try {
+                const fullPath = path.join(tempDir, 'src', filePath);
+                await fs.ensureDir(path.dirname(fullPath));
+                await fs.writeFile(fullPath, code as string);
+            } catch (error) {
+                console.error(`Error writing generated file ${filePath}:`, error);
+            }
         }
 
         // Run npm run build in the temp folder
