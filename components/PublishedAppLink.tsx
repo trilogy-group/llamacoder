@@ -8,24 +8,24 @@ export default function PublishedAppLink({ url }: PublishedAppLinkProps) {
   const isPublished = !!url;
   
   return (
-    <div className={`backdrop-blur-sm border rounded-lg shadow-md p-3 flex items-center space-x-3 ${
-      isPublished ? 'bg-white/80 border-green-200' : 'bg-gray-100/80 border-gray-200'
+    <div className={`backdrop-blur-sm border rounded-lg shadow-md p-4 flex items-center space-x-3 ${
+      isPublished ? 'bg-green-100 border-green-300' : 'bg-gray-100/80 border-gray-200'
     }`}>
       <div className="flex-shrink-0">
-        <div className={`w-2 h-2 rounded-full ${
+        <div className={`w-3 h-3 rounded-full ${
           isPublished ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
         }`}></div>
       </div>
       {isPublished ? (
         <Link 
           href={url!}
-          className="text-sm text-green-700 hover:text-green-900 font-medium flex items-center group"
+          className="text-base text-green-700 hover:text-green-900 font-semibold flex items-center group transition-colors duration-200 hover:bg-green-200 px-3 py-1 rounded-md"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <span className="truncate max-w-[200px]">Your App is Live</span>
+          <span className="truncate max-w-[250px]">Your App is Live - View Now</span>
           <svg
-            className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform"
+            className="h-5 w-5 ml-2 group-hover:translate-x-0.5 transition-transform"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
