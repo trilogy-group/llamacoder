@@ -374,9 +374,12 @@ export default function Home() {
         message={progressMessage}
         isVisible={isStatusVisible}
       />
-      <div className="fixed bottom-4 left-4 z-50">
-        <PublishedAppLink url={publishedUrl} />
-      </div>
+
+      {status !== "creating" && status !== "initial" && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <PublishedAppLink url={publishedUrl} />
+        </div>
+      )}
     </div>
   );
 }
