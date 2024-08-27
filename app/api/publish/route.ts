@@ -12,11 +12,11 @@ export async function POST(request: Request) {
         const { generatedCode, artifactId } = await request.json();
 
         const config = {
-            region: process.env.AWS_REGION || "us-east-1",
+            region: "us-east-1",
         };
         const s3Client = new S3Client(config);
         const appName = artifactId;
-        const bucketName = process.env.S3_BUCKET_NAME || "ti-artifact-apps";
+        const bucketName = "ti-artifact-apps";
 
         // Create a temporary directory
         const tempDir = path.join(process.cwd(), 'temp', appName);
