@@ -83,7 +83,7 @@ export default function PublishButton({
           <button
             disabled={loading || isPublishing}
             onClick={handlePublish}
-            className="inline-flex h-12 px-4 items-center justify-center gap-2 rounded-full bg-blue-500 transition disabled:grayscale"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-blue-500 px-4 py-2 text-white shadow-md transition-all hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="relative">
               {isPublishing && (
@@ -95,7 +95,9 @@ export default function PublishButton({
                 className={`${isPublishing ? "invisible" : ""} h-5 w-5 text-white`}
               />
             </span>
-            <p className="text-base font-medium text-white">Publish app</p>
+            <span className="font-medium">
+              {isPublishing ? "Publishing..." : "Publish App"}
+            </span>
           </button>
         </Tooltip.Trigger>
         <Tooltip.Portal>

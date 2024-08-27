@@ -5,25 +5,31 @@ interface PublishedAppLinkProps {
 }
 
 export default function PublishedAppLink({ url }: PublishedAppLinkProps) {
-    if (!url) return null;
+  const isPublished = !!url;
   
-    return (
-      <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold text-green-800 mb-3">Your App is Live!</h3>
-        <div className="flex items-center justify-between">
-          <Link 
-            href={url}
-            className="text-green-600 hover:text-green-800 text-base font-medium flex items-center group"
-            target="_blank"
-            rel="noopener noreferrer"
+  return (
+    <div className={`backdrop-blur-sm border rounded-lg shadow-md p-3 flex items-center space-x-3 ${
+      isPublished ? 'bg-white/80 border-green-200' : 'bg-gray-100/80 border-gray-200'
+    }`}>
+      <div className="flex-shrink-0">
+        <div className={`w-2 h-2 rounded-full ${
+          isPublished ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+        }`}></div>
+      </div>
+      {isPublished ? (
+        <Link 
+          href={url!}
+          className="text-sm text-green-700 hover:text-green-900 font-medium flex items-center group"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className="truncate max-w-[200px]">Your App is Live</span>
+          <svg
+            className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <span className="truncate max-w-[300px]">{url}</span>
-            <svg
-              className="h-5 w-5 ml-2 group-hover:translate-x-0.5 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -32,13 +38,11 @@ export default function PublishedAppLink({ url }: PublishedAppLinkProps) {
             />
           </svg>
         </Link>
-        <button
-          onClick={() => navigator.clipboard.writeText(url)}
-          className="text-sm px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
-        >
-          Copy
-        </button>
-      </div>
+      ) : (
+        <span className="text-sm text-gray-600 font-medium">
+          Publish your app to see it live
+        </span>
+      )}
     </div>
   );
 }

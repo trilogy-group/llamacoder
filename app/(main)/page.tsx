@@ -50,7 +50,7 @@ export default function Home() {
   const [progressMessage, setProgressMessage] = useState("");
   const [files, setFiles] = useState<Record<string, { code: string, active: boolean, hidden: boolean, readOnly: boolean }> | null>(null);
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
-  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>("");
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
 
@@ -60,6 +60,7 @@ export default function Home() {
       const storedModel = localStorage.getItem('selectedModel');
       const storedPrompt = localStorage.getItem('initialPrompt');
       const storedGeneratedCode = localStorage.getItem('generatedCode');
+      const storedPublishedUrl = localStorage.getItem('publishedUrl');
       
       if (storedFiles) {
         try {
@@ -82,6 +83,10 @@ export default function Home() {
       if (storedGeneratedCode) {
         setGeneratedCode(storedGeneratedCode);
       }
+      
+      if (storedPublishedUrl) {
+        setPublishedUrl(storedPublishedUrl);
+      }
       setLoading(false);
     };
 
@@ -96,8 +101,13 @@ export default function Home() {
       localStorage.setItem('selectedModel', selectedModel);
       localStorage.setItem('initialPrompt', initialPrompt);
       localStorage.setItem('generatedCode', generatedCode);
+      if (publishedUrl) {
+        localStorage.setItem('publishedUrl', publishedUrl);
+      } else {
+        localStorage.removeItem('publishedUrl');
+      }
     }
-  }, [files, selectedModel, initialPrompt, generatedCode, loading]);
+  }, [files, selectedModel, initialPrompt, generatedCode, loading, publishedUrl]);
 
   useEffect(() => {
     if (generatedCode) {
@@ -131,6 +141,8 @@ export default function Home() {
     localStorage.removeItem('generatedCode');
     localStorage.removeItem('codeFiles');
     localStorage.removeItem('activeFile');
+    localStorage.removeItem('publishedUrl');
+    setPublishedUrl(null);
     
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
@@ -268,7 +280,10 @@ export default function Home() {
     );
   };
 
-  // Remove the readFileContent function from here, as we'll move it to a utility file
+  const handlePublish = (url: string) => {
+    setPublishedUrl(url);
+    localStorage.setItem('publishedUrl', url);
+  };
 
   const isStatusVisible = status === "creating" || status === "updating";
 
@@ -334,25 +349,21 @@ export default function Home() {
 
               {status !== "creating" && (
                 <div className="w-full">
-                  <CodeEditor
-                    status={status}
-                    files={files}
-                  >
+                  <div className="flex justify-between mb-0">
                     <CodeDownloader
                       loading={loading}
                     />
-                  </CodeEditor>
-                </div>
-              )}
-              {status !== "creating" && status !== "updating" && (
-                <div className="mt-8 w-full flex justify-end">
-                  <PublishButton
-                    loading={loading}
-                    onPublish={(url) => setPublishedUrl(url)}
+                    <PublishButton
+                      loading={loading}
+                      onPublish={handlePublish}
+                    />
+                  </div>
+                  <CodeEditor
+                    status={status}
+                    files={files}
                   />
                 </div>
               )}
-              <PublishedAppLink url={publishedUrl} />
             </div>
           </motion.div>
         )}
@@ -363,6 +374,9 @@ export default function Home() {
         message={progressMessage}
         isVisible={isStatusVisible}
       />
+      <div className="fixed bottom-4 left-4 z-50">
+        <PublishedAppLink url={publishedUrl} />
+      </div>
     </div>
   );
 }

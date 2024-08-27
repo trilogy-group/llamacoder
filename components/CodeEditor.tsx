@@ -82,10 +82,10 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="flex items-center gap-4 p-4">{children}</div>
-    <SandpackLayout>
+      <div className="flex items-center gap-4 py-2">{children}</div>
+      <SandpackLayout>
         <SandpackCodeEditor
-          style={{ height: "80vh" }}
+          style={{ height: "calc(80vh - 40px)" }}
           showRunButton={true}
           showInlineErrors={true}
           wrapContent={true}
@@ -93,7 +93,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           showTabs={true}
           showReadOnly={true}
         />
-        <div className="relative" style={{ height: "80vh", width: "50%" }}>
+        <div className="relative" style={{ height: "calc(80vh - 40px)", width: "50%" }}>
           <SandpackPreview style={{ height: "100%" }} />
           {statusMessage && (
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
@@ -117,7 +117,7 @@ export default function CodeEditor({
   const randomMessage = "Brewing code magic...";
 
   return (
-    <div className="relative mt-8 w-full overflow-hidden">
+    <div className="relative w-full overflow-hidden">
       <AnimatePresence>
         <SandpackProvider
           template="react-ts"
