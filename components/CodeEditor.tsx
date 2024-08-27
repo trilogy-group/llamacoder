@@ -28,6 +28,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    updateFile("/App.tsx", code);
     const files: Record<
       string,
       { code: string; active: boolean; hidden: boolean; readOnly: boolean }
@@ -44,13 +45,17 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       hidden: false,
       readOnly: false,
     };
+
+    files["/App.tsx"] = {
+      code: code,
+      active: false,
+      hidden: true,
+      readOnly: true,
+    };
+    
     localStorage.setItem("codeFiles", JSON.stringify(files));
     localStorage.setItem("generatedCode", code);
   }, [code, activeFile]);
-
-  useEffect(() => {
-    updateFile("/App.tsx", code);
-  }, [activeFile, code]);
 
   useEffect(() => {
     const stopListening = listen((msg) => {
