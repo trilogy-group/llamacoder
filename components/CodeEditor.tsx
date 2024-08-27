@@ -8,7 +8,7 @@ import {
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { AnimatePresence } from "framer-motion";
 
@@ -25,6 +25,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   const { sandpack, listen } = useSandpack();
   const { activeFile, updateFile } = sandpack;
   const { code } = useActiveCode();
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const files: Record<
@@ -49,16 +50,23 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   }, [activeFile, code]);
 
   useEffect(() => {
-    // listens for any message dispatched between sandpack and the bundler
     const stopListening = listen((msg) => {
       console.log(msg);
+      if (msg.type === "status") {
+        if (msg.status === "transpiling") {
+          setStatusMessage("🚀 Assembling your code... Almost there!");
+        } else if (msg.status === "evaluating") {
+          setStatusMessage("🧠 Analyzing your creation... Your app is almost ready!");
+        } else if (msg.status === "idle") {
+          setStatusMessage("");
+        }
+      }
     });
-
+    console.log("statusMessage: ", statusMessage);
     return () => {
-      // unsubscribe
       stopListening();
     };
-  }, [listen]);
+  }, [listen, statusMessage]);
 
   useEffect(() => {
     localStorage.setItem('activeFile', activeFile);
@@ -75,7 +83,17 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           wrapContent={true}
           showLineNumbers={true}
         />
-        <SandpackPreview style={{ height: "80vh" }} />
+        <div className="relative" style={{ height: "80vh", width: "50%" }}>
+          <SandpackPreview style={{ height: "100%" }} />
+          {statusMessage && (
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+              <CircularProgress size={60} thickness={4} color="primary" />
+              <p className="mt-2 text-lg font-semibold text-white">
+                {statusMessage}
+              </p>
+            </div>
+          )}
+        </div>
       </SandpackLayout>
     </>
   );
