@@ -137,9 +137,9 @@ export default function Home() {
     }));
 
     const fileContext = fileContents.join('\n');
-    var userPrompt = initialPrompt;
+    var userPrompt = prompt;
     if (fileContext !== "") {
-      userPrompt = `${initialPrompt}\n\nUse these relevant info wherever needed: \n<relevant_info>\n${fileContext}\n</relevant_info>`;
+      userPrompt = `${prompt}\n\nUse these relevant info wherever needed: \n<relevant_info>\n${fileContext}\n</relevant_info>`;
     }
 
     setProgressMessage(
