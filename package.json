@@ -35,6 +35,7 @@
     "eventsource-parser": "^1.1.2",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.3.19",
+    "fs-extra": "^11.2.0",
     "jszip": "^3.10.1",
     "langchain": "^0.1.0",
     "nanoid": "^5.0.7",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@types/archiver": "^6.0.2",
     "@types/file-saver": "^2.0.7",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

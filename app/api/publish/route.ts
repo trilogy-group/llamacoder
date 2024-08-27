@@ -1,11 +1,9 @@
-import { AmplifyClient, CreateAppCommand, CreateBranchCommand, StartDeploymentCommand, Platform } from "@aws-sdk/client-amplify";
 import { nanoid } from 'nanoid';
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import spawn from 'cross-spawn';
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
-import archiver from 'archiver';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -21,13 +19,23 @@ export async function POST(request: Request) {
         const appName = `${nanoid(10)}`;
         const bucketName = process.env.S3_BUCKET_NAME || "ti-artifact-apps";
 
-        // Write the generated code to src/App.tsx
-        const appFilePath = path.join(process.cwd(), 'templates/react-simple/src/App.tsx');
-        await fs.promises.writeFile(appFilePath, generatedCode);
+        // Create a temporary directory
+        const tempDir = path.join(process.cwd(), 'temp', appName);
+        await fs.ensureDir(tempDir);
 
-        // Run npm run build in the @templates folder
+        // Copy the template files to the temporary directory
+        await fs.copy(path.join(process.cwd(), 'templates/react-simple'), tempDir);
+
+        // Write each generated file to the appropriate location in the temp directory
+        for (const [filePath, code] of Object.entries(generatedCode)) {
+            const fullPath = path.join(tempDir, 'src', filePath);
+            await fs.ensureDir(path.dirname(fullPath));
+            await fs.writeFile(fullPath, code as string);
+        }
+
+        // Run npm run build in the temp folder
         console.log('Running build command...');
-        const buildProcess = spawn('npm', ['run', 'build'], { cwd: path.join(process.cwd(), 'templates/react-simple') });
+        const buildProcess = spawn('npm', ['run', 'build'], { cwd: tempDir });
 
         buildProcess.stdout.on('data', (data: any) => {
             console.log(`stdout: ${data}`);
@@ -49,11 +57,11 @@ export async function POST(request: Request) {
 
         console.log('Build command completed.');
         
-        const buildFolder = path.join(process.cwd(), 'templates/react-simple/build');
+        const buildFolder = path.join(tempDir, 'build');
         const indexPath = path.join(buildFolder, 'index.html');
-        let indexContent = await fs.promises.readFile(indexPath, 'utf-8');
+        let indexContent = await fs.readFile(indexPath, 'utf-8');
         indexContent = indexContent.replace(/(src|href)="\/static\//g, `$1="/${appName}/static/`);
-        await fs.promises.writeFile(indexPath, indexContent);
+        await fs.writeFile(indexPath, indexContent);
 
         const uploadDirectory = async (dirPath: string, s3Path: string) => {
             const files = await fs.promises.readdir(dirPath);
@@ -79,6 +87,9 @@ export async function POST(request: Request) {
         await uploadDirectory(buildFolder, appName);
 
         const publishedUrl = `https://apps.ti.trilogy.com/${appName}/index.html`;
+
+        // Clean up the temporary directory
+        await fs.remove(tempDir);
 
         return NextResponse.json({ success: true, url: publishedUrl });
     } catch (error) {

@@ -334,7 +334,6 @@ export default function Home() {
                   >
                     <CodeDownloader
                       loading={loading}
-                      generatedCode={generatedCode}
                     />
                   </CodeEditor>
                 </div>
@@ -343,7 +342,6 @@ export default function Home() {
                 <div className="mt-8 w-full flex justify-end">
                   <PublishButton
                     loading={loading}
-                    generatedCode={generatedCode}
                     onPublish={(url) => setPublishedUrl(url)}
                   />
                 </div>

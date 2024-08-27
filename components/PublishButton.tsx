@@ -6,12 +6,34 @@ import { toast } from "sonner";
 
 interface PublishButtonProps {
   loading: boolean;
-  generatedCode: string;
   onPublish: (url: string) => void;
 }
 
-async function publishApp(generatedCode: string) {
+interface CodeFile {
+  code: string;
+  active: boolean;
+  hidden: boolean;
+  readOnly: boolean;
+}
+
+async function publishApp() {
   try {
+    // Read codeFiles from localStorage
+    const codeFilesString = localStorage.getItem('codeFiles');
+    if (!codeFilesString) {
+      throw new Error('No code files found in localStorage');
+    }
+
+    const codeFiles = JSON.parse(codeFilesString) as Record<string, CodeFile>;
+
+    // Filter and prepare TypeScript and TSX files
+    const generatedCode = Object.entries(codeFiles)
+      .filter(([fileName]) => fileName.endsWith('.ts') || fileName.endsWith('.tsx'))
+      .reduce((acc, [fileName, codeFile]) => {
+        acc[fileName] = codeFile.code;
+        return acc;
+      }, {} as Record<string, string>);
+
     const response = await fetch("/api/publish", {
       method: "POST",
       headers: {
@@ -33,7 +55,6 @@ async function publishApp(generatedCode: string) {
 
 export default function PublishButton({
   loading,
-  generatedCode,
   onPublish,
 }: PublishButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
@@ -42,7 +63,7 @@ export default function PublishButton({
     setIsPublishing(true);
 
     try {
-      const liveUrl = await publishApp(generatedCode);
+      const liveUrl = await publishApp();
       toast.success(`Your app has been published! Live URL: ${liveUrl}`);
       navigator.clipboard.writeText(liveUrl);
       onPublish(liveUrl);

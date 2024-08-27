@@ -3,14 +3,13 @@ import { saveAs } from "file-saver";
 
 interface CodeDownloaderProps {
   loading: boolean;
-  generatedCode: string;
 }
 
 const CodeDownloader: React.FC<CodeDownloaderProps> = ({
   loading,
-  generatedCode,
 }) => {
   function downloadCode() {
+    const generatedCode: string | null = localStorage.getItem('generatedCode') || "";
     const blob = new Blob([generatedCode], {
       type: "text/plain;charset=utf-8",
     });

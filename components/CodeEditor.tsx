@@ -32,6 +32,12 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       string,
       { code: string; active: boolean; hidden: boolean; readOnly: boolean }
     > = JSON.parse(localStorage.getItem("codeFiles") || "{}");
+    // Set active status to false for all files
+    Object.keys(files).forEach(key => {
+      files[key].active = false;
+    });
+
+    // Update the current file
     files[activeFile] = {
       code: code,
       active: true,
@@ -39,9 +45,8 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       readOnly: false,
     };
     localStorage.setItem("codeFiles", JSON.stringify(files));
-
     localStorage.setItem("generatedCode", code);
-  }, [code]);
+  }, [code, activeFile]);
 
   useEffect(() => {
     updateFile("/App.tsx", code);
@@ -54,7 +59,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
         if (msg.status === "transpiling") {
           setStatusMessage("🚀 Assembling your code... Almost there!");
         } else if (msg.status === "evaluating") {
-          setStatusMessage("🧠 Analyzing your creation... Your app is almost ready!");
+          setStatusMessage("🚀 Analyzing... Your app is almost ready!");
         } else if (msg.status === "idle") {
           setStatusMessage("");
         }
@@ -73,7 +78,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="flex items-center gap-4 p-4">{children}</div>
-      <SandpackLayout>
+    <SandpackLayout>
         <SandpackCodeEditor
           style={{ height: "80vh" }}
           showRunButton={true}
