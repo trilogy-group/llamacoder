@@ -27,9 +27,9 @@ secrets:
 #     timeout: 5s
 
 # Number of CPU units for the task.
-cpu: 512
+cpu: 4096
 # Amount of memory in MiB used by the task.
-memory: 1024
+memory: 8192
 
 # Connect your App Runner service to your environment's VPC.
 # network:

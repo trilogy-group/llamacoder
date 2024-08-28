@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     }
 
     // Print the captured stream
-    console.log("Captured stream:", result);
+    // console.log("Captured stream:", result);
 
     // Create a ReadableStream to stream the response
     const streamResponse = new ReadableStream({
