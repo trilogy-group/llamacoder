@@ -7,13 +7,11 @@ import {
   useActiveCode,
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { AnimatePresence } from "framer-motion";
 
 interface CodeEditorProps {
-  status: string;
   files: Record<
     string,
     { code: string; active: boolean; hidden: boolean; readOnly: boolean }
@@ -59,7 +57,6 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stopListening = listen((msg) => {
-      console.log(msg);
       if (msg.type === "status") {
         if (msg.status === "transpiling") {
           setStatusMessage("🚀 Assembling your code... Almost there!");
@@ -70,7 +67,6 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
         }
       }
     });
-    console.log("statusMessage: ", statusMessage);
     return () => {
       stopListening();
     };
@@ -110,12 +106,9 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function CodeEditor({
-  status,
   files,
   children,
 }: CodeEditorProps) {
-  const randomMessage = "Brewing code magic...";
-
   return (
     <div className="relative w-full overflow-hidden">
       <AnimatePresence>
@@ -145,21 +138,6 @@ export default function CodeEditor({
         >
           <div className="relative">
             <SandpackContent>{children}</SandpackContent>
-
-            {(status === "creating" || status === "updating") && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black bg-opacity-10 backdrop-blur-[0.5px]"
-              >
-                <CircularProgress size={60} thickness={4} color="primary" />
-                <p className="mt-4 text-xl font-bold text-white">
-                  {randomMessage}
-                </p>
-              </motion.div>
-            )}
           </div>
         </SandpackProvider>
       </AnimatePresence>
