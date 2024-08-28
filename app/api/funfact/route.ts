@@ -10,7 +10,7 @@ Guidelines for generating witty fun facts:
 - Use wordplay, puns, or clever connections when possible
 - Ensure the fact is true and verifiable
 - Make it engaging and memorable
-- Include 1-3 relevant emojis in your fun fact. One emoji at the beginning and one at the end is mandatory.
+- Include 1-3 relevant emojis in your fun fact. One emoji at the end is mandatory.
 - A fun fact should not be more than 1 sentence.
 
 Include your fun fact within <fun_fact> tags.

@@ -15,7 +15,6 @@ import { generateCode, modifyCode, generateFunFact } from "../../utils/apiClient
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
-import FloatingStatusIndicator from "../../components/FloatingStatusIndicator";
 import { CircularProgress } from "@mui/material";
 import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
 import { readFileContent } from "../../utils/fileUtils";
@@ -129,6 +128,12 @@ export default function Home() {
         ...(prevFiles || {}),
         "/App.tsx": {
           code: generatedCode,
+          active: false,
+          hidden: true,
+          readOnly: true,
+        },
+        "/public/index.html": {
+          code: indexHTML,
           active: false,
           hidden: true,
           readOnly: true,
@@ -310,18 +315,25 @@ export default function Home() {
     localStorage.setItem("publishedUrl", url);
   };
 
-  const isStatusVisible = status === "creating" || status === "updating";
+  const generateRandomFunFact = async () => {
+    const newFunFact = await generateFunFact();
+    console.log("New fun fact: ", newFunFact);
+    setFunFact(newFunFact);
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (status === "creating" || status === "updating") {
       interval = setInterval(async () => {
-        const newFunFact = await generateFunFact();
-        console.log("New fun fact: ", newFunFact);
-        setFunFact(newFunFact);
-      }, 5000);
+        generateRandomFunFact();
+      }, 10000);
     }
-    return () => clearInterval(interval);
+    if (status === "created" || status === "updated") {
+      generateRandomFunFact();
+    }
+    return () => {
+      clearInterval(interval);
+    };
   }, [status]);
 
   if (loading) {
@@ -400,11 +412,6 @@ export default function Home() {
       </main>
       <Footer />
       <Toaster invert={true} />
-      <FloatingStatusIndicator
-        message={progressMessage}
-        isVisible={isStatusVisible}
-      />
-
       {status !== "creating" && status !== "initial" && (
         <div className="fixed bottom-4 left-4 z-50">
           <PublishedAppLink url={publishedUrl} />
