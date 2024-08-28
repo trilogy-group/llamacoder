@@ -3,8 +3,7 @@ import { toast } from "sonner";
 
 export const generateCode = async (
     messages: { role: string; content: string }[],
-    model: string,
-    setGeneratedCode: (code: string) => void,
+    model: string
 ) => {
     console.log("Messages:", JSON.stringify(messages));
     console.log("Model:", model);
@@ -38,7 +37,6 @@ export const generateCode = async (
                 try {
                     const text = JSON.parse(data).text ?? "";
                     newGeneratedCode += text;
-                    setGeneratedCode(newGeneratedCode);
                 } catch (e) {
                     console.error(e);
                 }
@@ -57,6 +55,7 @@ export const generateCode = async (
             parser.feed(chunkValue);
         }
 
+        console.log("newGeneratedCode - codegen: ", newGeneratedCode);
         return newGeneratedCode;
     } catch (error: any) {
         console.error("Error in generateCode:", error);
@@ -67,7 +66,6 @@ export const generateCode = async (
 export const modifyCode = async (
     messages: { role: string; content: string }[],
     model: string,
-    setGeneratedCode: (code: string) => void,
 ) => {
     try {
         const chatRes = await fetch("/api/generateCode", {
@@ -98,7 +96,6 @@ export const modifyCode = async (
                 try {
                     const text = JSON.parse(data).text ?? "";
                     newGeneratedCode += text;
-                    setGeneratedCode(newGeneratedCode);
                 } catch (e) {
                     console.error(e);
                 }

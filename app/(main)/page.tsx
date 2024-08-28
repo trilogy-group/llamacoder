@@ -158,7 +158,16 @@ export default function Home() {
     const fileContext = fileContents.join('\n');
     var userPrompt = prompt;
     if (fileContext !== "") {
-      userPrompt = `${prompt}\n\nUse these relevant info wherever needed: \n<relevant_info>\n${fileContext}\n</relevant_info>`;
+      userPrompt = `
+${prompt}
+      
+Use these relevant info wherever needed:
+<relevant_info>
+${fileContext}
+</relevant_info>
+
+Note: Do not use 'App' as any component's name. It is a reserved keyword in my workspace.
+`;
     }
 
     setProgressMessage(
@@ -169,13 +178,19 @@ export default function Home() {
         { role: "user", content: userPrompt }
       ],
       selectedModel,
-      setGeneratedCode,
     );
-
+    console.log("GeneratedCode: ", newGeneratedCode);
     if (newGeneratedCode) {
       const componentName = extractComponentName(newGeneratedCode);
+      if (componentName === "App") {
+        toast.error("Oops! The code genie got a bit confused. Let's try again!");
+        setStatus("initial");
+        setProgressMessage("");
+        return;
+      }
       const fileName = `/${componentName}.tsx`;
       setStatus("created");
+      setGeneratedCode(newGeneratedCode); // Ensure generatedCode is updated
       setFiles((prevFiles) => {
         const updatedFiles = Object.entries(prevFiles || {}).reduce((acc, [key, value]) => {
           acc[key] = { ...value, active: false };
@@ -198,13 +213,17 @@ export default function Home() {
           },
         };
       });
+      setProgressMessage(
+        "Ta-da! The code genie has worked its magic! Preparing preview..."
+      );
+      setTimeout(() => {
+        setProgressMessage("");
+      }, 3000);
     } else {
       setStatus("initial");
       toast.error("Oops! The code genie got a bit confused. Let's try again!");
+      setProgressMessage("");
     }
-    setProgressMessage(
-      "Ta-da! The code genie has worked its magic! Preparing preview... "
-    );
   };
 
   const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
@@ -222,44 +241,49 @@ export default function Home() {
     }
 
     const activeFile = getActiveFile();
+    const activeComponent = activeFile.slice(1, -4);
     const activeFileContent = getFileContent(activeFile);
 
     // Get all available components
     const availableComponents = getAllComponents(false);
     var query = `
-  You are helping me build a full fledged web application. Here is the overview of the application:
-  <overview>
-  ${initialPrompt}
-  </overview>
+You are helping me build a full fledged web application. Here is the overview of the application:
+<overview>
+${initialPrompt}
+</overview>
 
-  Note: 
-  - Do not use App for any component's name. It is a reserved keyword in my workspace.
-  - You should always return the complete code for a component irrespective of whether you are updating the given component or creating a new one.
+Note: 
+- Do not use 'App' as any component's name. It is a reserved keyword in my workspace.
+- You should always return the complete code for a component irrespective of whether you are updating the given component or creating a new one.
 
-  <custom_components>
-  We have these custom components that you can use in your code:
-  ${availableComponents.map(component => `  - <${component}>`).join('\n')}
+<custom_components>
+We have these custom components that you can use in your code:
+${availableComponents.map(component => `  - <${component}>`).join('\n')}
 
-  Please use these components where appropriate in your code.
-  Make sure you import them before using them. A custom component can be imported like this:
-  import MyCustomComponent from "./MyCustomComponent";
+Please use these components where appropriate in your code.
+Make sure you import them before using them. A custom component can be imported like this:
+import MyCustomComponent from "./MyCustomComponent";
 
-  Replace the component name with the actual component name.
-  </custom_components>
+Replace the component name with the actual component name.
+</custom_components>
 
-  <required_changes>
-  I want you to make the following changes:
-  ${prompt}
+<required_changes>
+I want you to make the following changes:
+${prompt}
 
-  Note: This may require you to either modify the code given below or create new components.
+Note: This may require you to either modify the code given below or create new components.
 
-  Here is the component I am currently working on (You will have to either modify this or create a new component):
-  ${activeFileContent}
-  
-  Ensure you do not change the component name. Either modify the code given below or create a new component.
-  If you choose to create a new component, make sure you do not use name of any custom components provided above.
-  </required_changes>
-  `;
+Here is the component I am currently working on (You will have to either modify this or create a new component):
+<${activeComponent}>
+${activeFileContent}
+</${activeComponent}>
+
+Ensure you do not change the component name. Either modify the code given below or create a new component.
+If you choose to create a new component, make sure you do not use name of any custom components provided above.
+</required_changes>
+
+Note: No component name should be 'App'. It is a reserved keyword in my workspace.
+`;
 
     // Read content of selected files
     const fileContents = await Promise.all(selectedFiles.map(async (file) => {
@@ -286,11 +310,18 @@ export default function Home() {
     const newGeneratedCode = await modifyCode(
       currentMessages,
       selectedModel,
-      setGeneratedCode,
     );
+
+    console.log("GeneratedCode: ", newGeneratedCode);
 
     if (newGeneratedCode) {
       const componentName = extractComponentName(newGeneratedCode);
+      if (componentName === "App") {
+        toast.error("Oops! The code genie got a bit confused. Let's try again!");
+        setStatus("created");
+        setProgressMessage("");
+        return;
+      }
       const fileName = `/${componentName}.tsx`;
       setGeneratedCode(newGeneratedCode); // Ensure generatedCode is updated
       setFiles((prevFiles) => {
@@ -310,13 +341,17 @@ export default function Home() {
         };
       });
       setStatus("updated");
+      setProgressMessage(
+        "Ta-da! The code genie has worked its magic! Preparing preview..."
+      );
+      setTimeout(() => {
+        setProgressMessage("");
+      }, 3000);
     } else {
       setStatus("created");
       toast.error("Failed to update the code. Please try again.");
+      setProgressMessage("");
     }
-    setProgressMessage(
-      "Ta-da! The code genie has worked its magic! Preparing preview... ✨"
-    );
   };
 
   const handlePublish = (url: string) => {
