@@ -210,7 +210,6 @@ export default function Home() {
     setStatus("creating");
     setGeneratedCode("");
     setFiles(null);
-    setProgressMessage("Warming up the code genie...");
 
     // Generate a 7-character UUID and save it to local storage
     const artifactId = uuidv4().slice(0, 7);
@@ -226,23 +225,17 @@ export default function Home() {
     const fileContext = await getFileContext();
     var userPrompt = generateCodePrompt(prompt, fileContext);
 
-    setProgressMessage(
-      "Sent your wishes to the code genie. Waiting for the magic...",
-    );
-
     const messages = [{ role: "user", content: userPrompt }];
     console.log("Messages: ", messages, selectedModel);
 
     const onSuccess = (componentName: string, newGeneratedCode: string) => {
       updateGeneratedCode(componentName, newGeneratedCode);
       setStatus("created");
-      setProgressMessage("");
     };
 
     const onFailure = () => {
       console.log("onFailure called");
       setStatus("initial");
-      setProgressMessage("");
     };
 
     try {
@@ -257,7 +250,6 @@ export default function Home() {
   const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("updating");
-    setProgressMessage("Warming up the code genie for modifications...");
 
     const formData = new FormData(e.currentTarget);
     const prompt = formData.get("prompt") as string;
@@ -284,21 +276,15 @@ export default function Home() {
     const messages = [{ role: "user", content: query }];
     console.log("Messages: ", messages, selectedModel);
 
-    setProgressMessage(
-      "Sent your update wishes to the code genie. Waiting for the magic...",
-    );
-
     const onSuccess = (componentName: string, newGeneratedCode: string) => {
       console.log("onSuccess called");
       updateGeneratedCode(componentName, newGeneratedCode);
       setStatus("created");
-      setProgressMessage("");
     };
 
     const onFailure = () => {
       console.log("onFailure called");
       setStatus("created");
-      setProgressMessage("");
     };
     try {
       const newGeneratedCode = await modifyCode(messages, selectedModel);
