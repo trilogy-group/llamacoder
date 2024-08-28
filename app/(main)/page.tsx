@@ -48,7 +48,6 @@ export default function Home() {
   const [generatedCode, setGeneratedCode] = useState("");
   const [ref, scrollTo] = useScrollTo();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [progressMessage, setProgressMessage] = useState("");
   const [files, setFiles] = useState<Record<
     string,
     { code: string; active: boolean; hidden: boolean; readOnly: boolean }
