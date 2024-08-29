@@ -59,9 +59,9 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     const stopListening = listen((msg) => {
       if (msg.type === "status") {
         if (msg.status === "transpiling") {
-          setStatusMessage("🚀 Assembling your code... Almost there!");
+          setStatusMessage("🚀 Assembling your code...");
         } else if (msg.status === "evaluating") {
-          setStatusMessage("🚀 Analyzing... Your app is almost ready!");
+          setStatusMessage("🚀 Your app is almost ready!");
         } else if (msg.status === "idle") {
           setStatusMessage("");
         }
