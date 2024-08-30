@@ -1,16 +1,23 @@
-export const generateCodePrompt = (prompt: string, fileContext: string) => {
-    if(fileContext === "") return prompt;
-    return `
+export const generateCodePrompt = (prompt: string, fileContext: string, apiSpec: string) => {
+    let formattedPrompt = `
 ${prompt}
-      
-Use these relevant info wherever needed:
-<relevant_info>
-${fileContext}
-</relevant_info>
+
+Use these APIs wherever needed: (Use the server url mentioned in the api_docs itself)
+<api_docs>
+${apiSpec}
+</api_docs>
 `;
+    if (fileContext) {
+        formattedPrompt = `${formattedPrompt}\n\Here are some relevant content you may need to use (Please use them wherever appropriate):
+<relevant_content>
+${fileContext} 
+</relevant_content>
+`;
+    }
+    return formattedPrompt;
 }
 
-export const modifyCodePrompt = (initialPrompt: string, prompt: string, activeComponent: string, activeFileContent: string, availableComponents: string[], fileContext: string) => {
+export const modifyCodePrompt = (initialPrompt: string, prompt: string, activeComponent: string, activeFileContent: string, availableComponents: string[], fileContext: string, apiSpec: string) => {
     var prompt = `
 You are helping me build a full fledged web application. Here is the overview of the application:
 <overview>
@@ -48,10 +55,17 @@ If you choose to create a new component, make sure you do not use name of any cu
 </required_changes>
 
 Note: No component name should be 'App'. It is a reserved keyword in my workspace.
+
+Use these APIs wherever needed: (Use the server url mentioned in the api_docs itself)
+<api_docs>
+${apiSpec}
+</api_docs>
 `;
     if (fileContext !== "") {
-      prompt = `${prompt}\n\Here are some relevant content you may need to use (Please use them wherever appropriate):
-  ${fileContext} 
+        prompt = `${prompt}\n\Here are some relevant content you may need to use (Please use them wherever appropriate):
+<relevant_content>
+${fileContext} 
+</relevant_content>
 `;
     }
     return prompt;

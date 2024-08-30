@@ -1,5 +1,6 @@
 import React, { FormEvent } from "react";
 import { ArrowLongRightIcon } from "@heroicons/react/20/solid";
+import LoadingDots from "./loading-dots";
 
 interface UpdateAndPublishSectionProps {
   loading: boolean;
@@ -29,7 +30,11 @@ const UpdatePromptForm: React.FC<UpdateAndPublishSectionProps> = ({
                 disabled={loading}
                 className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:bg-gray-300"
               >
-                <ArrowLongRightIcon className="h-6 w-6" />
+                {loading ? (
+                  <LoadingDots color="white" style="large" />
+                ) : (
+                  <ArrowLongRightIcon className="h-6 w-6" />
+                )}
               </button>
             </div>
           </div>

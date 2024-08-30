@@ -11,17 +11,21 @@ import PromptForm from "../../components/PromptForm";
 import ModelSelector from "../../components/ModelSelector";
 import CodeEditor from "../../components/CodeEditor";
 import CodeDownloader from "../../components/CodeDownloader";
-import { generateCode, modifyCode, generateFunFact } from "../../utils/apiClient";
+import {
+  generateCode,
+  modifyCode,
+  generateFunFact,
+  getApiSpec,
+} from "../../utils/apiClient";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
 import { CircularProgress } from "@mui/material";
-import { getActiveFile, getFileContent } from "../../utils/codeFileUtils";
+import { getActiveFile, getFileContent, getAllComponents } from "../../utils/codeFileUtils";
 import { readFileContent } from "../../utils/fileUtils";
 import { v4 as uuidv4 } from "uuid";
-import { getAllComponents } from "../../utils/codeFileUtils";
 import { generateCodePrompt, modifyCodePrompt } from "../../utils/promptUtils";
-import FunFactRenderer from "../../components/FunFactRenderer";
+// import FunFactRenderer from "../../components/FunFactRenderer";
 
 function extractComponentName(code: string): string {
   const match = code.match(/export default (\w+)/);
@@ -41,11 +45,15 @@ const indexHTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
+
 export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
   >("initial");
-  const [generatedCode, setGeneratedCode] = useState("");
+  const [generatedCode, setGeneratedCode] = useState<{
+    code: string;
+    extraLibraries: { name: string; version: string }[];
+  }>({ code: "", extraLibraries: [] });
   const [ref, scrollTo] = useScrollTo();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [files, setFiles] = useState<Record<
@@ -56,16 +64,22 @@ export default function Home() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>("");
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
+  const [apiSpec, setApiSpec] = useState<string>("");
+  
+  const [funFact, setFunFact] = useState<string>(
+    "Developers often name variables after food they're craving 🍕����🍔",
+  );
 
-  const [funFact, setFunFact] = useState<string>("Developers often name variables after food they're craving 🍕💻🍔");
-
+  
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       const storedFiles = localStorage.getItem("codeFiles");
       const storedModel = localStorage.getItem("selectedModel");
       const storedPrompt = localStorage.getItem("initialPrompt");
       const storedGeneratedCode = localStorage.getItem("generatedCode");
       const storedPublishedUrl = localStorage.getItem("publishedUrl");
+      const storedApiSpec = await getApiSpec();
+      setApiSpec(storedApiSpec.apiDocs);
 
       if (storedFiles) {
         try {
@@ -86,7 +100,7 @@ export default function Home() {
       }
 
       if (storedGeneratedCode) {
-        setGeneratedCode(storedGeneratedCode);
+        setGeneratedCode(JSON.parse(storedGeneratedCode));
       }
 
       if (storedPublishedUrl) {
@@ -105,7 +119,7 @@ export default function Home() {
       }
       localStorage.setItem("selectedModel", selectedModel);
       localStorage.setItem("initialPrompt", initialPrompt);
-      localStorage.setItem("generatedCode", generatedCode);
+      localStorage.setItem("generatedCode", JSON.stringify(generatedCode));
       if (publishedUrl) {
         localStorage.setItem("publishedUrl", publishedUrl);
       } else {
@@ -126,7 +140,7 @@ export default function Home() {
       setFiles((prevFiles) => ({
         ...(prevFiles || {}),
         "/App.tsx": {
-          code: generatedCode,
+          code: generatedCode.code,
           active: false,
           hidden: true,
           readOnly: true,
@@ -161,7 +175,10 @@ export default function Home() {
 
   const updateGeneratedCode = (
     componentName: string,
-    newGeneratedCode: string,
+    newGeneratedCode: {
+      code: string;
+      extraLibraries: { name: string; version: string }[];
+    },
   ) => {
     setGeneratedCode(newGeneratedCode);
     const fileName = `/${componentName}.tsx`;
@@ -180,7 +197,7 @@ export default function Home() {
       return {
         ...updatedFiles,
         [fileName]: {
-          code: newGeneratedCode,
+          code: newGeneratedCode.code,
           active: true,
           hidden: false,
           readOnly: false,
@@ -190,11 +207,21 @@ export default function Home() {
   };
 
   const processGeneratedCode = async (
-    newGeneratedCode: string,
-    onSuccess: (componentName: string, newGeneratedCode: string) => void,
+    newGeneratedCode: {
+      code: string;
+      extraLibraries: { name: string; version: string }[];
+    },
+    onSuccess: (
+      componentName: string,
+      newGeneratedCode: {
+        code: string;
+        extraLibraries: { name: string; version: string }[];
+      },
+    ) => void,
     onFailure: () => void,
   ) => {
-    const componentName = extractComponentName(newGeneratedCode);
+    console.log("newGeneratedCode: ", newGeneratedCode);
+    const componentName = extractComponentName(newGeneratedCode.code);
     if (componentName === "App") {
       onFailure();
       return;
@@ -208,7 +235,7 @@ export default function Home() {
       scrollTo({ delay: 0.5 });
     }
     setStatus("creating");
-    setGeneratedCode("");
+    setGeneratedCode({ code: "", extraLibraries: [] });
     setFiles(null);
 
     // Generate a 7-character UUID and save it to local storage
@@ -223,12 +250,18 @@ export default function Home() {
 
     // Read content of selected files
     const fileContext = await getFileContext();
-    var userPrompt = generateCodePrompt(prompt, fileContext);
+    var userPrompt = generateCodePrompt(prompt, fileContext, apiSpec);
 
     const messages = [{ role: "user", content: userPrompt }];
     console.log("Messages: ", messages, selectedModel);
 
-    const onSuccess = (componentName: string, newGeneratedCode: string) => {
+    const onSuccess = (
+      componentName: string,
+      newGeneratedCode: {
+        code: string;
+        extraLibraries: { name: string; version: string }[];
+      },
+    ) => {
       updateGeneratedCode(componentName, newGeneratedCode);
       setStatus("created");
     };
@@ -272,11 +305,18 @@ export default function Home() {
       activeFileContent,
       availableComponents,
       fileContext,
+      apiSpec,
     );
     const messages = [{ role: "user", content: query }];
     console.log("Messages: ", messages, selectedModel);
 
-    const onSuccess = (componentName: string, newGeneratedCode: string) => {
+    const onSuccess = (
+      componentName: string,
+      newGeneratedCode: {
+        code: string;
+        extraLibraries: { name: string; version: string }[];
+      },
+    ) => {
       console.log("onSuccess called");
       updateGeneratedCode(componentName, newGeneratedCode);
       setStatus("created");
@@ -306,20 +346,20 @@ export default function Home() {
     setFunFact(newFunFact);
   };
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (status === "creating" || status === "updating") {
-      interval = setInterval(async () => {
-        generateRandomFunFact();
-      }, 10000);
-    }
-    if (status === "created" || status === "updated") {
-      generateRandomFunFact();
-    }
-    return () => {
-      clearInterval(interval);
-    };
-  }, [status]);
+  // useEffect(() => {
+  //   let interval: NodeJS.Timeout;
+  //   if (status === "creating" || status === "updating") {
+  //     interval = setInterval(async () => {
+  //       generateRandomFunFact();
+  //     }, 10000);
+  //   }
+  //   if (status === "created" || status === "updated") {
+  //     generateRandomFunFact();
+  //   }
+  //   return () => {
+  //     clearInterval(interval);
+  //   };
+  // }, [status]);
 
   if (loading) {
     return (
@@ -342,7 +382,7 @@ export default function Home() {
         <FileUploader setSelectedFiles={setSelectedFiles} />
 
         <PromptForm
-          loading={loading}
+          loading={status === "creating"}
           onSubmit={handleGenerateCode}
           status={status}
           initialPrompt={initialPrompt}
@@ -356,7 +396,7 @@ export default function Home() {
 
         <hr className="border-1 mb-20 h-px bg-gray-700 dark:bg-gray-700" />
 
-        {status !== "initial" && files && (
+        {status !== "initial" && status !== "creating" && files && (
           <motion.div
             initial={{ height: 0 }}
             animate={{
@@ -373,13 +413,13 @@ export default function Home() {
               <div className="mb-8 flex w-full justify-center">
                 <div className="w-full md:w-3/5">
                   <UpdatePromptForm
-                    loading={loading}
+                    loading={status === "updating"}
                     onUpdate={handleModifyCode}
                   />
                 </div>
               </div>
 
-              {status !== "creating" && (
+              {status !== "initial" && status !== "creating" && (
                 <div className="w-full">
                   <div className="mb-0 flex justify-between">
                     <CodeDownloader loading={loading} />
@@ -388,7 +428,7 @@ export default function Home() {
                       onPublish={handlePublish}
                     />
                   </div>
-                  <CodeEditor files={files} />
+                  <CodeEditor files={files} extraDependencies={generatedCode.extraLibraries || []} />
                 </div>
               )}
             </div>
@@ -403,9 +443,9 @@ export default function Home() {
         </div>
       )}
 
-      {(status === "creating" || status === "updating") && (
+      {/* {(status === "creating" || status === "updating") && (
         <FunFactRenderer funFact={funFact} />
-      )}
+      )} */}
     </div>
   );
 }
