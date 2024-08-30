@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   
     const bedrock = new BedrockChat({
       model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
-      temperature: 0,
+      temperature: 0.2,
       region: "us-east-1",
       maxTokens: 8000
     });

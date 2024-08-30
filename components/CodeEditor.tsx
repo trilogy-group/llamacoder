@@ -162,6 +162,7 @@ export default function CodeEditor({
     "@emotion/react": "latest",
     "@emotion/styled": "latest",
     "@mui/icons-material": "latest",
+    "react-player": "latest"
   };
 
   const [customDependencies, setCustomDependencies] = useState(dependencies);
