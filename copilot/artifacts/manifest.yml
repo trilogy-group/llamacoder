@@ -13,6 +13,9 @@ http:
   path: '/'
   # You can specify a custom health check path. The default is "/".
   # healthcheck: '/'
+  target_container_timeout: 300s
+  deregistration_delay: 300s
+  idle_timeout: 600s
 
 # Configuration for your containers and service.
 image:
