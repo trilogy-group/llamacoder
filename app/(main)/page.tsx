@@ -14,7 +14,6 @@ import CodeDownloader from "../../components/CodeDownloader";
 import {
   generateCode,
   modifyCode,
-  generateFunFact,
   getApiSpec,
 } from "../../utils/apiClient";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
@@ -25,7 +24,6 @@ import { getActiveFile, getFileContent, getAllComponents } from "../../utils/cod
 import { readFileContent } from "../../utils/fileUtils";
 import { v4 as uuidv4 } from "uuid";
 import { generateCodePrompt, modifyCodePrompt } from "../../utils/promptUtils";
-// import FunFactRenderer from "../../components/FunFactRenderer";
 
 function extractComponentName(code: string): string {
   const match = code.match(/export default (\w+)/);
@@ -65,10 +63,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
   const [apiSpec, setApiSpec] = useState<string>("");
-  
-  const [funFact, setFunFact] = useState<string>(
-    "Developers often name variables after food they're craving 🍕����🍔",
-  );
 
   
   useEffect(() => {
@@ -340,27 +334,6 @@ export default function Home() {
     localStorage.setItem("publishedUrl", url);
   };
 
-  const generateRandomFunFact = async () => {
-    const newFunFact = await generateFunFact();
-    console.log("New fun fact: ", newFunFact);
-    setFunFact(newFunFact);
-  };
-
-  // useEffect(() => {
-  //   let interval: NodeJS.Timeout;
-  //   if (status === "creating" || status === "updating") {
-  //     interval = setInterval(async () => {
-  //       generateRandomFunFact();
-  //     }, 10000);
-  //   }
-  //   if (status === "created" || status === "updated") {
-  //     generateRandomFunFact();
-  //   }
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  // }, [status]);
-
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -419,7 +392,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {status !== "initial" && status !== "creating" && (
+              {(status === "created" || status === "updated") && (
                 <div className="w-full">
                   <div className="mb-0 flex justify-between">
                     <CodeDownloader loading={loading} />

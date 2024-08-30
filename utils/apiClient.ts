@@ -47,14 +47,6 @@ export const modifyCode = async (
     }
 }
 
-export const generateFunFact = async (topic?: string) => {
-    if (!topic) {
-        const topics = ["developer", "react framework", "typescript", "UI/UX", "javascript"];
-        topic = topics[Math.floor(Math.random() * topics.length)];
-    }
-    return fetchResponse("/api/funfact", "POST", { topic });
-}
-
 export const getApiSpec = async (): Promise<any> => {
     try {
         return await fetchResponse("/api/docs", "GET");
