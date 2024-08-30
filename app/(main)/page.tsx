@@ -48,7 +48,7 @@ export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
   >("initial");
-  const [generatedCode, setGeneratedCode] = useState<{
+  const [generatedCode, setGeneratedCodeMain] = useState<{
     code: string;
     extraLibraries: { name: string; version: string }[];
   }>({ code: "", extraLibraries: [] });
@@ -64,7 +64,19 @@ export default function Home() {
   const [initialPrompt, setInitialPrompt] = useState<string>("");
   const [apiSpec, setApiSpec] = useState<string>("");
 
-  
+  const setGeneratedCode = (newGeneratedCode: {
+    code: string;
+    extraLibraries: { name: string; version: string }[];
+  }) => {
+    const updatedExtraLibraries = [
+      ...generatedCode.extraLibraries,
+      ...newGeneratedCode.extraLibraries.filter(
+        (newLib) => !generatedCode.extraLibraries.some((existingLib: { name: string; version: string }) => existingLib.name === newLib.name)
+      )
+    ];
+    setGeneratedCodeMain({ ...newGeneratedCode, extraLibraries: updatedExtraLibraries });
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const storedFiles = localStorage.getItem("codeFiles");
@@ -392,7 +404,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {(status === "created" || status === "updated") && (
+              {(status === "created" || status === "updated" || status === "updating") && (
                 <div className="w-full">
                   <div className="mb-0 flex justify-between">
                     <CodeDownloader loading={loading} />

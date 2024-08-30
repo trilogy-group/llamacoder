@@ -9,9 +9,12 @@ const CodeDownloader: React.FC<CodeDownloaderProps> = ({
   loading,
 }) => {
   function downloadCode() {
-    const generatedCode: string | null = localStorage.getItem('generatedCode') || "";
+    const generatedCode: {code: string, extraLibraries: string[]} | null = localStorage.getItem('generatedCode') ? JSON.parse(localStorage.getItem('generatedCode') || "") : null ;
     const activeFile: string | null = localStorage.getItem('activeFile') || "";
-    const blob = new Blob([generatedCode], {
+    if (!generatedCode || !activeFile) {
+      return;
+    }
+    const blob = new Blob([generatedCode.code], {
       type: "text/plain;charset=utf-8",
     });
     saveAs(blob, activeFile.slice(1, activeFile.length));
