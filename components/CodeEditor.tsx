@@ -9,11 +9,12 @@ import {
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { useEffect, useState } from "react";
-import CircularProgress from "@mui/material/CircularProgress";
 import { AnimatePresence } from "framer-motion";
-import Button from "@mui/material/Button";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CodeIcon from "@mui/icons-material/Code";
+import DownloadIcon from "@mui/icons-material/GetApp"; // Changed to a more appropriate icon
+import { saveAs } from "file-saver";
+import CircularProgress from "@mui/material/CircularProgress";
 
 interface CodeEditorProps {
   files: Record<
@@ -25,12 +26,52 @@ interface CodeEditorProps {
 }
 
 function SandpackContent({ children }: { children: React.ReactNode }) {
+  const [isPreviewOnly, setIsPreviewOnly] = useState(true);
+
+  const handleDownload = () => {
+    const generatedCode: { code: string; extraLibraries: string[] } | null =
+      localStorage.getItem("generatedCode")
+        ? JSON.parse(localStorage.getItem("generatedCode") || "")
+        : null;
+    const activeFile: string | null = localStorage.getItem("activeFile") || "";
+    if (!generatedCode || !activeFile) {
+      return;
+    }
+    const blob = new Blob([generatedCode.code], {
+      type: "text/plain;charset=utf-8",
+    });
+    saveAs(blob, activeFile.slice(1, activeFile.length));
+  };
+
+  const actionButtons = (
+    <div className="absolute bottom-2 left-2 flex gap-2 z-10">
+      <button
+        onClick={() => setIsPreviewOnly(!isPreviewOnly)}
+        className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2"
+        title={isPreviewOnly ? "Show Editor" : "Show Preview"}
+      >
+        {isPreviewOnly ? (
+          <CodeIcon style={{ width: "16px", height: "16px" }} />
+        ) : (
+          <VisibilityIcon style={{ width: "16px", height: "16px" }} />
+        )}
+        <span>{isPreviewOnly ? "Editor" : "Preview"}</span>
+      </button>
+      <button
+        onClick={handleDownload}
+        className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2"
+        title="Download Code"
+      >
+        <DownloadIcon style={{ width: "16px", height: "16px" }} />
+      </button>
+    </div>
+  );
+
   const { sandpack, listen } = useSandpack();
   const { activeFile, updateFile } = sandpack;
   const { code } = useActiveCode();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const { logs, reset } = useSandpackConsole({resetOnPreviewRestart: true});
-  const [isPreviewOnly, setIsPreviewOnly] = useState(true);
+  const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
 
   useEffect(() => {
     updateFile("/App.tsx", code);
@@ -59,13 +100,21 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     };
 
     localStorage.setItem("codeFiles", JSON.stringify(files));
-    const generatedCode = JSON.parse(localStorage.getItem("generatedCode") || "{}");
-    localStorage.setItem("generatedCode", JSON.stringify({code, extraLibraries: generatedCode.extraLibraries || []}));
+    const generatedCode = JSON.parse(
+      localStorage.getItem("generatedCode") || "{}",
+    );
+    localStorage.setItem(
+      "generatedCode",
+      JSON.stringify({
+        code,
+        extraLibraries: generatedCode.extraLibraries || [],
+      }),
+    );
   }, [code, activeFile]);
 
   useEffect(() => {
     const stopListening = listen((msg) => {
-      console.log("msg: ", msg)
+      console.log("msg: ", msg);
       if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
@@ -91,9 +140,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-4 py-2">
-        {children}
-      </div>
+      <div className="flex items-center gap-4 py-2">{children}</div>
       <SandpackLayout>
         {!isPreviewOnly && (
           <SandpackCodeEditor
@@ -110,8 +157,14 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           className="relative"
           style={{ height: "calc(80vh - 40px)", width: isPreviewOnly ? "100%" : "50%" }}
         >
-          <SandpackPreview style={{ height: "100%" }} />
-          {statusMessage && (
+        <SandpackPreview
+          style={{
+            height: "calc(80vh - 40px)",
+            width: isPreviewOnly ? "100%" : "50%",
+          }}
+        />
+        {statusMessage === "" && actionButtons}
+        {statusMessage && (
             <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
               <CircularProgress size={60} thickness={4} color="primary" />
               <p className="mt-2 text-lg font-semibold text-white">
@@ -119,29 +172,9 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
               </p>
             </div>
           )}
-        </div>
+                  </div>
+
       </SandpackLayout>
-      <Button
-        variant="contained"
-        startIcon={isPreviewOnly ? <CodeIcon /> : <VisibilityIcon />}
-        onClick={() => setIsPreviewOnly(!isPreviewOnly)}
-        sx={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          zIndex: 9999,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          color: 'white',
-          '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          },
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          borderRadius: '20px',
-          padding: '8px 16px',
-        }}
-      >
-        {isPreviewOnly ? "Show Editor" : "Hide Editor"}
-      </Button>
     </div>
   );
 }
@@ -162,7 +195,7 @@ export default function CodeEditor({
     "@emotion/react": "latest",
     "@emotion/styled": "latest",
     "@mui/icons-material": "latest",
-    "react-player": "latest"
+    "react-player": "latest",
   };
 
   const [customDependencies, setCustomDependencies] = useState(dependencies);
@@ -182,13 +215,13 @@ export default function CodeEditor({
     });
 
     // console.log("customDependencies: ", customDependencies)
-    console.log("dependencies: ", dependencies)
-    console.log("extraDependencies: ", extraDependencies)
-    console.log("normalizedExtraDependencies: ", normalizedExtraDependencies)
+    console.log("dependencies: ", dependencies);
+    console.log("extraDependencies: ", extraDependencies);
+    console.log("normalizedExtraDependencies: ", normalizedExtraDependencies);
   }, [extraDependencies]);
 
   useEffect(() => {
-    console.log("customDependencies: ", customDependencies)
+    console.log("customDependencies: ", customDependencies);
   }, [customDependencies]);
 
   return (

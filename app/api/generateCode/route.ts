@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
       const code = codeMatch ? codeMatch[1].trim() : '';
 
-      return { code, extraLibraries };
+      return { code, extraLibraries: extraLibraries || [] };
     }
 
     const parsedResponse = parseResponse(response.content as string);

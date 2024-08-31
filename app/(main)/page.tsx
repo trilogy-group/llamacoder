@@ -11,16 +11,16 @@ import PromptForm from "../../components/PromptForm";
 import ModelSelector from "../../components/ModelSelector";
 import CodeEditor from "../../components/CodeEditor";
 import CodeDownloader from "../../components/CodeDownloader";
-import {
-  generateCode,
-  modifyCode,
-  getApiSpec,
-} from "../../utils/apiClient";
+import { generateCode, modifyCode, getApiSpec } from "../../utils/apiClient";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
 import { CircularProgress } from "@mui/material";
-import { getActiveFile, getFileContent, getAllComponents } from "../../utils/codeFileUtils";
+import {
+  getActiveFile,
+  getFileContent,
+  getAllComponents,
+} from "../../utils/codeFileUtils";
 import { readFileContent } from "../../utils/fileUtils";
 import { v4 as uuidv4 } from "uuid";
 import { generateCodePrompt, modifyCodePrompt } from "../../utils/promptUtils";
@@ -42,7 +42,6 @@ const indexHTML = `<!DOCTYPE html>
     <div id="root"></div>
   </body>
 </html>`;
-
 
 export default function Home() {
   const [status, setStatus] = useState<
@@ -71,10 +70,17 @@ export default function Home() {
     const updatedExtraLibraries = [
       ...generatedCode.extraLibraries,
       ...newGeneratedCode.extraLibraries.filter(
-        (newLib) => !generatedCode.extraLibraries.some((existingLib: { name: string; version: string }) => existingLib.name === newLib.name)
-      )
+        (newLib) =>
+          !generatedCode.extraLibraries.some(
+            (existingLib: { name: string; version: string }) =>
+              existingLib.name === newLib.name,
+          ),
+      ),
     ];
-    setGeneratedCodeMain({ ...newGeneratedCode, extraLibraries: updatedExtraLibraries });
+    setGeneratedCodeMain({
+      ...newGeneratedCode,
+      extraLibraries: updatedExtraLibraries,
+    });
   };
 
   useEffect(() => {
@@ -358,6 +364,12 @@ export default function Home() {
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
       <Header />
 
+      {status !== "initial" &&
+        status !== "creating" && (
+          <div className="fixed right-4 top-4 z-50">
+            <PublishButton loading={loading} onPublish={handlePublish} />
+          </div>
+        )}
       <main className="mt-12 flex w-full flex-1 flex-col items-center px-4 text-center sm:mt-20">
         <h1 className="my-6 max-w-3xl text-4xl font-bold text-gray-800 sm:text-6xl">
           Turn your <span className="text-blue-600">idea</span>
@@ -404,16 +416,14 @@ export default function Home() {
                 </div>
               </div>
 
-              {(status === "created" || status === "updated" || status === "updating") && (
+              {(status === "created" ||
+                status === "updated" ||
+                status === "updating") && (
                 <div className="w-full">
-                  <div className="mb-0 flex justify-between">
-                    <CodeDownloader loading={loading} />
-                    <PublishButton
-                      loading={loading}
-                      onPublish={handlePublish}
-                    />
-                  </div>
-                  <CodeEditor files={files} extraDependencies={generatedCode.extraLibraries || []} />
+                  <CodeEditor
+                    files={files}
+                    extraDependencies={generatedCode.extraLibraries || []}
+                  />
                 </div>
               )}
             </div>
