@@ -10,7 +10,6 @@ import FileUploader from "../../components/FileUploader";
 import PromptForm from "../../components/PromptForm";
 import ModelSelector from "../../components/ModelSelector";
 import CodeEditor from "../../components/CodeEditor";
-import CodeDownloader from "../../components/CodeDownloader";
 import { generateCode, modifyCode, getApiSpec } from "../../utils/apiClient";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
