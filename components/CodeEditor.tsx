@@ -44,7 +44,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   };
 
   const actionButtons = (
-    <div className="absolute bottom-2 left-2 flex gap-2 z-10">
+    <div className="absolute bottom-2 left-2 z-10 flex gap-2">
       <button
         onClick={() => setIsPreviewOnly(!isPreviewOnly)}
         className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2"
@@ -155,16 +155,18 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
         )}
         <div
           className="relative"
-          style={{ height: "calc(80vh - 40px)", width: isPreviewOnly ? "100%" : "50%" }}
-        >
-        <SandpackPreview
           style={{
             height: "calc(80vh - 40px)",
             width: isPreviewOnly ? "100%" : "50%",
           }}
-        />
-        {statusMessage === "" && actionButtons}
-        {statusMessage && (
+        >
+          <SandpackPreview
+            style={{
+              height: "calc(80vh - 40px)",
+              width: "100%"
+            }}
+          />
+          {statusMessage && (
             <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
               <CircularProgress size={60} thickness={4} color="primary" />
               <p className="mt-2 text-lg font-semibold text-white">
@@ -172,8 +174,8 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
               </p>
             </div>
           )}
-                  </div>
-
+        </div>
+        {statusMessage === "" && actionButtons}
       </SandpackLayout>
     </div>
   );
