@@ -1,50 +1,67 @@
 import { NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import spawn from 'cross-spawn';
 import fs from 'fs-extra';
 import path from 'path';
+import { Artifact } from '@/types/Artifact';
+import { deleteExistingFiles, uploadDirectory } from '@/utils/s3Client';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || "ti-artifact-apps";
+
 export async function POST(request: Request) {
     try {
-        const { generatedCode, artifactId } = await request.json();
-
-        const config = {
-            region: "us-east-1",
-        };
-        const s3Client = new S3Client(config);
-        const appName = artifactId;
-        const bucketName = "ti-artifact-apps";
-
+        const artifact = await request.json() as Artifact;
+        console.log("Artifact: ", artifact);
         // Create a temporary directory
-        const tempDir = path.join(process.cwd(), 'temp', appName);
+        const tempDir = path.join(process.cwd(), 'temp', artifact.id);
         await fs.ensureDir(tempDir);
 
         console.log("Copying template files to the temporary directory: ", tempDir);
 
+        // Copy template files
         const templateDir = path.join(process.cwd(), 'templates/react-simple');
-        const templateFiles = await fs.readdir(templateDir);
-        for (const file of templateFiles) {
-            try {
-                await fs.copy(path.join(templateDir, file), path.join(tempDir, file));
-            } catch (error) {
-                console.error(`Error copying file ${file}:`, error);
-            }
-        }
+        await fs.copy(templateDir, tempDir);
 
-        for (const [filePath, code] of Object.entries(generatedCode)) {
-            try {
-                const fullPath = path.join(tempDir, 'src', filePath);
-                await fs.ensureDir(path.dirname(fullPath));
-                await fs.writeFile(fullPath, code as string);
-            } catch (error) {
-                console.error(`Error writing generated file ${filePath}:`, error);
-            }
-        }
+        // Write artifact code to App.tsx
+        const appTsxPath = path.join(tempDir, 'src', 'App.tsx');
+        await fs.writeFile(appTsxPath, artifact.code);
 
-        // Run npm run build in the temp folder
+        // Update package.json with dependencies
+        const packageJsonPath = path.join(tempDir, 'package.json');
+        const packageJson = await fs.readJson(packageJsonPath);
+        const dependencies = artifact.dependencies as Record<string, string>;
+        packageJson.dependencies = { ...packageJson.dependencies, ...dependencies };
+        packageJson.homepage = `/${artifact.id}`;
+        packageJson.name = artifact.name;
+        await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
+
+        // Run npm install
+        console.log('Running npm install...');
+        const installProcess = spawn('npm', ['install'], { cwd: tempDir });
+
+        installProcess.stdout.on('data', (data: any) => {
+            console.log(`stdout: ${data}`);
+        });
+
+        installProcess.stderr.on('data', (data: any) => {
+            console.error(`stderr: ${data}`);
+        });
+
+        await new Promise<void>((resolve, reject) => {
+            installProcess.on('close', (code: any) => {
+                if (code !== 0) {
+                    reject(new Error(`npm install process exited with code ${code}`));
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        console.log('npm install completed.');
+
+        // Run npm run build
         console.log('Running build command...');
         const buildProcess = spawn('npm', ['run', 'build'], { cwd: tempDir });
 
@@ -57,7 +74,7 @@ export async function POST(request: Request) {
         });
 
         await new Promise<void>((resolve, reject) => {
-            buildProcess.on('close', (code: number) => {
+            buildProcess.on('close', (code: any) => {
                 if (code !== 0) {
                     reject(new Error(`Build process exited with code ${code}`));
                 } else {
@@ -69,60 +86,14 @@ export async function POST(request: Request) {
         console.log('Build command completed.');
         
         const buildFolder = path.join(tempDir, 'build');
-        const indexPath = path.join(buildFolder, 'index.html');
-        let indexContent = await fs.readFile(indexPath, 'utf-8');
-        indexContent = indexContent.replace(/(src|href)="\/static\//g, `$1="/${appName}/static/`);
-        await fs.writeFile(indexPath, indexContent);
-
-        const deleteExistingFiles = async (s3Path: string) => {
-            const listParams = {
-                Bucket: bucketName,
-                Prefix: s3Path,
-            };
-
-            const listedObjects = await s3Client.send(new ListObjectsV2Command(listParams));
-
-            if (listedObjects.Contents && listedObjects.Contents.length > 0) {
-                const deleteParams = {
-                    Bucket: bucketName,
-                    Delete: { Objects: listedObjects.Contents.map(({ Key }) => ({ Key })) }
-                };
-
-                await s3Client.send(new DeleteObjectsCommand(deleteParams));
-
-                if (listedObjects.IsTruncated) {
-                    await deleteExistingFiles(s3Path);
-                }
-            }
-        };
 
         // Delete existing files before uploading
-        await deleteExistingFiles(appName);
+        await deleteExistingFiles(BUCKET_NAME, artifact.id);
 
-        const uploadDirectory = async (dirPath: string, s3Path: string) => {
-            const files = await fs.promises.readdir(dirPath);
-            for (const file of files) {
-                const filePath = path.join(dirPath, file);
-                const fileStat = await fs.promises.stat(filePath);
-                if (fileStat.isDirectory()) {
-                    await uploadDirectory(filePath, `${s3Path}/${file}`);
-                } else {
-                    const fileContent = await fs.promises.readFile(filePath);
-                    const contentType = file === 'index.html' ? 'text/html' : 'application/octet-stream';
-                    const uploadParams = {
-                        Bucket: bucketName,
-                        Key: `${s3Path}/${file}`,
-                        Body: fileContent,
-                        ContentType: contentType,
-                    };
-                    await s3Client.send(new PutObjectCommand(uploadParams));
-                }
-            }
-        };
+        // Upload the build folder to S3
+        await uploadDirectory(BUCKET_NAME, buildFolder, artifact.id);
 
-        await uploadDirectory(buildFolder, appName);
-
-        const publishedUrl = `https://apps.ti.trilogy.com/${appName}/index.html`;
+        const publishedUrl = `https://apps.ti.trilogy.com/${artifact.id}/index.html`;
 
         // Clean up the temporary directory
         await fs.remove(tempDir);

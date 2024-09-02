@@ -9,39 +9,36 @@ interface PublishButtonProps {
   onPublish: (url: string) => void;
 }
 
-interface CodeFile {
-  code: string;
-  active: boolean;
-  hidden: boolean;
-  readOnly: boolean;
-}
-
 async function publishApp() {
   try {
-    // Read codeFiles from localStorage
-    const codeFilesString = localStorage.getItem('codeFiles');
-    if (!codeFilesString) {
-      throw new Error('No code files found in localStorage');
+    // Filter and prepare TypeScript and TSX files
+    const artifactId = localStorage.getItem('artifactId');
+    const generatedCode = localStorage.getItem('generatedCode');
+    if(!generatedCode) {
+      throw new Error("No generated code found");
+    }
+    
+    const generatedCodeJson = JSON.parse(generatedCode) as { code: string, extraLibraries: string[] };
+
+    const dependencies = Object.fromEntries(
+      generatedCodeJson.extraLibraries.map((lib: any) => [lib.name, "latest"])
+    );
+
+    const artifact = {
+      id: artifactId,
+      code: generatedCodeJson.code,
+      dependencies: dependencies,
+      name: artifactId
     }
 
-    const codeFiles = JSON.parse(codeFilesString) as Record<string, CodeFile>;
-
-    // Filter and prepare TypeScript and TSX files
-    const generatedCode = Object.entries(codeFiles)
-      .filter(([fileName]) => fileName.endsWith('.ts') || fileName.endsWith('.tsx'))
-      .reduce((acc, [fileName, codeFile]) => {
-        acc[fileName] = codeFile.code;
-        return acc;
-      }, {} as Record<string, string>);
-
-    const artifactId = localStorage.getItem('artifactId');
+    console.log("Publishing artifact: ", artifact);
 
     const response = await fetch("/api/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ generatedCode, artifactId }),
+      body: JSON.stringify(artifact),
     });
     const data = await response.json();
     if (data.success) {

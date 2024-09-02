@@ -15,11 +15,6 @@ import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
 import { CircularProgress } from "@mui/material";
-import {
-  getActiveFile,
-  getFileContent,
-  getAllComponents,
-} from "../../utils/codeFileUtils";
 import { readFileContent } from "../../utils/fileUtils";
 import { v4 as uuidv4 } from "uuid";
 import { generateCodePrompt, modifyCodePrompt } from "../../utils/promptUtils";
@@ -172,6 +167,7 @@ export default function Home() {
     localStorage.removeItem("activeFile");
     localStorage.removeItem("publishedUrl");
     setPublishedUrl(null);
+    setGeneratedCodeMain({ code: "", extraLibraries: [] });
   };
 
   const getFileContext = async () => {
@@ -232,10 +228,9 @@ export default function Home() {
     onFailure: () => void,
   ) => {
     console.log("newGeneratedCode: ", newGeneratedCode);
-    const componentName = extractComponentName(newGeneratedCode.code);
+    var componentName = extractComponentName(newGeneratedCode.code);
     if (componentName === "App") {
-      onFailure();
-      return;
+      componentName = "MyApp";
     }
     onSuccess(componentName, newGeneratedCode);
   };
@@ -304,20 +299,15 @@ export default function Home() {
       return;
     }
 
-    const activeFile = getActiveFile();
-    const activeComponent = activeFile.slice(1, -4);
-    const activeFileContent = getFileContent(activeFile);
-    const availableComponents = getAllComponents(false);
+    const generatedCode = localStorage.getItem("generatedCode");
+    if(!generatedCode) {
+      toast.error("No generated code found");
+      setStatus("created");
+      return;
+    }
+    const generatedCodeJson = JSON.parse(generatedCode);
     const fileContext = await getFileContext();
-    var query = modifyCodePrompt(
-      initialPrompt,
-      prompt,
-      activeComponent,
-      activeFileContent,
-      availableComponents,
-      fileContext,
-      apiSpec,
-    );
+    var query = modifyCodePrompt(initialPrompt, prompt, generatedCodeJson.code, fileContext, apiSpec);
     const messages = [{ role: "user", content: query }];
     console.log("Messages: ", messages, selectedModel);
 
