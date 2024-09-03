@@ -10,6 +10,7 @@ import FileUploader from "../../components/FileUploader";
 import PromptForm from "../../components/PromptForm";
 import ModelSelector from "../../components/ModelSelector";
 import CodeEditor from "../../components/CodeEditor";
+import FeedbackButton from "../../components/FeedbackButton";
 import { generateCode, modifyCode, getApiSpec } from "../../utils/apiClient";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
@@ -430,6 +431,7 @@ export default function Home() {
       {/* {(status === "creating" || status === "updating") && (
         <FunFactRenderer funFact={funFact} />
       )} */}
+      <FeedbackButton />
     </div>
   );
 }
