@@ -8,20 +8,20 @@ const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
 // Create a new artifact
 export async function POST(request: Request) {
   try {
-    const body: Omit<Artifact, 'id' | 'created_at' | 'updated_at'> = await request.json();
+    const body: Omit<Artifact, 'id' | 'createdAt' | 'updatedAt'> = await request.json();
     const now = new Date();
     const artifact: Artifact = {
       ...body,
       id: uuidv4(),
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
     await ddbClient.put(TABLE_NAME, {
       PK: `ARTIFACT#${artifact.id}`,
       SK: `ARTIFACT#${artifact.id}`,
       ...artifact,
-      created_at: now.toISOString(),
-      updated_at: now.toISOString(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     });
     return NextResponse.json(artifact, { status: 201 });
   } catch (error) {
@@ -47,8 +47,8 @@ export async function GET(request: Request) {
 
     const artifact: Artifact = {
       id: result.Item.id,
-      created_at: new Date(result.Item.created_at),
-      updated_at: new Date(result.Item.updated_at),
+      createdAt: new Date(result.Item.createdAt),
+      updatedAt: new Date(result.Item.updatedAt),
       name: result.Item.name,
       prompt: result.Item.prompt,
       code: result.Item.code,
@@ -74,14 +74,14 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Artifact ID is required' }, { status: 400 });
     }
 
-    const updateExpression = 'SET ' + Object.keys(updateData).map(key => `#${key} = :${key}`).join(', ') + ', #updated_at = :updated_at';
+    const updateExpression = 'SET ' + Object.keys(updateData).map(key => `#${key} = :${key}`).join(', ') + ', #updatedAt = :updatedAt';
     const expressionAttributeNames = {
       ...Object.keys(updateData).reduce((acc, key) => ({ ...acc, [`#${key}`]: key }), {}),
-      '#updated_at': 'updated_at'
+      '#updatedAt': 'updatedAt'
     };
     const expressionAttributeValues = {
       ...Object.entries(updateData).reduce((acc, [key, value]) => ({ ...acc, [`:${key}`]: value }), {}),
-      ':updated_at': now.toISOString(),
+      ':updatedAt': now.toISOString(),
     };
 
     await ddbClient.update(TABLE_NAME, 
@@ -98,8 +98,8 @@ export async function PUT(request: Request) {
 
     const updatedArtifact: Artifact = {
       id: result.Item.id,
-      created_at: new Date(result.Item.created_at),
-      updated_at: new Date(result.Item.updated_at),
+      createdAt: new Date(result.Item.createdAt),
+      updatedAt: new Date(result.Item.updatedAt),
       name: result.Item.name,
       prompt: result.Item.prompt,
       code: result.Item.code,

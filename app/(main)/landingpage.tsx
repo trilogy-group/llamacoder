@@ -32,7 +32,7 @@ const LandingPage = () => {
             <br /> into an Ar<span className="text-blue-600">TI</span>fact
           </h1>
           <TypewriterEffect
-            text="Build, Preview and Make it Live 🚀 with a single click"
+            text="Build, Preview and Make it Live 🚀 with a single click!"
             highlightWords={["Build", "Preview", "Live"]}
             className="text-2xl text-gray-600 mb-8 mt-8"
           />

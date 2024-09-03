@@ -3,8 +3,8 @@ export type Job = {
     status: string;
     name: string;
     type: string;
-    created_at: Date;
-    updated_at: Date;
-    resource_type: string;
-    resource_id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    resourceType: string;
+    resourceId: string;
 };
