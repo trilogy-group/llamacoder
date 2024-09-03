@@ -4,10 +4,15 @@ import { drive_v3 } from 'googleapis/build/src/apis/drive/v3';
 import { Readable } from 'stream';
 import { v4 as uuidv4 } from 'uuid';
 
+const privateKeyBase64 = process.env.GOOGLE_PRIVATE_KEY_BASE64;
+const privateKey = privateKeyBase64
+  ? Buffer.from(privateKeyBase64, 'base64').toString('ascii')
+  : undefined;
+
 // Configure a JWT auth client using environment variables
 const jwtClient = new google.auth.JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  key: privateKey,
   scopes: [
         'https://www.googleapis.com/auth/spreadsheets',
         'https://www.googleapis.com/auth/drive.file',
