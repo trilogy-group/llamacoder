@@ -1,13 +1,14 @@
 import { BedrockChat } from "@langchain/community/chat_models/bedrock";
 import { perplexitySearchTool } from "../../../utils/tools";
 import { systemPrompt } from "./prompt";
+import util from 'util';
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     let { messages, model } = await req.json();
-    console.log("Received messages: ", messages);
+    console.log("Received messages: ", util.inspect(messages, { showHidden: false, depth: null, colors: true }));
 
     const allMessages = [
       { role: "system", content: systemPrompt },
