@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useRef } from "react";
 import { ArrowLongRightIcon } from "@heroicons/react/20/solid";
 import LoadingDots from "./loading-dots";
+import { useState } from "react";
+import Image from "next/image";
 
 interface PromptFormProps {
   loading: boolean;
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>, images: File[]) => void;
   status: string;
   placeholder?: string;
   initialPrompt?: string;
@@ -18,6 +20,18 @@ export default function PromptForm({
   initialPrompt = "",
 }: PromptFormProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [images, setImages] = useState<File[]>([]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setImages(Array.from(e.target.files));
+    }
+  };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit(e, images);
+  };
 
   useEffect(() => {
     if (textareaRef.current && initialPrompt) {
@@ -26,11 +40,11 @@ export default function PromptForm({
   }, [initialPrompt]);
 
   return (
-    <form className="w-full max-w-xl" onSubmit={onSubmit}>
+    <form className="w-full max-w-xl" onSubmit={handleSubmit}>
       <fieldset disabled={loading} className="disabled:opacity-75">
         <div className="relative mt-5">
           <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
-          <div className="relative flex rounded-3xl bg-white shadow-sm">
+          <div className="relative flex flex-col rounded-3xl bg-white shadow-sm">
             <div className="relative flex flex-grow items-stretch focus-within:z-10">
               <textarea
                 ref={textareaRef}
@@ -48,6 +62,29 @@ export default function PromptForm({
                 }}
               />
             </div>
+            <div className="px-6 py-3">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-2 px-6 py-3">
+                {images.map((image, index) => (
+                  <Image
+                    key={index}
+                    src={URL.createObjectURL(image)}
+                    alt={`Uploaded image ${index + 1}`}
+                    width={50}
+                    height={50}
+                    className="rounded-md object-cover"
+                  />
+                ))}
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}

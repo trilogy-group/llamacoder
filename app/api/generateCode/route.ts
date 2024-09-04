@@ -9,25 +9,25 @@ export async function POST(req: Request) {
     let { messages, model } = await req.json();
     console.log("Received messages: ", messages);
 
-    messages = [
+    const allMessages = [
       { role: "system", content: systemPrompt },
       ...messages
     ];
-  
+
     const bedrock = new BedrockChat({
       model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
       temperature: 0.2,
       region: "us-east-1",
-      maxTokens: 8000
+      maxTokens: 8000,
     });
 
     const llmWithTools = bedrock.bindTools([perplexitySearchTool]);
 
-    let response = await llmWithTools.invoke(messages);
+    let response = await llmWithTools.invoke(allMessages);
     console.log("Initial response: ", response);
-    messages.push(response);
+    allMessages.push(response);
 
-    if("tool_calls" in response && response.tool_calls) {
+    if ("tool_calls" in response && response.tool_calls) {
       console.log("Tool calls found in response");
       console.log("Tool calls: ", response.tool_calls);
     }
@@ -41,9 +41,9 @@ export async function POST(req: Request) {
       toolCalls++;
       const toolCall = tool_calls[0];
       const toolResponse = await perplexitySearchTool.invoke(toolCall);
-      messages.push(toolResponse);
-      response = await llmWithTools.invoke(messages);
-      messages.push(response);
+      allMessages.push(toolResponse);
+      response = await llmWithTools.invoke(allMessages);
+      allMessages.push(response);
     }
 
     const parseResponse = (response: string) => {
@@ -64,10 +64,10 @@ export async function POST(req: Request) {
     const parsedResponse = parseResponse(response.content as string);
 
     return new Response(JSON.stringify(parsedResponse), {
-      headers: new Headers({
-        "Content-Type": "text/plain",
+      headers: {
+        "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-      }),
+      },
     });
   } catch (error) {
     console.error("Error in POST /api/generateCode:", error);

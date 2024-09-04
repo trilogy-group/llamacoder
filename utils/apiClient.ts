@@ -19,12 +19,12 @@ async function fetchResponse(endpoint: string, method: "GET" | "POST" = "POST", 
     return res.json();
 }
 
-async function fetchAndParseCode(messages: { role: string; content: string }[], model: string) {
+async function fetchAndParseCode(messages: { role: string; content: any[] }[], model: string) {
     return fetchResponse("/api/generateCode", "POST", { messages, model });
 }
 
 export const generateCode = async (
-    messages: { role: string; content: string }[],
+    messages: { role: string; content: any[] }[],
     model: string
 ): Promise<{ code: string; extraLibraries: { name: string; version: string }[] }> => {
     try {
@@ -36,7 +36,7 @@ export const generateCode = async (
 }
 
 export const modifyCode = async (
-    messages: { role: string; content: string }[],
+    messages: { role: string; content: any[] }[],
     model: string,
 ): Promise<{ code: string; extraLibraries: { name: string; version: string }[] }> => {
     try {
