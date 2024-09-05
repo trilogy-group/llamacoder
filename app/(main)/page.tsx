@@ -187,6 +187,10 @@ export default function Home() {
       extraLibraries: { name: string; version: string }[];
     },
   ) => {
+    if(newGeneratedCode.code === "") {
+      toast.error("Seems like the code genie stopped mid-way while generating the code. Please try again.");
+      return;
+    }
     setGeneratedCode(newGeneratedCode);
     const fileName = `/${componentName}.tsx`;
     setFiles((prevFiles) => {
@@ -349,6 +353,9 @@ export default function Home() {
     );
   }
 
+  // return (
+  //   <Workspace />
+  // )
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
       <Header />
@@ -426,10 +433,6 @@ export default function Home() {
           <PublishedAppLink url={publishedUrl} />
         </div>
       )}
-
-      {/* {(status === "creating" || status === "updating") && (
-        <FunFactRenderer funFact={funFact} />
-      )} */}
     </div>
   );
 }

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
       temperature: 0.2,
       region: "us-east-1",
-      maxTokens: 8000
+      maxTokens: 8192
     });
 
     const llmWithTools = bedrock.bindTools([perplexitySearchTool]);
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
       const code = codeMatch ? codeMatch[1].trim() : '';
 
-      return { code, extraLibraries: extraLibraries || [] };
+      return { code, extraLibraries: extraLibraries || [], rawResponse: response };
     }
 
     const parsedResponse = parseResponse(response.content as string);
