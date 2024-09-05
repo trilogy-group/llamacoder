@@ -17,6 +17,7 @@ import { saveAs } from "file-saver";
 import CircularProgress from "@mui/material/CircularProgress";
 
 interface CodeEditorProps {
+  status: string
   files: Record<
     string,
     { code: string; active: boolean; hidden: boolean; readOnly: boolean }
@@ -25,7 +26,7 @@ interface CodeEditorProps {
   children?: React.ReactNode;
 }
 
-function SandpackContent({ children }: { children: React.ReactNode }) {
+function SandpackContent({ status, children }: { status: string, children: React.ReactNode }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
 
   const handleDownload = () => {
@@ -113,9 +114,16 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   }, [code, activeFile]);
 
   useEffect(() => {
+    console.log("status: ", status, statusMessage);
+  }, [status, statusMessage]);
+
+  useEffect(() => {
     const stopListening = listen((msg) => {
       console.log("msg: ", msg);
-      if (msg.type === "dependencies") {
+      if(status === "creating" || status === "updating") {
+        setStatusMessage("🚀 Generating code...");
+      }
+      else if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
         if (msg.status === "transpiling") {
@@ -132,7 +140,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     return () => {
       stopListening();
     };
-  }, [listen, statusMessage]);
+  }, [listen, statusMessage, status]);
 
   useEffect(() => {
     localStorage.setItem("activeFile", activeFile);
@@ -167,11 +175,16 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
             }}
           />
           {statusMessage && (
-            <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
-              <CircularProgress size={60} thickness={4} color="primary" />
-              <p className="mt-2 text-lg font-semibold text-white">
-                {statusMessage}
-              </p>
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center"
+              style={{ backgroundColor: '#1e2029' }}
+            >
+              <div className="flex flex-col items-center">
+                <CircularProgress size={60} thickness={4} color="primary" />
+                <p className="mt-2 text-lg font-semibold text-white">
+                  {statusMessage}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -182,6 +195,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function CodeEditor({
+  status,
   files,
   extraDependencies,
   children,
@@ -243,7 +257,7 @@ export default function CodeEditor({
           files={files}
         >
           <div className="relative">
-            <SandpackContent>{children}</SandpackContent>
+            <SandpackContent status={status}>{children}</SandpackContent>
           </div>
         </SandpackProvider>
       </AnimatePresence>

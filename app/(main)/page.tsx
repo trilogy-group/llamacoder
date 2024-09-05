@@ -38,6 +38,28 @@ const indexHTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
+const defaultCode = `
+import React from 'react';
+export default function App() {
+  return <div>Hello World</div>;
+}
+`;
+
+const defaultFiles = {
+  "/App.tsx": {
+    code: defaultCode,
+    active: false,
+    hidden: true,
+    readOnly: true,
+  },
+  "/public/index.html": {
+    code: indexHTML,
+    active: false,
+    hidden: true,
+    readOnly: true,
+  }
+}
+
 export default function Home() {
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
@@ -45,13 +67,13 @@ export default function Home() {
   const [generatedCode, setGeneratedCodeMain] = useState<{
     code: string;
     extraLibraries: { name: string; version: string }[];
-  }>({ code: "", extraLibraries: [] });
+  }>({ code: defaultCode, extraLibraries: [] });
   const [ref, scrollTo] = useScrollTo();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [files, setFiles] = useState<Record<
     string,
     { code: string; active: boolean; hidden: boolean; readOnly: boolean }
-  > | null>(null);
+  >>(defaultFiles);
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [publishedUrl, setPublishedUrl] = useState<string | null>("");
   const [loading, setLoading] = useState(true);
@@ -168,7 +190,7 @@ export default function Home() {
     localStorage.removeItem("activeFile");
     localStorage.removeItem("publishedUrl");
     setPublishedUrl(null);
-    setGeneratedCodeMain({ code: "", extraLibraries: [] });
+    setGeneratedCodeMain({ code: defaultCode, extraLibraries: [] });
   };
 
   const getFileContext = async () => {
@@ -247,7 +269,7 @@ export default function Home() {
     }
     setStatus("creating");
     setGeneratedCode({ code: "", extraLibraries: [] });
-    setFiles(null);
+    setFiles(defaultFiles);
 
     // Generate a 7-character UUID and save it to local storage
     const artifactId = uuidv4().slice(0, 7);
@@ -425,7 +447,6 @@ export default function Home() {
 
         <hr className="border-1 mb-20 h-px bg-gray-700 dark:bg-gray-700" />
 
-        {status !== "initial" && status !== "creating" && files && (
           <motion.div
             initial={{ height: 0 }}
             animate={{
@@ -439,6 +460,7 @@ export default function Home() {
             ref={ref}
           >
             <div className="flex flex-col items-center">
+            {status !== "initial" && status !== "creating" && files &&
               <div className="mb-8 flex w-full justify-center">
                 <div className="w-full md:w-3/5">
                   <UpdatePromptForm
@@ -447,12 +469,12 @@ export default function Home() {
                   />
                 </div>
               </div>
+            }
 
-              {(status === "created" ||
-                status === "updated" ||
-                status === "updating") && (
+              {(status !== "initial") && (
                 <div className="w-full">
                   <CodeEditor
+                    status={status}
                     files={files}
                     extraDependencies={generatedCode.extraLibraries || []}
                   />
@@ -460,7 +482,6 @@ export default function Home() {
               )}
             </div>
           </motion.div>
-        )}
       </main>
       <Footer />
       <Toaster invert={true} />
@@ -469,6 +490,7 @@ export default function Home() {
           <PublishedAppLink url={publishedUrl} />
         </div>
       )}
+      <FeedbackButton />
     </div>
   );
 }
