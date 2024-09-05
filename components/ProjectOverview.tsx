@@ -11,6 +11,18 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
   const projectTags = mockTags.slice(0, Math.floor(Math.random() * 3) + 1);
+  const contributors = [1, 2, 3];
+
+  // Function to generate a color based on the createdBy string
+  const getColorFromString = (str: string) => {
+    const colors =[ 'red', 'green', "yellow"];
+    const hash = str.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+    console.log(hash);
+    console.log(colors[hash % colors.length], project.createdBy);
+    return colors[hash % colors.length];
+  };
+
+  const projectColor = getColorFromString(project.createdBy);
 
   return (
     <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] bg-gradient-to-br from-blue-50/80 to-white/70">
@@ -27,13 +39,14 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
 
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center flex-grow">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm mr-3">
+          <div className={`w-8 h-8 bg-${projectColor}-500 rounded-full flex items-center justify-center text-white font-medium text-sm mr-3`}>
             {project.createdBy[0].toUpperCase()}
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800">{project.title}</h3>
             <p className="text-xs text-gray-500">
-              {project.createdBy} · {project.createdAt.toLocaleDateString()}
+              {project.updatedBy} · {project.updatedAt.toLocaleDateString()} · 
+              <span className="ml-1 font-medium">{contributors.length} contributor{contributors.length !== 1 ? 's' : ''}</span>
             </p>
           </div>
         </div>
