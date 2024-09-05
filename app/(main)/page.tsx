@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useRef } from "react";
 import { Toaster, toast } from "sonner";
 import { useScrollTo } from "@/hooks/use-scroll-to";
 import { motion } from "framer-motion";
@@ -79,6 +79,17 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
   const [apiSpec, setApiSpec] = useState<string>("");
+  const updatePromptFormRef = useRef<HTMLFormElement>(null);
+
+  const handleFixIt = (errorMessage: string) => {
+    if (updatePromptFormRef.current) {
+      const textArea = updatePromptFormRef.current.querySelector('textarea[name="prompt"]') as HTMLTextAreaElement;
+      if (textArea) {
+        textArea.value = `Fix this error: ${errorMessage}`;
+        updatePromptFormRef.current.requestSubmit();
+      }
+    }
+  };
 
   const setGeneratedCode = (newGeneratedCode: {
     code: string;
@@ -464,6 +475,7 @@ export default function Home() {
               <div className="mb-8 flex w-full justify-center">
                 <div className="w-full md:w-3/5">
                   <UpdatePromptForm
+                    ref={updatePromptFormRef}
                     loading={status === "updating"}
                     onUpdate={handleModifyCode}
                   />
@@ -477,6 +489,7 @@ export default function Home() {
                     status={status}
                     files={files}
                     extraDependencies={generatedCode.extraLibraries || []}
+                    onFixIt={handleFixIt}
                   />
                 </div>
               )}
