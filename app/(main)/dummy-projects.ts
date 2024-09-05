@@ -10,6 +10,7 @@ const createDummyArtifact = (name: string): Artifact => ({
     code: "console.log('Hello, World!');",
     dependencies: {},
     template: "default",
+    history: [],
 });
 
 
@@ -20,7 +21,9 @@ export const dummyProjects: Project[] = [
         description:
             "An intelligent chatbot powered by machine learning algorithms.",
         context: [],
-        artifacts: [createDummyArtifact("Main"), createDummyArtifact("Utils")],
+        artifacts: [
+            createDummyArtifact("Calculator")
+        ],
         entrypoint: createDummyArtifact("Main"),
         createdAt: new Date("2023-01-15"),
         updatedAt: new Date("2023-04-20"),

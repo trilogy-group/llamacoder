@@ -1,3 +1,9 @@
+export interface Message {
+    id: string;
+    content: string;
+    role: "user" | "assistant";
+}
+
 export type Artifact = {
     id: string;
     createdAt: Date;
@@ -7,4 +13,5 @@ export type Artifact = {
     code: string;
     dependencies: Record<string, string>;
     template: string;
+    history: Message[];
 };

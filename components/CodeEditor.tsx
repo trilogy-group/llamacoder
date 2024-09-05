@@ -139,12 +139,11 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   }, [activeFile]);
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-4 py-2">{children}</div>
-      <SandpackLayout>
+    <div className="absolute inset-0 flex flex-col">
+      <SandpackLayout className="flex-grow overflow-hidden">
         {!isPreviewOnly && (
           <SandpackCodeEditor
-            style={{ height: "calc(80vh - 40px)", width: "50%" }}
+            className="h-full"
             showRunButton={true}
             showInlineErrors={true}
             wrapContent={true}
@@ -154,29 +153,25 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           />
         )}
         <div
-          className="relative"
+          className="relative h-full"
           style={{
-            height: "calc(80vh - 40px)",
-            width: isPreviewOnly ? "100%" : "50%",
+            width: isPreviewOnly ? '100%' : '50%',
           }}
         >
-          <SandpackPreview
-            style={{
-              height: "calc(80vh - 40px)",
-              width: "100%"
-            }}
-          />
+          <SandpackPreview className="h-full w-full" />
           {statusMessage && (
-            <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
-              <CircularProgress size={60} thickness={4} color="primary" />
-              <p className="mt-2 text-lg font-semibold text-white">
-                {statusMessage}
-              </p>
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="text-center">
+                <CircularProgress size={60} thickness={4} color="primary" />
+                <p className="mt-2 text-lg font-semibold text-white">
+                  {statusMessage}
+                </p>
+              </div>
             </div>
           )}
         </div>
-        {statusMessage === "" && actionButtons}
       </SandpackLayout>
+      {statusMessage === "" && actionButtons}
     </div>
   );
 }
@@ -227,7 +222,7 @@ export default function CodeEditor({
   }, [customDependencies]);
 
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className="relative w-full h-full">
       <AnimatePresence>
         <SandpackProvider
           template="react-ts"
@@ -242,9 +237,7 @@ export default function CodeEditor({
           }}
           files={files}
         >
-          <div className="relative">
-            <SandpackContent>{children}</SandpackContent>
-          </div>
+          <SandpackContent>{children}</SandpackContent>
         </SandpackProvider>
       </AnimatePresence>
     </div>
