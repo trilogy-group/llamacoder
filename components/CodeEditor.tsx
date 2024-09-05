@@ -15,6 +15,8 @@ import CodeIcon from "@mui/icons-material/Code";
 import DownloadIcon from "@mui/icons-material/GetApp"; // Changed to a more appropriate icon
 import { saveAs } from "file-saver";
 import CircularProgress from "@mui/material/CircularProgress";
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+
 
 interface CodeEditorProps {
   files: Record<
@@ -23,10 +25,14 @@ interface CodeEditorProps {
   >;
   extraDependencies: { name: string; version: string }[];
   children?: React.ReactNode;
+  onFixIt: (errorMessage: string) => void;
 }
 
-function SandpackContent({ children }: { children: React.ReactNode }) {
+function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onFixIt: (errorMessage: string) => void }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
+  const [hasCompilationError, setHasCompilationError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isFixButtonDisabled, setIsFixButtonDisabled] = useState(false);
 
   const handleDownload = () => {
     const generatedCode: { code: string; extraLibraries: string[] } | null =
@@ -115,7 +121,10 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stopListening = listen((msg) => {
       console.log("msg: ", msg);
-      if (msg.type === "dependencies") {
+      if (msg.type === "action" && msg.action === "show-error") {
+        setErrorMessage(msg.message);
+        setIsFixButtonDisabled(false);
+      } else if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
         if (msg.status === "transpiling") {
@@ -126,6 +135,12 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           setStatusMessage("");
         }
       } else if (msg.type == "done") {
+        if ("compilatonError" in msg) {
+          setHasCompilationError(msg.compilatonError);
+          if (msg.compilatonError) {
+            setIsFixButtonDisabled(false);
+          }
+        }
         console.log("logs: ", logs);
       }
     });
@@ -134,13 +149,22 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     };
   }, [listen, statusMessage]);
 
+  const handleFixIt = () => {
+    if (errorMessage) {
+      onFixIt(errorMessage);
+      setIsFixButtonDisabled(true);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem("activeFile", activeFile);
   }, [activeFile]);
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-4 py-2">{children}</div>
+      <div className="flex items-center gap-4 py-2">
+        {children}
+      </div>
       <SandpackLayout>
         {!isPreviewOnly && (
           <SandpackCodeEditor
@@ -177,6 +201,21 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
         </div>
         {statusMessage === "" && actionButtons}
       </SandpackLayout>
+      {hasCompilationError && (
+        <button
+          onClick={handleFixIt}
+          className={`sp-icon-standalone flex items-center gap-2 absolute top-6 right-2 z-50 font-bold py-2 px-4 rounded transition-colors
+            ${isFixButtonDisabled 
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+              : 'bg-green-500 hover:bg-green-600 text-white'
+            }`}
+          title="Fix Compilation Error"
+          disabled={isFixButtonDisabled}
+        >
+          <ErrorOutlineIcon style={{ width: "16px", height: "16px" }} />
+          <span>Auto Fix</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -185,6 +224,7 @@ export default function CodeEditor({
   files,
   extraDependencies,
   children,
+  onFixIt,
 }: CodeEditorProps) {
   const dependencies = {
     "lucide-react": "latest",
@@ -243,7 +283,7 @@ export default function CodeEditor({
           files={files}
         >
           <div className="relative">
-            <SandpackContent>{children}</SandpackContent>
+            <SandpackContent onFixIt={onFixIt}>{children}</SandpackContent>
           </div>
         </SandpackProvider>
       </AnimatePresence>
