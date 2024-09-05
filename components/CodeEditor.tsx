@@ -213,7 +213,7 @@ function SandpackContent({ status, children, onFixIt }: { status: string, childr
         </div>
         {statusMessage === "" && actionButtons}
       </SandpackLayout>
-      {hasCompilationError && (
+      {errorMessage && (
         <button
           onClick={handleFixIt}
           className={`flex items-center gap-2 absolute top-6 right-2 z-50 font-medium py-2 px-4 rounded-full transition-colors
