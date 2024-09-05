@@ -9,6 +9,7 @@ ${fileContext}
 </relevant_content>
 `;
     }
+    formattedPrompt = `${formattedPrompt}\n\nNote: Make sure to return the complete code in the response irrespective of the changes you are making.`;
     return formattedPrompt;
 }
 
@@ -37,5 +38,6 @@ ${fileContext}
 </relevant_content>
 `;
     }
+    prompt = `${prompt}\n\nNote: Make sure to return the complete code in the response irrespective of the changes you are making.`;
     return prompt;
 }
