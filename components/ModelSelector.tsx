@@ -9,15 +9,12 @@ interface ModelSelectorProps {
 }
 
 const models = [
-  { label: "GPT-4o", value: "gpt-4o" },
-  { label: "GPT-3.5 Turbo", value: "gpt-3.5-turbo" },
-  { label: "GPT-4", value: "gpt-4" },
-  { label: "GPT-4 Turbo", value: "gpt-4-1106-preview" },
-  { label: "Claude Sonnet 3.5", value: "claude-3-5-sonnet-20240620" },
   {
     label: "Bedrock Claude Sonnet 3.5",
     value: "anthropic.claude-3-5-sonnet-20240620-v1:0",
   },
+  { label: "GPT-4o", value: "gpt-4o" },
+  { label: "Claude Sonnet 3.5", value: "claude-3-5-sonnet-20240620" },
 ];
 
 export default function ModelSelector({

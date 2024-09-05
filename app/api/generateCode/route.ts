@@ -1,9 +1,48 @@
 import { BedrockChat } from "@langchain/community/chat_models/bedrock";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatOpenAI } from "@langchain/openai";
+import { DynamicStructuredTool } from "@langchain/core/tools";
+import { Runnable } from "@langchain/core/runnables";
 import { perplexitySearchTool } from "../../../utils/tools";
 import { systemPrompt } from "./prompt";
 import util from 'util';
 
 export const runtime = "nodejs";
+
+const ChatModel = (model: string, tools: DynamicStructuredTool<any>[]): Runnable => {
+  if(model.startsWith("anthropic")){
+    const llm = new BedrockChat({
+      model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+      temperature: 0.2,
+      region: "us-east-1",
+      maxTokens: 8192,
+    });
+    return llm.bindTools(tools);
+  } 
+  else if(model.startsWith("claude")){
+    const llm = new ChatAnthropic({
+      model: "claude-3-5-sonnet-20240620",
+      temperature: 0,
+      maxTokens: 8192,
+    });
+    return llm.bindTools(tools);
+  }
+  else if(model.startsWith("gpt")){
+    const llm = new ChatOpenAI({
+      modelName: "gpt-4o",
+      temperature: 0.2,
+      maxTokens: 8192
+    });
+    return llm.bindTools(tools);
+  }
+  const llm = new BedrockChat({
+    model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    temperature: 0.2,
+    region: "us-east-1",
+    maxTokens: 8192
+  });
+  return llm.bindTools(tools);
+}
 
 export async function POST(req: Request) {
   try {
@@ -15,16 +54,9 @@ export async function POST(req: Request) {
       ...messages
     ];
 
-    const bedrock = new BedrockChat({
-      model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
-      temperature: 0.2,
-      region: "us-east-1",
-      maxTokens: 8192
-    });
+    const llm = ChatModel(model, [perplexitySearchTool]);
 
-    const llmWithTools = bedrock.bindTools([perplexitySearchTool]);
-
-    let response = await llmWithTools.invoke(allMessages);
+    let response = await llm.invoke(allMessages);
     console.log("Initial response: ", response);
     allMessages.push(response);
 
@@ -43,7 +75,7 @@ export async function POST(req: Request) {
       const toolCall = tool_calls[0];
       const toolResponse = await perplexitySearchTool.invoke(toolCall);
       allMessages.push(toolResponse);
-      response = await llmWithTools.invoke(allMessages);
+      response = await llm.invoke(allMessages);
       allMessages.push(response);
     }
 
