@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction } from "react";
+import { DocumentIcon } from "@heroicons/react/24/outline";
 
 interface FileUploaderProps {
   setSelectedFiles: Dispatch<SetStateAction<File[]>>;
@@ -11,7 +12,10 @@ export default function FileUploader({
     <div className="mb-4 w-full max-w-sm">
       <div className="relative">
         <div className="absolute -inset-2 rounded-[32px] bg-gray-300/50" />
-        <div className="relative flex rounded-3xl bg-white shadow-sm">
+        <div 
+          className="relative flex rounded-3xl bg-white shadow-sm"
+          title="Upload documents to add extra context"
+        >
           <input
             type="file"
             multiple

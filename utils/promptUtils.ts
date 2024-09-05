@@ -1,11 +1,6 @@
 export const generateCodePrompt = (prompt: string, fileContext: string, apiSpec: string) => {
     let formattedPrompt = `
 ${prompt}
-
-Use these APIs wherever needed: (Use the server url mentioned in the api_docs itself)
-<api_docs>
-${apiSpec}
-</api_docs>
 `;
     if (fileContext) {
         formattedPrompt = `${formattedPrompt}\n\Here are some relevant content you may need to use (Please use them wherever appropriate):
@@ -35,10 +30,6 @@ ${code}
 ${prompt}
 </required_changes>
 
-Use these APIs wherever needed: (Use the server url mentioned in the api_docs itself)
-<api_docs>
-${apiSpec}
-</api_docs>
 `;
     if (fileContext !== "") {
         prompt = `${prompt}\n\Here are some relevant content you may need to use (Please use them wherever appropriate):
