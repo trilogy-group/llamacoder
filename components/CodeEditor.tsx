@@ -19,6 +19,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 
 interface CodeEditorProps {
+  status: string
   files: Record<
     string,
     { code: string; active: boolean; hidden: boolean; readOnly: boolean }
@@ -28,7 +29,7 @@ interface CodeEditorProps {
   onFixIt: (errorMessage: string) => void;
 }
 
-function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onFixIt: (errorMessage: string) => void }) {
+function SandpackContent({ status, children, onFixIt }: { status: string, children: React.ReactNode, onFixIt: (errorMessage: string) => void }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
   const [hasCompilationError, setHasCompilationError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -119,9 +120,15 @@ function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onF
   }, [code, activeFile]);
 
   useEffect(() => {
+    console.log("status: ", status, statusMessage);
+  }, [status, statusMessage]);
+
+  useEffect(() => {
     const stopListening = listen((msg) => {
       console.log("msg: ", msg);
-      if (msg.type === "action" && msg.action === "show-error") {
+      if(status === "creating" || status === "updating") {
+        setStatusMessage("🚀 Generating code...");
+      } else if (msg.type === "action" && msg.action === "show-error") {
         setErrorMessage(msg.message);
         setIsFixButtonDisabled(false);
       } else if (msg.type === "dependencies") {
@@ -147,7 +154,7 @@ function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onF
     return () => {
       stopListening();
     };
-  }, [listen, statusMessage]);
+  }, [listen, statusMessage, status]);
 
   const handleFixIt = () => {
     if (errorMessage) {
@@ -191,11 +198,16 @@ function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onF
             }}
           />
           {statusMessage && (
-            <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
-              <CircularProgress size={60} thickness={4} color="primary" />
-              <p className="mt-2 text-lg font-semibold text-white">
-                {statusMessage}
-              </p>
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center"
+              style={{ backgroundColor: '#1e2029' }}
+            >
+              <div className="flex flex-col items-center">
+                <CircularProgress size={60} thickness={4} color="primary" />
+                <p className="mt-2 text-lg font-semibold text-white">
+                  {statusMessage}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -204,10 +216,10 @@ function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onF
       {hasCompilationError && (
         <button
           onClick={handleFixIt}
-          className={`sp-icon-standalone flex items-center gap-2 absolute top-6 right-2 z-50 font-bold py-2 px-4 rounded transition-colors
+          className={`flex items-center gap-2 absolute top-6 right-2 z-50 font-medium py-2 px-4 rounded-full transition-colors
             ${isFixButtonDisabled 
-              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-              : 'bg-green-500 hover:bg-green-600 text-white'
+              ? 'bg-blue-300 text-white cursor-not-allowed' 
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
             }`}
           title="Fix Compilation Error"
           disabled={isFixButtonDisabled}
@@ -221,6 +233,7 @@ function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onF
 }
 
 export default function CodeEditor({
+  status,
   files,
   extraDependencies,
   children,
@@ -283,7 +296,7 @@ export default function CodeEditor({
           files={files}
         >
           <div className="relative">
-            <SandpackContent onFixIt={onFixIt}>{children}</SandpackContent>
+            <SandpackContent status={status} onFixIt={onFixIt}>{children}</SandpackContent>
           </div>
         </SandpackProvider>
       </AnimatePresence>
