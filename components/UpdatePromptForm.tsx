@@ -1,7 +1,7 @@
 import { ArrowLongRightIcon, XMarkIcon } from "@heroicons/react/20/solid";
 import { PhotoIcon } from "@heroicons/react/24/outline";
 import LoadingDots from "./loading-dots";
-import React, { FormEvent, useRef, useState } from "react";
+import React, { FormEvent, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import Image from "next/image";
 import FileUploader from "./FileUploader";
 
@@ -10,11 +10,13 @@ interface UpdateAndPublishSectionProps {
   onUpdate: (e: FormEvent<HTMLFormElement>, images: File[], files: File[]) => void;
 }
 
-const UpdatePromptForm: React.FC<UpdateAndPublishSectionProps> = ({
+const UpdatePromptForm = forwardRef<HTMLFormElement, UpdateAndPublishSectionProps>(({
   loading,
   onUpdate,
-}) => {
+}, ref) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  useImperativeHandle(ref, () => formRef.current!);
   const [images, setImages] = useState<File[]>([]);
   const [files, setFiles] = useState<File[]>([]);
 
@@ -42,7 +44,7 @@ const UpdatePromptForm: React.FC<UpdateAndPublishSectionProps> = ({
 
   return (
     <div className="mt-5">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} ref={formRef}>
         <fieldset disabled={loading} className="group w-full">
           <div className="relative">
             <div className="relative flex flex-col rounded-3xl bg-white shadow-sm group-disabled:bg-gray-50">
@@ -121,6 +123,8 @@ const UpdatePromptForm: React.FC<UpdateAndPublishSectionProps> = ({
       </form>
     </div>
   );
-};
+});
+
+UpdatePromptForm.displayName = 'UpdatePromptForm';
 
 export default UpdatePromptForm;

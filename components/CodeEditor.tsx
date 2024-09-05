@@ -25,12 +25,14 @@ interface CodeEditorProps {
   >;
   extraDependencies: { name: string; version: string }[];
   children?: React.ReactNode;
+  onFixIt: (errorMessage: string) => void;
 }
 
-function SandpackContent({ children }: { children: React.ReactNode }) {
+function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onFixIt: (errorMessage: string) => void }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
   const [hasCompilationError, setHasCompilationError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isFixButtonDisabled, setIsFixButtonDisabled] = useState(false);
 
   const handleDownload = () => {
     const generatedCode: { code: string; extraLibraries: string[] } | null =
@@ -121,6 +123,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       console.log("msg: ", msg);
       if (msg.type === "action" && msg.action === "show-error") {
         setErrorMessage(msg.message);
+        setIsFixButtonDisabled(false);
       } else if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
@@ -134,6 +137,9 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       } else if (msg.type == "done") {
         if ("compilatonError" in msg) {
           setHasCompilationError(msg.compilatonError);
+          if (msg.compilatonError) {
+            setIsFixButtonDisabled(false);
+          }
         }
         console.log("logs: ", logs);
       }
@@ -145,7 +151,8 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
 
   const handleFixIt = () => {
     if (errorMessage) {
-      console.log("Error message:", errorMessage);
+      onFixIt(errorMessage);
+      setIsFixButtonDisabled(true);
     }
   };
 
@@ -197,8 +204,13 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
       {hasCompilationError && (
         <button
           onClick={handleFixIt}
-          className="sp-icon-standalone flex items-center gap-2 absolute top-6 right-2 z-50 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+          className={`sp-icon-standalone flex items-center gap-2 absolute top-6 right-4 z-50 font-bold py-2 px-4 rounded transition-colors
+            ${isFixButtonDisabled 
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+              : 'bg-green-500 hover:bg-green-600 text-white'
+            }`}
           title="Fix Compilation Error"
+          disabled={isFixButtonDisabled}
         >
           <ErrorOutlineIcon style={{ width: "16px", height: "16px" }} />
           <span>Auto Fix</span>
@@ -212,6 +224,7 @@ export default function CodeEditor({
   files,
   extraDependencies,
   children,
+  onFixIt,
 }: CodeEditorProps) {
   const dependencies = {
     "lucide-react": "latest",
@@ -270,7 +283,7 @@ export default function CodeEditor({
           files={files}
         >
           <div className="relative">
-            <SandpackContent>{children}</SandpackContent>
+            <SandpackContent onFixIt={onFixIt}>{children}</SandpackContent>
           </div>
         </SandpackProvider>
       </AnimatePresence>
