@@ -15,6 +15,8 @@ import CodeIcon from "@mui/icons-material/Code";
 import DownloadIcon from "@mui/icons-material/GetApp"; // Changed to a more appropriate icon
 import { saveAs } from "file-saver";
 import CircularProgress from "@mui/material/CircularProgress";
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+
 
 interface CodeEditorProps {
   files: Record<
@@ -27,6 +29,8 @@ interface CodeEditorProps {
 
 function SandpackContent({ children }: { children: React.ReactNode }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
+  const [hasCompilationError, setHasCompilationError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleDownload = () => {
     const generatedCode: { code: string; extraLibraries: string[] } | null =
@@ -115,7 +119,9 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stopListening = listen((msg) => {
       console.log("msg: ", msg);
-      if (msg.type === "dependencies") {
+      if (msg.type === "action" && msg.action === "show-error") {
+        setErrorMessage(msg.message);
+      } else if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
         if (msg.status === "transpiling") {
@@ -126,6 +132,9 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           setStatusMessage("");
         }
       } else if (msg.type == "done") {
+        if ("compilatonError" in msg) {
+          setHasCompilationError(msg.compilatonError);
+        }
         console.log("logs: ", logs);
       }
     });
@@ -134,13 +143,21 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     };
   }, [listen, statusMessage]);
 
+  const handleFixIt = () => {
+    if (errorMessage) {
+      console.log("Error message:", errorMessage);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem("activeFile", activeFile);
   }, [activeFile]);
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-4 py-2">{children}</div>
+      <div className="flex items-center gap-4 py-2">
+        {children}
+      </div>
       <SandpackLayout>
         {!isPreviewOnly && (
           <SandpackCodeEditor
@@ -177,6 +194,16 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
         </div>
         {statusMessage === "" && actionButtons}
       </SandpackLayout>
+      {hasCompilationError && (
+        <button
+          onClick={handleFixIt}
+          className="sp-icon-standalone flex items-center gap-2 absolute top-6 right-2 z-50 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+          title="Fix Compilation Error"
+        >
+          <ErrorOutlineIcon style={{ width: "16px", height: "16px" }} />
+          <span>Auto Fix</span>
+        </button>
+      )}
     </div>
   );
 }
