@@ -204,7 +204,7 @@ function SandpackContent({ children, onFixIt }: { children: React.ReactNode, onF
       {hasCompilationError && (
         <button
           onClick={handleFixIt}
-          className={`sp-icon-standalone flex items-center gap-2 absolute top-6 right-4 z-50 font-bold py-2 px-4 rounded transition-colors
+          className={`sp-icon-standalone flex items-center gap-2 absolute top-6 right-2 z-50 font-bold py-2 px-4 rounded transition-colors
             ${isFixButtonDisabled 
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
               : 'bg-green-500 hover:bg-green-600 text-white'
