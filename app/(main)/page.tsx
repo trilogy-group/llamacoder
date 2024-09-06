@@ -475,7 +475,4 @@ export default function Home() {
       {/* {(status === "creating" || status === "updating") && (
         <FunFactRenderer funFact={funFact} />
       )} */}
-      <FeedbackButton />
-    </div>
-  );
 }
