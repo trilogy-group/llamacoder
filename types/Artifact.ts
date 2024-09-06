@@ -12,6 +12,5 @@ export type Artifact = {
     prompt: string;
     code: string;
     dependencies: Record<string, string>;
-    template: string;
     history: Message[];
 };

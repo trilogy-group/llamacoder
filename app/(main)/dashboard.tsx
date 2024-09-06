@@ -5,10 +5,10 @@ import CreateProjectButton from "@/components/CreateProjectButton";
 import ProjectOverviewInputForm from "@/components/ProjectOverviewInputForm";
 import { Project } from "@/types/Project";
 import EmptyProjectMessage from "@/components/EmptyProjectMessage";
-import { dummyProjects } from "./dummy-projects";
+// import { dummyProjects } from "./dummy-projects";
 import HeaderV2 from "@/components/HeaderV2";
 
-// const dummyProjects: Project[] = [];
+const dummyProjects: Project[] = [];
 
 const Dashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
