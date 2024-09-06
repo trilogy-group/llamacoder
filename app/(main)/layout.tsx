@@ -7,17 +7,19 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <body className="bg-brand antialiased">
-      <div className="absolute inset-x-0 flex justify-center">
-        <Image
-          src={bgImg}
-          alt=""
-          className="w-full max-w-[1200px] mix-blend-screen"
-          priority
-        />
-      </div>
+    <html lang="en">
+      <body className="bg-brand antialiased">
+        <div className="absolute inset-x-0 flex justify-center">
+          <Image
+            src={bgImg}
+            alt=""
+            className="w-full max-w-[1200px] mix-blend-screen"
+            priority
+          />
+        </div>
 
-      <div className="isolate">{children}</div>
-    </body>
+        <div className="isolate">{children}</div>
+      </body>
+    </html>
   );
 }

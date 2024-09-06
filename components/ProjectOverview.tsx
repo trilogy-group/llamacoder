@@ -5,9 +5,10 @@ import Tooltip from './Tooltip';
 
 interface ProjectOverviewProps {
   project: Project;
+  onOpenProject: () => void;
 }
 
-const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {  
+const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onOpenProject }) => {  
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
   const projectTags = mockTags.slice(0, Math.floor(Math.random() * 3) + 1);
@@ -97,7 +98,10 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
         </div>
         
         <Tooltip content="Open for development">
-          <button className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2">
+          <button 
+            onClick={() => onOpenProject()}
+            className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2"
+          >
             <FiEdit3 className="w-5 h-5" />
             <span className="text-sm font-medium">Open</span>
           </button>

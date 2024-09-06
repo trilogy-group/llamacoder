@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HeaderV2 from "@/components/HeaderV2";
 import { dummyProjects } from "./dummy-projects";
 import ArtifactList from "@/components/ArtifactLIst";
@@ -6,15 +6,33 @@ import Preview from "@/components/Preview";
 import UpdateArtifact from "@/components/UpdateArtifact";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Artifact } from "@/types/Artifact";
+import { Project } from "@/types/Project";
 
-const Workspace: React.FC = () => {
-  const [selectedArtifact, setSelectedArtifact] = useState<Artifact>(dummyProjects[0].artifacts[0]);
+interface WorkspaceProps {
+  projectId: string;
+}
+
+const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
+  const [project, setProject] = useState<Project | null>(null);
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
   const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] = useState(false);
+
+  useEffect(() => {
+    const foundProject = dummyProjects.find(p => p.id === projectId);
+    if (foundProject) {
+      setProject(foundProject);
+      setSelectedArtifact(foundProject.artifacts[0]);
+    }
+  }, [projectId]);
 
   const handleSelectArtifact = (artifact: Artifact) => {
     setSelectedArtifact(artifact);
   };
+
+  if (!project || !selectedArtifact) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="h-screen flex flex-col">
@@ -28,7 +46,7 @@ const Workspace: React.FC = () => {
             collapsible={true}
           >
             <ArtifactList
-              artifacts={dummyProjects[0].artifacts}
+              artifacts={project.artifacts}
               onSelectArtifact={handleSelectArtifact}
               selectedArtifact={selectedArtifact}
               isCollapsed={isArtifactListCollapsed}

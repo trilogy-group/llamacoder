@@ -1,17 +1,20 @@
+"use client";
+
 import React, { useState } from "react";
-import Header from "@/components/Header";
+import HeaderV2 from "@/components/HeaderV2";
 import ProjectList from "@/components/ProjectList";
 import CreateProjectButton from "@/components/CreateProjectButton";
 import ProjectOverviewInputForm from "@/components/ProjectOverviewInputForm";
 import { Project } from "@/types/Project";
 import EmptyProjectMessage from "@/components/EmptyProjectMessage";
-// import { dummyProjects } from "./dummy-projects";
-import HeaderV2 from "@/components/HeaderV2";
+import { useRouter } from 'next/navigation';
+import { dummyProjects } from "./dummy-projects";
 
-const dummyProjects: Project[] = [];
+// const dummyProjects: Project[] = [];
 
 const Dashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const router = useRouter();
 
   const handleCreateProject = () => setShowCreateForm(true);
   const handleCancelCreate = () => setShowCreateForm(false);
@@ -19,6 +22,10 @@ const Dashboard: React.FC = () => {
   const handleNextCreate = (description: string) => {
     console.log("New project description:", description);
     setShowCreateForm(false);
+  };
+
+  const handleOpenProject = (projectId: string) => {
+    router.push(`/workspaces/${projectId}`);
   };
 
   return (
@@ -40,6 +47,7 @@ const Dashboard: React.FC = () => {
               <ProjectList
                 projects={dummyProjects}
                 onCreateProject={handleCreateProject}
+                onOpenProject={handleOpenProject}
               />
             </>
           ) : (

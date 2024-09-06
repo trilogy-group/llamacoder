@@ -1,0 +1,7 @@
+"use client";
+
+import Workspace from '../../workspace';
+
+export default function WorkspacePage({ params }: { params: { projectId: string } }) {
+  return <Workspace projectId={params.projectId} />;
+}
