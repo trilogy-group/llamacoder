@@ -40,14 +40,14 @@ const UpdateArtifact: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col bg-white shadow-sm rounded-lg overflow-hidden">
-      <div className="max-h-[200px] overflow-y-auto">
+      <div className="flex-shrink-0">
         <ChatContext
           attachments={contextAttachments}
           onAdd={handleContextAttachmentAdd}
           onRemove={handleContextAttachmentRemove}
         />
       </div>
-      <div className="flex-grow overflow-auto">
+      <div className="flex-grow overflow-hidden flex flex-col">
         <ChatHistory messages={chatHistory} />
       </div>
       <InputForm onSubmit={handleSubmit} isEmpty={chatHistory.length === 0} />
