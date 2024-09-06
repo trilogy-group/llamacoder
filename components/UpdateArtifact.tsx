@@ -1,28 +1,56 @@
 import React, { useState } from "react";
 import ChatHistory from "./ChatHistory";
 import InputForm from "./InputForm";
+import ChatContext from "./ChatContext";
+import { Message } from "../types/Artifact";
 
 const UpdateArtifact: React.FC = () => {
-  const [chatHistory, setChatHistory] = useState<string[]>([]);
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  const [contextAttachments, setContextAttachments] = useState<File[]>([]);
 
-  const handleSubmit = (message: string) => {
-    if (message.trim()) {
-      setChatHistory([...chatHistory, message]);
+  const handleSubmit = (message: string, attachments: File[]) => {
+    if (message.trim() || attachments.length > 0) {
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        content: message,
+        role: "user",
+        attachments: attachments,
+      };
+      setChatHistory((prevHistory) => [...prevHistory, newMessage]);
+      
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: "Updated message",
+          role: "assistant",
+          attachments: [],
+        };
+        setChatHistory((prevHistory) => [...prevHistory, assistantMessage]);
+      }, 1000);
     }
+  };
+
+  const handleContextAttachmentAdd = (files: File[]) => {
+    setContextAttachments((prev) => [...prev, ...files]);
+  };
+
+  const handleContextAttachmentRemove = (index: number) => {
+    setContextAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
     <div className="w-full h-full flex flex-col bg-white shadow-sm rounded-lg overflow-hidden">
-      {chatHistory.length === 0 ? (
-        <InputForm onSubmit={handleSubmit} isEmpty={true} />
-      ) : (
-        <>
-          <div className="flex-grow overflow-y-auto">
-            <ChatHistory messages={chatHistory} />
-          </div>
-          <InputForm onSubmit={handleSubmit} isEmpty={false} />
-        </>
-      )}
+      <div className="max-h-[200px] overflow-y-auto">
+        <ChatContext
+          attachments={contextAttachments}
+          onAdd={handleContextAttachmentAdd}
+          onRemove={handleContextAttachmentRemove}
+        />
+      </div>
+      <div className="flex-grow overflow-auto">
+        <ChatHistory messages={chatHistory} />
+      </div>
+      <InputForm onSubmit={handleSubmit} isEmpty={chatHistory.length === 0} />
     </div>
   );
 };

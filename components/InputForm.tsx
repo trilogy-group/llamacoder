@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { FiPlus, FiSend } from "react-icons/fi";
 import AttachmentList from "./AttachmentList";
 import ModelSelector from "./ModelSelector";
+import { Message } from "../types/Artifact";
 
 interface InputFormProps {
-  onSubmit: (message: string) => void;
+  onSubmit: (message: string, attachments: File[]) => void;
   isEmpty: boolean;
 }
 
@@ -37,12 +38,13 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(inputMessage);
+    onSubmit(inputMessage, attachments);
     setInputMessage("");
+    setAttachments([]);
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`p-4 space-y-2 ${isEmpty ? 'flex-grow' : ''}`}>
+    <form onSubmit={handleSubmit} className={`p-4 space-y-2 ${isEmpty ? '' : ''}`}>
       <div className="bg-gray-100 p-3 rounded-lg flex-grow">
         <div className="flex items-center space-x-2 mb-2">
           <button
@@ -60,7 +62,11 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
             className="hidden"
             multiple
           />
-          <AttachmentList attachments={attachments} onRemove={removeAttachment} />
+          <AttachmentList 
+            attachments={attachments} 
+            onRemove={removeAttachment} 
+            badgeClassName="bg-white text-gray-800"
+          />
         </div>
         <div className="relative flex-grow">
           <textarea
