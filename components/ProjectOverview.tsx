@@ -1,15 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Project } from '../types/Project';
 import { FiExternalLink, FiShare2, FiTrash2, FiImage, FiEdit3 } from 'react-icons/fi';
 import Tooltip from './Tooltip';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 interface ProjectOverviewProps {
   project: Project;
+  onProjectDeleted: () => void;
 }
 
-const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {  
+const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted }) => {  
   const router = useRouter();
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
   const projectTags = mockTags.slice(0, Math.floor(Math.random() * 3) + 1);
@@ -30,6 +36,33 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
 
   const handleOpenProject = () => {
     router.push(`/workspaces/${project.id}`);
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await axios.delete(`/api/projects?id=${project.id}`);
+      toast.success('Project deleted successfully', {
+        duration: 3000,
+      });
+      onProjectDeleted();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Failed to delete project', {
+        duration: 3000,
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
   };
 
   return (
@@ -98,7 +131,11 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
             </Tooltip>
           )}
           <Tooltip content="Delete">
-            <button className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition duration-300 ease-in-out">
+            <button 
+              onClick={handleDeleteClick}
+              className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition duration-300 ease-in-out"
+              disabled={isDeleting}
+            >
               <FiTrash2 className="w-5 h-5" />
             </button>
           </Tooltip>
@@ -114,6 +151,31 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
           </button>
         </Tooltip>
       </div>
+
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Confirm Deletion</h3>
+            <p className="mb-6 text-gray-600">Are you sure you want to delete this project? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

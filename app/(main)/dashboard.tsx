@@ -9,6 +9,7 @@ import { Project } from "@/types/Project";
 import EmptyProjectMessage from "@/components/EmptyProjectMessage";
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { Toaster } from 'sonner';
 
 const Dashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -73,6 +74,10 @@ const Dashboard: React.FC = () => {
     router.push(`/workspaces/${projectId}`);
   };
 
+  const handleProjectDeleted = () => {
+    fetchProjects();
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderV2 />
@@ -108,6 +113,7 @@ const Dashboard: React.FC = () => {
                 projects={projects}
                 onCreateProject={() => setShowCreateForm(true)}
                 onOpenProject={handleOpenProject}
+                onProjectDeleted={handleProjectDeleted}
               />
             </>
           ) : (
@@ -131,6 +137,7 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       )}
+      <Toaster position="bottom-right" />
     </div>
   );
 }
