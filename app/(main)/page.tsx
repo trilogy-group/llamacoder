@@ -1,23 +1,25 @@
 "use client";
 
-import { useState, useEffect, FormEvent, useRef } from "react";
-import { Toaster, toast } from "sonner";
-import { useScrollTo } from "@/hooks/use-scroll-to";
-import { motion } from "framer-motion";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FileUploader from "../../components/FileUploader";
-import PromptForm from "../../components/PromptForm";
-import ModelSelector from "../../components/ModelSelector";
+import Header from "@/components/Header";
+import { useScrollTo } from "@/hooks/use-scroll-to";
+import { useUser } from "@auth0/nextjs-auth0/client";
+import { CircularProgress } from "@mui/material";
+import { motion } from "framer-motion";
+import { redirect } from "next/navigation";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Toaster, toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 import CodeEditor from "../../components/CodeEditor";
 import FeedbackButton from "../../components/FeedbackButton";
-import { generateCode, modifyCode, getApiSpec } from "../../utils/apiClient";
-import UpdatePromptForm from "../../components/UpdatePromptForm";
+import FileUploader from "../../components/FileUploader";
+import ModelSelector from "../../components/ModelSelector";
+import PromptForm from "../../components/PromptForm";
 import PublishButton from "../../components/PublishButton";
 import PublishedAppLink from "../../components/PublishedAppLink";
-import { CircularProgress } from "@mui/material";
+import UpdatePromptForm from "../../components/UpdatePromptForm";
+import { generateCode, getApiSpec, modifyCode } from "../../utils/apiClient";
 import { readFileContent } from "../../utils/fileUtils";
-import { v4 as uuidv4 } from "uuid";
 import { generateCodePrompt, modifyCodePrompt } from "../../utils/promptUtils";
 
 function extractComponentName(code: string): string {
@@ -57,10 +59,11 @@ const defaultFiles = {
     active: false,
     hidden: true,
     readOnly: true,
-  }
-}
+  },
+};
 
 export default function Home() {
+  const { user, error, isLoading } = useUser();
   const [status, setStatus] = useState<
     "initial" | "creating" | "created" | "updating" | "updated"
   >("initial");
@@ -70,10 +73,13 @@ export default function Home() {
   }>({ code: defaultCode, extraLibraries: [] });
   const [ref, scrollTo] = useScrollTo();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [files, setFiles] = useState<Record<
-    string,
-    { code: string; active: boolean; hidden: boolean; readOnly: boolean }
-  >>(defaultFiles);
+  const [files, setFiles] =
+    useState<
+      Record<
+        string,
+        { code: string; active: boolean; hidden: boolean; readOnly: boolean }
+      >
+    >(defaultFiles);
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [publishedUrl, setPublishedUrl] = useState<string | null>("");
   const [loading, setLoading] = useState(true);
@@ -83,7 +89,9 @@ export default function Home() {
 
   const handleFixIt = (errorMessage: string) => {
     if (updatePromptFormRef.current) {
-      const textArea = updatePromptFormRef.current.querySelector('textarea[name="prompt"]') as HTMLTextAreaElement;
+      const textArea = updatePromptFormRef.current.querySelector(
+        'textarea[name="prompt"]',
+      ) as HTMLTextAreaElement;
       if (textArea) {
         textArea.value = `Fix this error: ${errorMessage}`;
         updatePromptFormRef.current.requestSubmit();
@@ -221,8 +229,10 @@ export default function Home() {
       extraLibraries: { name: string; version: string }[];
     },
   ) => {
-    if(newGeneratedCode.code === "") {
-      toast.error("Seems like the code genie stopped mid-way while generating the code. Please try again.");
+    if (newGeneratedCode.code === "") {
+      toast.error(
+        "Seems like the code genie stopped mid-way while generating the code. Please try again.",
+      );
       return;
     }
     setGeneratedCode(newGeneratedCode);
@@ -273,7 +283,10 @@ export default function Home() {
     onSuccess(componentName, newGeneratedCode);
   };
 
-  const handleGenerateCode = async (e: FormEvent<HTMLFormElement>, images: File[]) => {
+  const handleGenerateCode = async (
+    e: FormEvent<HTMLFormElement>,
+    images: File[],
+  ) => {
     e.preventDefault();
     if (status !== "initial") {
       scrollTo({ delay: 0.5 });
@@ -302,19 +315,22 @@ export default function Home() {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(image);
         });
-      })
+      }),
     );
 
     var userPrompt = generateCodePrompt(prompt, fileContext, apiSpec);
 
     const messages = [
-      { 
-        role: "user", 
+      {
+        role: "user",
         content: [
           { type: "text", text: userPrompt },
-          ...imageBase64.map((image) => ({ type: "image_url", image_url: { url: image } }))
-        ]
-      }
+          ...imageBase64.map((image) => ({
+            type: "image_url",
+            image_url: { url: image },
+          })),
+        ],
+      },
     ];
     console.log("Messages: ", messages, selectedModel);
 
@@ -343,7 +359,10 @@ export default function Home() {
     }
   };
 
-  const handleModifyCode = async (e: FormEvent<HTMLFormElement>, images: File[]) => {
+  const handleModifyCode = async (
+    e: FormEvent<HTMLFormElement>,
+    images: File[],
+  ) => {
     e.preventDefault();
     setStatus("updating");
 
@@ -357,7 +376,7 @@ export default function Home() {
     }
 
     const generatedCode = localStorage.getItem("generatedCode");
-    if(!generatedCode) {
+    if (!generatedCode) {
       toast.error("No generated code found");
       setStatus("created");
       return;
@@ -372,18 +391,27 @@ export default function Home() {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(image);
         });
-      })
+      }),
     );
 
-    var query = modifyCodePrompt(initialPrompt, prompt, generatedCodeJson.code, fileContext, apiSpec);
+    var query = modifyCodePrompt(
+      initialPrompt,
+      prompt,
+      generatedCodeJson.code,
+      fileContext,
+      apiSpec,
+    );
     const messages = [
-      { 
-        role: "user", 
+      {
+        role: "user",
         content: [
           { type: "text", text: query },
-          ...imageBase64.map((image) => ({ type: "image_url", image_url: { url: image } }))
-        ]
-      }
+          ...imageBase64.map((image) => ({
+            type: "image_url",
+            image_url: { url: image },
+          })),
+        ],
+      },
     ];
     console.log("Messages: ", messages, selectedModel);
 
@@ -417,24 +445,28 @@ export default function Home() {
     localStorage.setItem("publishedUrl", url);
   };
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <CircularProgress size={60} thickness={4} />
       </div>
     );
   }
+  if (!user) {
+    redirect("/landing");
+    return null;
+  }
+  if (error) return <div>{error.message}</div>;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
-      <Header />
+      <Header user={user} />
 
-      {status !== "initial" &&
-        status !== "creating" && (
-          <div className="fixed right-4 top-4 z-50">
-            <PublishButton loading={loading} onPublish={handlePublish} />
-          </div>
-        )}
+      {status !== "initial" && status !== "creating" && (
+        <div className="fixed right-4 top-4 z-50">
+          <PublishButton loading={loading} onPublish={handlePublish} />
+        </div>
+      )}
       <main className="mt-12 flex w-full flex-1 flex-col items-center px-4 text-center sm:mt-20">
         <h1 className="my-6 max-w-3xl text-4xl font-bold text-gray-800 sm:text-6xl">
           Turn your <span className="text-blue-600">idea</span>
@@ -458,20 +490,20 @@ export default function Home() {
 
         <hr className="border-1 mb-20 h-px bg-gray-700 dark:bg-gray-700" />
 
-          <motion.div
-            initial={{ height: 0 }}
-            animate={{
-              height: "auto",
-              overflow: "hidden",
-              transitionEnd: { overflow: "visible" },
-            }}
-            transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-            className="w-full pb-[25vh] pt-10"
-            onAnimationComplete={() => scrollTo()}
-            ref={ref}
-          >
-            <div className="flex flex-col items-center">
-            {status !== "initial" && status !== "creating" && files &&
+        <motion.div
+          initial={{ height: 0 }}
+          animate={{
+            height: "auto",
+            overflow: "hidden",
+            transitionEnd: { overflow: "visible" },
+          }}
+          transition={{ type: "spring", bounce: 0, duration: 0.5 }}
+          className="w-full pb-[25vh] pt-10"
+          onAnimationComplete={() => scrollTo()}
+          ref={ref}
+        >
+          <div className="flex flex-col items-center">
+            {status !== "initial" && status !== "creating" && files && (
               <div className="mb-8 flex w-full justify-center">
                 <div className="w-full md:w-3/5">
                   <UpdatePromptForm
@@ -481,20 +513,20 @@ export default function Home() {
                   />
                 </div>
               </div>
-            }
+            )}
 
-              {(status !== "initial") && (
-                <div className="w-full">
-                  <CodeEditor
-                    status={status}
-                    files={files}
-                    extraDependencies={generatedCode.extraLibraries || []}
-                    onFixIt={handleFixIt}
-                  />
-                </div>
-              )}
-            </div>
-          </motion.div>
+            {status !== "initial" && (
+              <div className="w-full">
+                <CodeEditor
+                  status={status}
+                  files={files}
+                  extraDependencies={generatedCode.extraLibraries || []}
+                  onFixIt={handleFixIt}
+                />
+              </div>
+            )}
+          </div>
+        </motion.div>
       </main>
       <Footer />
       <Toaster invert={true} />

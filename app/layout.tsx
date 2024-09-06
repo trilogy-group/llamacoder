@@ -1,8 +1,10 @@
+import { UserProvider } from "@auth0/nextjs-auth0/client";
 import type { Metadata } from "next";
 import PlausibleProvider from "next-plausible";
+
 import "./globals.css";
 
-let title = "ArTIfacts – AI-Powered App Generator by TI";
+let title = "ArTIfacts - AI-Powered App Generator by TI";
 let description = "Generate your next app with ArTIfacts";
 let url = "https://github.com/trilogy-group/";
 let ogimage = "https://artifacts.ai/og-image.png";
@@ -43,7 +45,9 @@ export default function RootLayout({
         <PlausibleProvider domain="llamacoder.io" />
       </head>
 
-      {children}
+      <UserProvider>
+        <body>{children}</body>
+      </UserProvider>
     </html>
   );
 }

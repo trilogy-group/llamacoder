@@ -1,5 +1,5 @@
-import Image from "next/image";
 import bgImg from "@/public/halo.png";
+import Image from "next/image";
 
 export default function Layout({
   children,
