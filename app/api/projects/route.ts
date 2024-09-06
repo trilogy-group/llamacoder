@@ -15,16 +15,23 @@ export async function POST(request: Request) {
     const project: Project = {
       ...body,
       id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
-    await ddbClient.put(TABLE_NAME, {
-      PK: `PROJECT#${project.id}`,
-      SK: `PROJECT#${project.id}`,
+    
+    // Convert Date objects to ISO strings for DynamoDB
+    const dbProject = {
       ...project,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
+    };
+
+    await ddbClient.put(TABLE_NAME, {
+      PK: `PROJECT#${project.id}`,
+      SK: `PROJECT#${project.id}`,
+      ...dbProject,
     });
+    
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     console.error('Error creating project:', error);
@@ -32,42 +39,66 @@ export async function POST(request: Request) {
   }
 }
 
-// Read a project by ID
+// Read a project by ID or fetch all projects
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
+    if (id) {
+      // Fetch a single project by ID
+      const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
+      
+      if (!result.Item) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+
+      const project: Project = {
+        id: result.Item.id,
+        title: result.Item.title,
+        description: result.Item.description,
+        thumbnail: result.Item.thumbnail,
+        context: result.Item.context as FileContext[],
+        artifacts: result.Item.artifacts as Artifact[],
+        entrypoint: result.Item.entrypoint as Artifact,
+        status: result.Item.status,
+        createdAt: result.Item.createdAt,
+        updatedAt: result.Item.updatedAt,
+        createdBy: result.Item.createdBy,
+        updatedBy: result.Item.updatedBy,
+        publishedUrl: result.Item.publishedUrl,
+      };
+
+      return NextResponse.json(project);
+    } else {
+      // Fetch all projects
+      const result = await ddbClient.scan(
+        TABLE_NAME,
+        'begins_with(PK, :pk)',
+        { ':pk': 'PROJECT#' }
+      );
+
+      const projects: Project[] = result.Items?.filter(item => item.PK.startsWith('PROJECT#')).map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        thumbnail: item.thumbnail,
+        context: item.context as FileContext[],
+        artifacts: item.artifacts as Artifact[],
+        entrypoint: item.entrypoint as Artifact,
+        status: item.status,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        createdBy: item.createdBy,
+        updatedBy: item.updatedBy,
+        publishedUrl: item.publishedUrl,
+      })) || [];
+
+      return NextResponse.json(projects);
     }
-
-    const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
-    
-    if (!result.Item) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
-
-    const project: Project = {
-      id: result.Item.id,
-      title: result.Item.title,
-      description: result.Item.description,
-      thumbnail: result.Item.thumbnail,
-      context: result.Item.context as FileContext[],
-      artifacts: result.Item.artifacts as Artifact[],
-      entrypoint: result.Item.entrypoint as Artifact,
-      status: result.Item.status,
-      createdAt: new Date(result.Item.createdAt),
-      updatedAt: new Date(result.Item.updatedAt),
-      createdBy: result.Item.createdBy,
-      updatedBy: result.Item.updatedBy,
-      publishedUrl: result.Item.publishedUrl,
-    };
-
-    return NextResponse.json(project);
   } catch (error) {
-    console.error('Error fetching project:', error);
-    return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 });
+    console.error('Error fetching project(s):', error);
+    return NextResponse.json({ error: 'Failed to fetch project(s)' }, { status: 500 });
   }
 }
 
@@ -113,8 +144,8 @@ export async function PUT(request: Request) {
       artifacts: result.Item.artifacts as Artifact[],
       entrypoint: result.Item.entrypoint as Artifact,
       status: result.Item.status,
-      createdAt: new Date(result.Item.createdAt),
-      updatedAt: new Date(result.Item.updatedAt),
+      createdAt: result.Item.createdAt,
+      updatedAt: result.Item.updatedAt,
       createdBy: result.Item.createdBy,
       updatedBy: result.Item.updatedBy,
       publishedUrl: result.Item.publishedUrl,

@@ -8,18 +8,18 @@ export type FileContext = {
     path: string;
 };
 
-export type Project = {
+export interface Project {
     id: string;
     title: string;
     description: string;
-    thumbnail?: string;
+    thumbnail: string;
     context: FileContext[];
     artifacts: Artifact[];
     entrypoint: Artifact;
     status: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     createdBy: string;
     updatedBy: string;
     publishedUrl: string;
-};
+}

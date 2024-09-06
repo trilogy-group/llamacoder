@@ -397,7 +397,6 @@ export default function Home() {
     <>
       {pathname === '/' && <LandingPage />}
       {pathname === '/dashboard' && <Dashboard />}
-      {pathname.startsWith('/workspaces/') && <Workspace projectId={pathname.split('/').pop() as string} />}
     </>
   )
 }

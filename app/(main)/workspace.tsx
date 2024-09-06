@@ -1,6 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from "react";
 import HeaderV2 from "@/components/HeaderV2";
-import { dummyProjects } from "./dummy-projects";
 import ArtifactList from "@/components/ArtifactLIst";
 import Preview from "@/components/Preview";
 import UpdateArtifact from "@/components/UpdateArtifact";
@@ -8,25 +9,40 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Artifact } from "@/types/Artifact";
 import { Project } from "@/types/Project";
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 interface WorkspaceProps {
-  projectId: string;
+  params: { id: string };
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   const [project, setProject] = useState<Project | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
   const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const foundProject = dummyProjects.find(p => p.id === projectId);
-    if (foundProject) {
-      setProject(foundProject);
-      setSelectedArtifact(foundProject.artifacts[0]);
-    }
-  }, [projectId]);
+    const fetchProject = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`/api/projects?id=${params.id}`);
+        setProject(response.data);
+        if (response.data.artifacts && response.data.artifacts.length > 0) {
+          setSelectedArtifact(response.data.artifacts[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching project:', error);
+        setError('Failed to load project. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [params.id]);
 
   const handleSelectArtifact = (artifact: Artifact) => {
     setSelectedArtifact(artifact);
@@ -36,7 +52,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     router.push('/dashboard');
   };
 
-  if (!project || !selectedArtifact) {
+  if (!project) {
     return <div>Loading...</div>;
   }
 

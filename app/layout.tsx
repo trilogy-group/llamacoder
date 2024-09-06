@@ -34,16 +34,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className="h-full">
-      <head>
-        <PlausibleProvider domain="llamacoder.io" />
-      </head>
-
-      {children}
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }

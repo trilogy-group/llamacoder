@@ -5,7 +5,7 @@ import { Artifact } from "@/types/Artifact";
 interface ArtifactListProps {
   artifacts: Artifact[];
   onSelectArtifact: (artifact: Artifact) => void;
-  selectedArtifact: Artifact;
+  selectedArtifact: Artifact | null;
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
 }
@@ -24,7 +24,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
     artifact.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const otherArtifacts = filteredArtifacts.filter(artifact => artifact.id !== selectedArtifact.id);
+  const otherArtifacts = filteredArtifacts.filter(artifact => artifact.id !== selectedArtifact?.id);
 
   if (isCollapsed) {
     return (

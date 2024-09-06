@@ -2,13 +2,14 @@ import React from 'react';
 import { Project } from '../types/Project';
 import { FiExternalLink, FiShare2, FiTrash2, FiImage, FiEdit3 } from 'react-icons/fi';
 import Tooltip from './Tooltip';
+import { useRouter } from 'next/navigation';
 
 interface ProjectOverviewProps {
   project: Project;
-  onOpenProject: () => void;
 }
 
-const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onOpenProject }) => {  
+const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {  
+  const router = useRouter();
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
   const projectTags = mockTags.slice(0, Math.floor(Math.random() * 3) + 1);
@@ -16,14 +17,20 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onOpenProjec
 
   // Function to generate a color based on the createdBy string
   const getColorFromString = (str: string) => {
-    const colors =[ 'red', 'green', "yellow"];
+    const colors = ['red', 'green', "yellow"];
     const hash = str.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
-    console.log(hash);
-    console.log(colors[hash % colors.length], project.createdBy);
     return colors[hash % colors.length];
   };
 
   const projectColor = getColorFromString(project.createdBy);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleOpenProject = () => {
+    router.push(`/workspaces/${project.id}`);
+  };
 
   return (
     <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] bg-gradient-to-br from-blue-50/80 to-white/70">
@@ -46,7 +53,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onOpenProjec
           <div>
             <h3 className="text-lg font-semibold text-gray-800">{project.title}</h3>
             <p className="text-xs text-gray-500">
-              {project.updatedBy} · {project.updatedAt.toLocaleDateString()} · 
+              {project.updatedBy} · {formatDate(project.updatedAt)} · 
               <span className="ml-1 font-medium">{contributors.length} contributor{contributors.length !== 1 ? 's' : ''}</span>
             </p>
           </div>
@@ -99,7 +106,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onOpenProjec
         
         <Tooltip content="Open for development">
           <button 
-            onClick={() => onOpenProject()}
+            onClick={handleOpenProject}
             className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2"
           >
             <FiEdit3 className="w-5 h-5" />

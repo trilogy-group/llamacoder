@@ -15,7 +15,6 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onCreateProject, on
         <ProjectOverview
           key={project.id}
           project={project}
-          onOpenProject={() => onOpenProject(project.id)}
         />
       ))}
     </div>
