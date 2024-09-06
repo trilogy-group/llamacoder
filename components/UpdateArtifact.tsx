@@ -1,98 +1,122 @@
-import React, { useState } from "react";
-import { FiSend, FiMessageSquare, FiChevronRight, FiChevronLeft } from "react-icons/fi";
-import { Artifact, Message } from "../types/Artifact";
+import React, { useState, useRef, useEffect } from "react";
+import { FiPlus, FiX, FiSend, FiChevronDown } from "react-icons/fi";
 
-interface UpdateArtifactProps {
-  artifact: Artifact | null;
-  isCollapsed: boolean;
-  setIsCollapsed: (isCollapsed: boolean) => void;
-}
-
-const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, setIsCollapsed }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const UpdateArtifact: React.FC = () => {
   const [inputMessage, setInputMessage] = useState("");
+  const [selectedModel, setSelectedModel] = useState("claude-3.5-sonnet");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [chatHistory, setChatHistory] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim()) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        content: inputMessage,
-        role: "user",
-      };
-      setMessages([...messages, newMessage]);
-      setInputMessage("");
-      const assistantMessage: Message = {
-        id: Date.now().toString(),
-        content: "Updating artifact...",
-        role: "assistant",
-      };
-      setTimeout(() => {
-        setMessages([...messages, assistantMessage]);
-      }, 1000);
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAttachments([...attachments, ...Array.from(e.target.files)]);
     }
   };
 
-  if (isCollapsed) {
-    return (
-      <div className="h-full bg-white/60 backdrop-blur-md rounded-r-xl shadow-sm flex flex-col items-center justify-center">
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className="p-2 hover:bg-gray-200 rounded-full transition-colors duration-200"
-        >
-          <FiChevronLeft className="w-6 h-6 text-gray-600" />
-        </button>
-      </div>
-    );
-  }
+  const removeAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputMessage.trim()) {
+      setChatHistory([...chatHistory, inputMessage]);
+      setInputMessage("");
+    }
+  };
+
+  useEffect(() => {
+    const adjustHeight = () => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+      }
+    };
+
+    adjustHeight();
+  }, [inputMessage]);
 
   return (
-    <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-sm p-6 h-full flex flex-col transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] bg-gradient-to-br from-blue-50/80 to-white/70">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-          <FiMessageSquare className="mr-2 text-blue-500" />
-          Update Artifact
-        </h2>
-        <button
-          onClick={() => setIsCollapsed(true)}
-          className="p-1 hover:bg-gray-200 rounded transition-colors duration-200"
-        >
-          <FiChevronRight className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-      {artifact ? (
-        <>
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`p-3 rounded-lg ${
-                  message.role === "user" ? "bg-blue-100 ml-auto" : "bg-gray-100"
-                } max-w-3/4`}
-              >
-                {message.content}
-              </div>
-            ))}
+    <div className="w-full max-w-2xl mx-auto bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="max-h-60 overflow-y-auto p-4 space-y-2">
+        {chatHistory.map((message, index) => (
+          <div key={index} className="p-2 bg-gray-100 rounded-lg text-sm">
+            {message}
           </div>
-          <div className="flex items-center space-x-2">
+        ))}
+      </div>
+      <form onSubmit={handleSubmit} className="p-4 space-y-2">
+        <div className="bg-gray-100 p-3 rounded-lg flex-grow">
+          <div className="flex items-center space-x-2 mb-2">
+            <button
+              type="button"
+              onClick={handleAttachmentClick}
+              className="text-blue-500 hover:text-blue-600 bg-white rounded-full p-1 shadow-sm"
+            >
+              <FiPlus size={20} />
+            </button>
+            {attachments.length == 0 && <span className="text-xs text-gray-500">Add context</span>}
             <input
-              type="text"
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              multiple
+            />
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {attachments.map((file, index) => (
+                  <div key={index} className="flex items-center bg-white rounded-full px-2 py-0.5 text-xs shadow-sm">
+                    <span className="truncate max-w-[100px]">{file.name}</span>
+                    <FiX
+                      className="ml-1 cursor-pointer text-gray-500 hover:text-gray-700"
+                      onClick={() => removeAttachment(index)}
+                      size={12}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative flex-grow">
+            <textarea
+              ref={textareaRef}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder={`Update ${artifact.name}...`}
-              className="flex-1 rounded-full bg-gray-100 py-2 px-4 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-300 transition-all duration-300"
+              placeholder="Update your artifact..."
+              className="w-full py-2 px-3 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-y-auto"
+              style={{ minHeight: "80px", maxHeight: "200px", paddingBottom: "30px" }}
             />
-            <button
-              onClick={handleSendMessage}
-              className="rounded-full bg-blue-600 p-2 text-white shadow-md transition duration-300 ease-in-out hover:bg-blue-700"
-            >
-              <FiSend />
-            </button>
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+              <div className="relative inline-flex items-center">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="bg-transparent text-gray-400 text-[10px] focus:outline-none focus:ring-0 appearance-none cursor-pointer pr-3"
+                >
+                  <option value="claude-3.5-sonnet">claude-3.5-sonnet</option>
+                  <option value="gpt-4">GPT-4</option>
+                  <option value="bedrock-claude-3.5-sonnet">bedrock-claude-3.5-sonnet</option>
+                  {/* Add more model options here */}
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="text-blue-500 hover:text-blue-600"
+              >
+                <FiSend size={16} />
+              </button>
+            </div>
           </div>
-        </>
-      ) : (
-        <p className="text-gray-600">Select an artifact to update</p>
-      )}
+        </div>
+      </form>
     </div>
   );
 };
