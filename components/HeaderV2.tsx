@@ -1,10 +1,16 @@
-import React from "react";
+import { LOGOUT_URL } from "@/utils/constants";
+import { UserProfile } from "@auth0/nextjs-auth0/client";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import logo from "../public/logo.png";
 
-const HeaderV2: React.FC = () => {
+interface HeaderProps {
+  user?: UserProfile;
+}
 
+export default function HeaderV2({ user }: HeaderProps) {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <header className="fixed left-0 right-0 top-0 z-50 bg-gray-50 shadow-sm">
       <div className="w-full">
@@ -49,16 +55,46 @@ const HeaderV2: React.FC = () => {
               </svg>
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
             </button>
-            <Link href="/" className="text-gray-600">
-              <span className={`bg-green-600 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-white`}>
-                A
-              </span>
-            </Link>
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="flex items-center focus:outline-none"
+                >
+                  <Image
+                    src={user.picture ?? ""}
+                    alt={user.name || "A"}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
+                </button>
+                {isOpen && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div className="px-4 py-2 text-sm text-gray-700">
+                      {user.name}
+                    </div>
+                    <a
+                      href={LOGOUT_URL}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Log out
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/" className="text-gray-600">
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm font-semibold text-white`}
+                >
+                  A
+                </span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
     </header>
   );
-};
-
-export default HeaderV2;
+}
