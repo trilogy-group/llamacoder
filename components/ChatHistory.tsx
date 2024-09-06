@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Message } from "../types/Artifact";
 import { FiPaperclip, FiCopy } from "react-icons/fi";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -11,6 +11,13 @@ interface ChatHistoryProps {
 const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
   const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
   const [hoveredCodeBlock, setHoveredCodeBlock] = useState<string | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -32,7 +39,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
             <SyntaxHighlighter
               language={language || 'text'}
               style={tomorrow}
-              className="rounded-md my-2"
+              className="rounded-md my-2 text-xs" // Added text-xs class here
             >
               {code.trim()}
             </SyntaxHighlighter>
@@ -52,15 +59,17 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
   };
 
   return (
-    <div className="h-full w-full overflow-y-auto p-4 space-y-4">
+    <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => (
         <div
           key={message.id}
           className={`w-full rounded-lg shadow-sm relative ${
             message.role === "user" 
-              ? "bg-gray-50 ml-auto mr-0 sm:mr-8" 
-              : "bg-blue-50 mr-auto ml-0 sm:ml-8"
-          } max-w-[85%]`}
+              ? "bg-gray-50 hover:border-blue-500" 
+              : "bg-blue-50 hover:border-green-500"
+          } ${
+            hoveredMessage === message.id ? "border" : "border border-transparent"
+          } transition-colors duration-200`}
           onMouseEnter={() => setHoveredMessage(message.id)}
           onMouseLeave={() => setHoveredMessage(null)}
         >
