@@ -3,7 +3,6 @@ import { FiPlus, FiSend } from "react-icons/fi";
 import AttachmentList from "./AttachmentList";
 import ModelSelector from "./ModelSelector";
 
-
 interface InputFormProps {
   onSubmit: (message: string, attachments: File[]) => void;
   isEmpty: boolean;
@@ -12,6 +11,7 @@ interface InputFormProps {
 const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
   const [inputMessage, setInputMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -43,6 +43,16 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
       onSubmit(inputMessage, attachments);
       setInputMessage("");
       setAttachments([]);
+      setError(null);
+    } else {
+      setError("Please enter a message before sending.");
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputMessage(e.target.value);
+    if (e.target.value.trim()) {
+      setError(null);
     }
   };
 
@@ -75,9 +85,11 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
           <textarea
             ref={textareaRef}
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder={isEmpty ? "Update your artifact..." : "Ask followup question..."}
-            className="w-full py-2 px-3 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-y-auto"
+            className={`w-full py-2 px-3 border rounded-lg text-xs focus:outline-none focus:ring-2 ${
+              error ? 'border-red-300 focus:ring-red-500' : 'focus:ring-blue-500'
+            } resize-none overflow-y-auto`}
             style={{ minHeight: "80px", maxHeight: "200px", paddingBottom: "30px" }}
           />
           <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
@@ -85,13 +97,18 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
             <button
               type="submit"
               className="text-blue-500 hover:text-blue-600"
-              disabled={!inputMessage.trim()}
             >
               <FiSend size={16} />
             </button>
           </div>
         </div>
       </div>
+      {error && (
+        <div className="text-red-500 text-xs mt-1 bg-red-50 border border-red-200 rounded-md p-2 flex items-center">
+          <span className="mr-2">⚠️</span>
+          {error}
+        </div>
+      )}
     </form>
   );
 };
