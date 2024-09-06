@@ -40,14 +40,22 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, onRemove, 
             <span className="truncate max-w-[100px]">{file.name}</span>
             {isViewable(file) && (
               <button
-                onClick={() => handleView(file)}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleView(file);
+                }}
                 className="ml-1 text-gray-500 hover:text-gray-700"
               >
                 <FiEye size={14} />
               </button>
             )}
             <button
-              onClick={() => onRemove(index)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onRemove(index);
+              }}
               className="ml-1 text-gray-500 hover:text-gray-700"
             >
               <FiX size={14} />

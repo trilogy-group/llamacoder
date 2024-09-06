@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { FiPlus, FiSend } from "react-icons/fi";
 import AttachmentList from "./AttachmentList";
 import ModelSelector from "./ModelSelector";
-import { Message } from "../types/Artifact";
+
 
 interface InputFormProps {
   onSubmit: (message: string, attachments: File[]) => void;
@@ -15,7 +15,8 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleAttachmentClick = () => {
+  const handleAttachmentClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
     fileInputRef.current?.click();
   };
 
@@ -38,9 +39,11 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(inputMessage, attachments);
-    setInputMessage("");
-    setAttachments([]);
+    if (inputMessage.trim()) {
+      onSubmit(inputMessage, attachments);
+      setInputMessage("");
+      setAttachments([]);
+    }
   };
 
   return (
@@ -48,7 +51,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
       <div className="bg-gray-100 p-3 rounded-lg flex-grow">
         <div className="flex items-center space-x-2 mb-2">
           <button
-            type="button"
+            type="button" // Ensure this is type="button"
             onClick={handleAttachmentClick}
             className="text-blue-500 hover:text-blue-600 bg-white rounded-full p-1 shadow-sm"
           >
@@ -82,6 +85,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isEmpty }) => {
             <button
               type="submit"
               className="text-blue-500 hover:text-blue-600"
+              disabled={!inputMessage.trim()}
             >
               <FiSend size={16} />
             </button>

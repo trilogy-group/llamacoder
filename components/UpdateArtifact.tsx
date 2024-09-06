@@ -9,7 +9,7 @@ const UpdateArtifact: React.FC = () => {
   const [contextAttachments, setContextAttachments] = useState<File[]>([]);
 
   const handleSubmit = (message: string, attachments: File[]) => {
-    if (message.trim() || attachments.length > 0) {
+    if (message.trim()) {  // Only proceed if there's a non-empty message
       const newMessage: Message = {
         id: Date.now().toString(),
         content: message,
