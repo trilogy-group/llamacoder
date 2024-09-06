@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { saveAs } from 'file-saver';
+import Tooltip from "./Tooltip";
 
 // Import language support for SyntaxHighlighter
 import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript';
@@ -73,16 +74,22 @@ const FileViewerModal: React.FC<FileViewerModalProps> = ({ file, onClose }) => {
     if (!content) return null;
 
     if (file.type.startsWith("image/")) {
-      return <img src={content} alt={file.name} className="max-w-full max-h-[80vh] object-contain" />;
+      return <img src={content} alt={file.name} className="max-w-full max-h-[70vh] object-contain mx-auto" />;
     }
 
     if (file.name.toLowerCase().endsWith(".md")) {
-      return <ReactMarkdown className="prose">{content}</ReactMarkdown>;
+      return <ReactMarkdown className="prose max-w-none p-4">{content}</ReactMarkdown>;
     }
 
     const language = getLanguage(file.name);
     return (
-      <SyntaxHighlighter language={language} style={docco}>
+      <SyntaxHighlighter 
+        language={language} 
+        style={docco} 
+        customStyle={{padding: '1rem'}}
+        wrapLines={true}
+        showLineNumbers={true}
+      >
         {content}
       </SyntaxHighlighter>
     );
@@ -93,21 +100,27 @@ const FileViewerModal: React.FC<FileViewerModalProps> = ({ file, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-4 max-w-3xl w-full max-h-[90vh] overflow-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">{file.name}</h2>
-          <div>
-            <button onClick={handleDownload} className="mr-2 text-gray-500 hover:text-gray-700">
-              <FiDownload size={24} />
-            </button>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-              <FiX size={24} />
-            </button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10">
+          <h2 className="text-xl font-semibold text-gray-800 truncate">{file.name}</h2>
+          <div className="flex items-center space-x-2">
+            <Tooltip content="Download">
+              <button onClick={handleDownload} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition duration-300 ease-in-out">
+                <FiDownload size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Close">
+              <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition duration-300 ease-in-out">
+                <FiX size={20} />
+              </button>
+            </Tooltip>
           </div>
         </div>
-        <div className="overflow-auto">
-          {renderContent()}
+        <div className="flex-grow overflow-auto bg-gray-50 p-4">
+          <div className="bg-white rounded-lg shadow-sm">
+            {renderContent()}
+          </div>
         </div>
       </div>
     </div>
