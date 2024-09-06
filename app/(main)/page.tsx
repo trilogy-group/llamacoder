@@ -10,6 +10,7 @@ import FileUploader from "../../components/FileUploader";
 import PromptForm from "../../components/PromptForm";
 import ModelSelector from "../../components/ModelSelector";
 import CodeEditor from "../../components/CodeEditor";
+import FeedbackButton from "../../components/FeedbackButton";
 import { generateCode, modifyCode, getApiSpec } from "../../utils/apiClient";
 import UpdatePromptForm from "../../components/UpdatePromptForm";
 import PublishButton from "../../components/PublishButton";
@@ -238,7 +239,7 @@ export default function Home() {
     onSuccess(componentName, newGeneratedCode);
   };
 
-  const handleGenerateCode = async (e: FormEvent<HTMLFormElement>) => {
+  const handleGenerateCode = async (e: FormEvent<HTMLFormElement>, images: File[]) => {
     e.preventDefault();
     if (status !== "initial") {
       scrollTo({ delay: 0.5 });
@@ -259,9 +260,28 @@ export default function Home() {
 
     // Read content of selected files
     const fileContext = await getFileContext();
+
+    const imageBase64 = await Promise.all(
+      images.map(async (image) => {
+        const reader = new FileReader();
+        return new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(image);
+        });
+      })
+    );
+
     var userPrompt = generateCodePrompt(prompt, fileContext, apiSpec);
 
-    const messages = [{ role: "user", content: userPrompt }];
+    const messages = [
+      { 
+        role: "user", 
+        content: [
+          { type: "text", text: userPrompt },
+          ...imageBase64.map((image) => ({ type: "image_url", image_url: { url: image } }))
+        ]
+      }
+    ];
     console.log("Messages: ", messages, selectedModel);
 
     const onSuccess = (
@@ -289,7 +309,7 @@ export default function Home() {
     }
   };
 
-  const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
+  const handleModifyCode = async (e: FormEvent<HTMLFormElement>, images: File[]) => {
     e.preventDefault();
     setStatus("updating");
 
@@ -310,8 +330,27 @@ export default function Home() {
     }
     const generatedCodeJson = JSON.parse(generatedCode);
     const fileContext = await getFileContext();
+
+    const imageBase64 = await Promise.all(
+      images.map(async (image) => {
+        const reader = new FileReader();
+        return new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(image);
+        });
+      })
+    );
+
     var query = modifyCodePrompt(initialPrompt, prompt, generatedCodeJson.code, fileContext, apiSpec);
-    const messages = [{ role: "user", content: query }];
+    const messages = [
+      { 
+        role: "user", 
+        content: [
+          { type: "text", text: query },
+          ...imageBase64.map((image) => ({ type: "image_url", image_url: { url: image } }))
+        ]
+      }
+    ];
     console.log("Messages: ", messages, selectedModel);
 
     const onSuccess = (
@@ -433,9 +472,10 @@ export default function Home() {
   //       </div>
   //     )}
 
-  //     {/* {(status === "creating" || status === "updating") && (
-  //       <FunFactRenderer funFact={funFact} />
-  //     )} */}
-  //   </div>
-  // );
+      {/* {(status === "creating" || status === "updating") && (
+        <FunFactRenderer funFact={funFact} />
+      )} */}
+      <FeedbackButton />
+    </div>
+  );
 }
