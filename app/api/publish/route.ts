@@ -26,12 +26,15 @@ export async function POST(request: Request) {
 
         // Write artifact code to App.tsx
         const appTsxPath = path.join(tempDir, 'src', 'App.tsx');
-        await fs.writeFile(appTsxPath, artifact.code);
+        await fs.writeFile(appTsxPath, artifact?.code || '');
 
         // Update package.json with dependencies
         const packageJsonPath = path.join(tempDir, 'package.json');
         const packageJson = await fs.readJson(packageJsonPath);
-        const dependencies = artifact.dependencies as Record<string, string>;
+        const dependencies: Record<string, string> = {};
+        artifact.dependencies?.forEach(dep => {
+            dependencies[dep.name] = dep.version;
+        });
         packageJson.dependencies = { ...packageJson.dependencies, ...dependencies };
         packageJson.homepage = `/${artifact.id}`;
         packageJson.name = artifact.name;
