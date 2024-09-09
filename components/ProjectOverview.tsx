@@ -54,9 +54,25 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
       onProjectDeleted();
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast.error('Failed to delete project', {
-        duration: 3000,
-      });
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          toast.error('You are not authorized to delete projects. Please log in.', {
+            duration: 3000,
+          });
+        } else if (error.response.status === 403) {
+          toast.error('You don\'t have permission to delete this project.', {
+            duration: 3000,
+          });
+        } else {
+          toast.error('Failed to delete project. Please try again.', {
+            duration: 3000,
+          });
+        }
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          duration: 3000,
+        });
+      }
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirmation(false);

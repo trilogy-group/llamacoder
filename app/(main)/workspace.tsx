@@ -27,10 +27,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchProjectData = async () => {
       setIsLoading(true);
       try {
         const response = await axios.get(`/api/projects?id=${params.id}`);
@@ -40,13 +41,23 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
         }
       } catch (error) {
         console.error('Error fetching project:', error);
-        setError('Failed to load project. Please try again.');
+        if (axios.isAxiosError(error) && error.response) {
+          if (error.response.status === 401) {
+            setAuthError("You are not authorized to view this project. Please log in.");
+          } else if (error.response.status === 403) {
+            setAuthError("You don't have permission to view this project.");
+          } else {
+            toast.error("Failed to load project. Please try again.");
+          }
+        } else {
+          toast.error("An unexpected error occurred. Please try again.");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProject();
+    fetchProjectData();
   }, [params.id]);
 
   const handleSelectArtifact = (artifact: Artifact) => {
@@ -88,6 +99,20 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   const handleDeleteCancel = () => {
     setShowDeleteConfirmation(false);
   };
+
+  if (authError) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
+        <h2 className="text-2xl font-semibold text-red-600 mb-2">{authError}</h2>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -10,7 +10,7 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 
 const Dashboard: React.FC = () => {
   const { user, error: userError, isLoading: userLoading } = useUser();
@@ -30,11 +30,20 @@ const Dashboard: React.FC = () => {
     setError(null);
     try {
       const response = await axios.get("/api/projects");
-      console.log("Projects:", response.data);
       setProjects(response.data);
     } catch (error) {
       console.error("Error fetching projects:", error);
-      setError("Failed to load projects. Please try again.");
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          setError("You are not authorized to view projects. Please log in.");
+        } else if (error.response.status === 403) {
+          setError("You don't have permission to view these projects.");
+        } else {
+          setError("Failed to load projects. Please try again.");
+        }
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +78,17 @@ const Dashboard: React.FC = () => {
       setShowCreateForm(false);
     } catch (error) {
       console.error("Error creating project:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          toast.error("You are not authorized to create projects. Please log in.");
+        } else if (error.response.status === 403) {
+          toast.error("You don't have permission to create projects.");
+        } else {
+          toast.error("Failed to create project. Please try again.");
+        }
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsCreatingProject(false);
     }
