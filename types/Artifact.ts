@@ -1,17 +1,17 @@
-export interface Message {
-    id: string;
-    content: string;
-    role: "user" | "assistant";
-    attachments?: File[];
-}
+import { ChatSession } from "./ChatSession";
+
+export type Dependency = {
+    name: string;
+    version: string;
+};
 
 export type Artifact = {
     id: string;
-    createdAt: Date;
-    updatedAt: Date;
     name: string;
     prompt: string;
     code: string;
-    dependencies: Record<string, string>;
-    history: Message[];
+    dependencies: Dependency[];
+    chatSessions: ChatSession;
+    createdAt: Date;
+    updatedAt: Date;
 };

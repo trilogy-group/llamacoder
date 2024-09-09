@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Message } from "../types/Artifact";
+import { Artifact } from "../types/Artifact";
+import { ChatSession } from "../types/ChatSession";
 import { FiPaperclip, FiCopy } from "react-icons/fi";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ChatHistoryProps {
-  messages: Message[];
+  artifact: Artifact;
+  chatSession: ChatSession;
 }
 
-const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
+const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession }) => {
   const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
   const [hoveredCodeBlock, setHoveredCodeBlock] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -17,14 +19,14 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [chatSession.messages]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  const renderMessageContent = (content: string, messageId: string) => {
-    const parts = content.split(/(```[\s\S]*?```)/);
+  const renderMessageContent = (text: string, messageId: string) => {
+    const parts = text.split(/(```[\s\S]*?```)/);
     return parts.map((part, index) => {
       if (part.startsWith('```') && part.endsWith('```')) {
         const [, language, code] = part.match(/```(\w+)?\n?([\s\S]+?)```/) || [];
@@ -39,7 +41,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
             <SyntaxHighlighter
               language={language || 'text'}
               style={tomorrow}
-              className="rounded-md my-2 text-xs" // Added text-xs class here
+              className="rounded-md my-2 text-xs"
             >
               {code.trim()}
             </SyntaxHighlighter>
@@ -60,7 +62,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
 
   return (
     <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => (
+      {chatSession.messages.map((message) => (
         <div
           key={message.id}
           className={`w-full rounded-lg shadow-sm relative ${
@@ -82,20 +84,20 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ messages }) => {
                     className="flex items-center bg-white rounded-full px-2 py-0.5 text-[10px] text-gray-600 border border-gray-200"
                   >
                     <FiPaperclip className="mr-1" size={8} />
-                    {attachment.name}
+                    {attachment.fileName}
                   </div>
                 ))}
               </div>
             )}
             <div className="p-3 overflow-y-auto">
               <div className="text-xs text-gray-800 break-words">
-                {renderMessageContent(message.content, message.id)}
+                {renderMessageContent(message.text, message.id)}
               </div>
             </div>
           </div>
           {hoveredMessage === message.id && (
             <button
-              onClick={() => copyToClipboard(message.content)}
+              onClick={() => copyToClipboard(message.text)}
               className="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded-md opacity-50 hover:opacity-100 transition-opacity duration-200"
             >
               <FiCopy size={14} />

@@ -1,49 +1,50 @@
 import React, { useState } from "react";
 import { FiX, FiEye } from "react-icons/fi";
 import FileViewerModal from "./FileViewerModal";
+import { Attachment } from "../types/Attachment";
 
 interface AttachmentListProps {
-  attachments: File[];
-  onRemove: (index: number) => void;
+  attachments: Attachment[];
+  onRemove: (id: string) => void;
   badgeClassName?: string;
 }
 
 const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, onRemove, badgeClassName = "" }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
 
   if (attachments.length === 0) return null;
 
-  const handleView = (file: File) => {
-    setSelectedFile(file);
+  const handleView = (attachment: Attachment) => {
+    setSelectedAttachment(attachment);
   };
 
   const handleCloseModal = () => {
-    setSelectedFile(null);
+    setSelectedAttachment(null);
   };
 
-  const isViewable = (file: File) => {
+  const isViewable = (fileType: string, fileName: string) => {
     const viewableExtensions = [
       ".txt", ".json", ".md", ".js", ".ts", ".jsx", ".tsx", ".py", ".java",
       ".cpp", ".c", ".cs", ".rb", ".php", ".swift", ".go"
     ];
-    return file.type.startsWith("image/") || viewableExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    return fileType.startsWith("image/") || viewableExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
   };
 
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        {attachments.map((file, index) => (
+        {attachments.map((attachment) => (
           <div
-            key={index}
+            key={attachment.id}
             className={`flex items-center px-2 py-1 rounded-full text-xs ${badgeClassName}`}
           >
-            <span className="truncate max-w-[100px]">{file.name}</span>
-            {isViewable(file) && (
+            <span className="truncate max-w-[100px]">{attachment.fileName}</span>
+            {isViewable(attachment.fileType, attachment.fileName) && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleView(file);
+                  handleView(attachment);
                 }}
                 className="ml-1 text-gray-500 hover:text-gray-700"
               >
@@ -54,7 +55,7 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, onRemove, 
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                onRemove(index);
+                onRemove(attachment.id);
               }}
               className="ml-1 text-gray-500 hover:text-gray-700"
             >
@@ -63,8 +64,8 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, onRemove, 
           </div>
         ))}
       </div>
-      {selectedFile && (
-        <FileViewerModal file={selectedFile} onClose={handleCloseModal} />
+      {selectedAttachment && (
+        <FileViewerModal attachment={selectedAttachment} onClose={handleCloseModal} />
       )}
     </>
   );

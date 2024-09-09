@@ -5,6 +5,7 @@ import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { saveAs } from 'file-saver';
 import Tooltip from "./Tooltip";
+import { Attachment } from "../types/Attachment";
 
 // Import language support for SyntaxHighlighter
 import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript';
@@ -30,25 +31,36 @@ SyntaxHighlighter.registerLanguage('swift', swift);
 SyntaxHighlighter.registerLanguage('go', go);
 
 interface FileViewerModalProps {
-  file: File;
+  attachment: Attachment;
   onClose: () => void;
 }
 
-const FileViewerModal: React.FC<FileViewerModalProps> = ({ file, onClose }) => {
+const FileViewerModal: React.FC<FileViewerModalProps> = ({ attachment, onClose }) => {
   const [content, setContent] = useState<string | null>(null);
 
   useEffect(() => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setContent(e.target?.result as string);
+    const fetchContent = async () => {
+      try {
+        const response = await fetch(attachment.url);
+        if (attachment.fileType.startsWith("image/")) {
+          const blob = await response.blob();
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setContent(e.target?.result as string);
+          };
+          reader.readAsDataURL(blob);
+        } else {
+          const text = await response.text();
+          setContent(text);
+        }
+      } catch (error) {
+        console.error("Error fetching file content:", error);
+        setContent("Error loading file content");
+      }
     };
-    
-    if (file.type.startsWith("image/")) {
-      reader.readAsDataURL(file);
-    } else {
-      reader.readAsText(file);
-    }
-  }, [file]);
+
+    fetchContent();
+  }, [attachment]);
 
   const getLanguage = (fileName: string): string => {
     const extension = fileName.split('.').pop()?.toLowerCase();
@@ -73,15 +85,15 @@ const FileViewerModal: React.FC<FileViewerModalProps> = ({ file, onClose }) => {
   const renderContent = () => {
     if (!content) return null;
 
-    if (file.type.startsWith("image/")) {
-      return <img src={content} alt={file.name} className="max-w-full max-h-[70vh] object-contain mx-auto" />;
+    if (attachment.fileType.startsWith("image/")) {
+      return <img src={content} alt={attachment.fileName} className="max-w-full max-h-[70vh] object-contain mx-auto" />;
     }
 
-    if (file.name.toLowerCase().endsWith(".md")) {
+    if (attachment.fileName.toLowerCase().endsWith(".md")) {
       return <ReactMarkdown className="prose max-w-none p-4">{content}</ReactMarkdown>;
     }
 
-    const language = getLanguage(file.name);
+    const language = getLanguage(attachment.fileName);
     return (
       <SyntaxHighlighter 
         language={language} 
@@ -96,14 +108,14 @@ const FileViewerModal: React.FC<FileViewerModalProps> = ({ file, onClose }) => {
   };
 
   const handleDownload = () => {
-    saveAs(file, file.name);
+    saveAs(attachment.url, attachment.fileName);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-gray-800 truncate">{file.name}</h2>
+          <h2 className="text-xl font-semibold text-gray-800 truncate">{attachment.fileName}</h2>
           <div className="flex items-center space-x-2">
             <Tooltip content="Download">
               <button onClick={handleDownload} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition duration-300 ease-in-out">

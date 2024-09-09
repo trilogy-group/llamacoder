@@ -1,14 +1,17 @@
 import React, { useRef } from "react";
 import { FiPlus } from "react-icons/fi";
 import AttachmentList from "./AttachmentList";
+import { Artifact } from "../types/Artifact";
+import { Attachment } from "../types/Attachment";
 
 interface ChatContextProps {
-  attachments: File[];
+  artifact: Artifact;
+  attachments: Attachment[];
   onAdd: (files: File[]) => void;
-  onRemove: (index: number) => void;
+  onRemove: (id: string) => void;
 }
 
-const ChatContext: React.FC<ChatContextProps> = ({ attachments, onAdd, onRemove }) => {
+const ChatContext: React.FC<ChatContextProps> = ({ artifact, attachments, onAdd, onRemove }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAttachmentClick = () => {
@@ -44,7 +47,7 @@ const ChatContext: React.FC<ChatContextProps> = ({ attachments, onAdd, onRemove 
         {attachments.length > 0 ? (
             <AttachmentList 
                 attachments={attachments} 
-                onRemove={onRemove} 
+                onRemove={onRemove}
                 badgeClassName="bg-blue-100 text-blue-800"
             />
         ) : (

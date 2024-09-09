@@ -1,19 +1,12 @@
 import { Artifact } from "./Artifact";
-
-export type FileContext = {
-    id: string;
-    title: string;
-    description: string;
-    mimeType: string;
-    path: string;
-};
+import { Attachment } from "./Attachment";
 
 export type Project = {
     id: string;
     title: string;
     description: string;
     thumbnail?: string;
-    context: FileContext[];
+    attachments: Attachment[];
     artifacts: Artifact[];
     entrypoint: Artifact;
     status: string;

@@ -15,32 +15,21 @@ import CodeIcon from "@mui/icons-material/Code";
 import DownloadIcon from "@mui/icons-material/GetApp"; // Changed to a more appropriate icon
 import { saveAs } from "file-saver";
 import CircularProgress from "@mui/material/CircularProgress";
+import { Artifact } from "../types/Artifact";
 
 interface CodeEditorProps {
-  files: Record<
-    string,
-    { code: string; active: boolean; hidden: boolean; readOnly: boolean }
-  >;
-  extraDependencies: { name: string; version: string }[];
+  artifact: Artifact;
   children?: React.ReactNode;
 }
 
-function SandpackContent({ children }: { children: React.ReactNode }) {
+function SandpackContent({ children, onCodeChange }: { children: React.ReactNode, onCodeChange: (code: string) => void }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
 
   const handleDownload = () => {
-    const generatedCode: { code: string; extraLibraries: string[] } | null =
-      localStorage.getItem("generatedCode")
-        ? JSON.parse(localStorage.getItem("generatedCode") || "")
-        : null;
-    const activeFile: string | null = localStorage.getItem("activeFile") || "";
-    if (!generatedCode || !activeFile) {
-      return;
-    }
-    const blob = new Blob([generatedCode.code], {
+    const blob = new Blob([code], {
       type: "text/plain;charset=utf-8",
     });
-    saveAs(blob, activeFile.slice(1, activeFile.length));
+    saveAs(blob, "App.tsx");
   };
 
   const actionButtons = (
@@ -67,50 +56,14 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     </div>
   );
 
-  const { sandpack, listen } = useSandpack();
-  const { activeFile, updateFile } = sandpack;
+  const { listen } = useSandpack();
   const { code } = useActiveCode();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
 
   useEffect(() => {
-    updateFile("/App.tsx", code);
-    const files: Record<
-      string,
-      { code: string; active: boolean; hidden: boolean; readOnly: boolean }
-    > = JSON.parse(localStorage.getItem("codeFiles") || "{}");
-    // Set active status to false for all files
-    Object.keys(files).forEach((key) => {
-      files[key].active = false;
-    });
-
-    // Update the current file
-    files[activeFile] = {
-      code: code,
-      active: true,
-      hidden: false,
-      readOnly: false,
-    };
-
-    files["/App.tsx"] = {
-      code: code,
-      active: false,
-      hidden: true,
-      readOnly: true,
-    };
-
-    localStorage.setItem("codeFiles", JSON.stringify(files));
-    const generatedCode = JSON.parse(
-      localStorage.getItem("generatedCode") || "{}",
-    );
-    localStorage.setItem(
-      "generatedCode",
-      JSON.stringify({
-        code,
-        extraLibraries: generatedCode.extraLibraries || [],
-      }),
-    );
-  }, [code, activeFile]);
+    onCodeChange(code);
+  }, [code, onCodeChange]);
 
   useEffect(() => {
     const stopListening = listen((msg) => {
@@ -134,16 +87,12 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
     };
   }, [listen, statusMessage]);
 
-  useEffect(() => {
-    localStorage.setItem("activeFile", activeFile);
-  }, [activeFile]);
-
   return (
     <div className="absolute inset-0 flex flex-col">
-      <SandpackLayout className="flex-grow overflow-hidden">
+      <div className="flex-grow overflow-hidden flex">
         {!isPreviewOnly && (
           <SandpackCodeEditor
-            className="h-full"
+            className="flex-1 h-full"
             showRunButton={true}
             showInlineErrors={true}
             wrapContent={true}
@@ -153,10 +102,7 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
           />
         )}
         <div
-          className="relative h-full"
-          style={{
-            width: isPreviewOnly ? '100%' : '50%',
-          }}
+          className={`relative ${isPreviewOnly ? 'w-full' : 'w-1/2'} h-full`}
         >
           <SandpackPreview className="h-full w-full" />
           {statusMessage && (
@@ -170,56 +116,31 @@ function SandpackContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
         </div>
-      </SandpackLayout>
+      </div>
       {statusMessage === "" && actionButtons}
     </div>
   );
 }
 
 export default function CodeEditor({
-  files,
-  extraDependencies,
+  artifact,
   children,
 }: CodeEditorProps) {
-  const dependencies = {
-    "lucide-react": "latest",
-    recharts: "2.9.0",
-    axios: "latest",
-    "react-dom": "latest",
-    "react-router-dom": "latest",
-    "react-ui": "latest",
-    "@mui/material": "latest",
-    "@emotion/react": "latest",
-    "@emotion/styled": "latest",
-    "@mui/icons-material": "latest",
-    "react-player": "latest",
+  const normalizedDependencies = Array.isArray(artifact.dependencies)
+    ? artifact.dependencies.reduce(
+        (acc, dep) => {
+          acc[dep.name] = dep.version || "latest";
+          return acc;
+        },
+        {} as Record<string, string>
+      )
+    : {};
+
+  const handleCodeChange = (newCode: string) => {
+    // Dispatch an event to update the artifact
+    const event = new CustomEvent('artifactCodeChange', { detail: { code: newCode } });
+    window.dispatchEvent(event);
   };
-
-  const [customDependencies, setCustomDependencies] = useState(dependencies);
-
-  useEffect(() => {
-    const normalizedExtraDependencies = extraDependencies.reduce(
-      (acc, dep) => {
-        acc[dep.name] = "latest";
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-
-    setCustomDependencies({
-      ...dependencies,
-      ...normalizedExtraDependencies,
-    });
-
-    // console.log("customDependencies: ", customDependencies)
-    console.log("dependencies: ", dependencies);
-    console.log("extraDependencies: ", extraDependencies);
-    console.log("normalizedExtraDependencies: ", normalizedExtraDependencies);
-  }, [extraDependencies]);
-
-  useEffect(() => {
-    console.log("customDependencies: ", customDependencies);
-  }, [customDependencies]);
 
   return (
     <div className="relative w-full h-full">
@@ -233,11 +154,18 @@ export default function CodeEditor({
           }}
           theme={draculaTheme}
           customSetup={{
-            dependencies: customDependencies,
+            dependencies: normalizedDependencies,
           }}
-          files={files}
+          files={{
+            "/App.tsx": {
+              code: artifact.code,
+              active: true,
+              hidden: false,
+              readOnly: false,
+            },
+          }}
         >
-          <SandpackContent>{children}</SandpackContent>
+          <SandpackContent onCodeChange={handleCodeChange}>{children}</SandpackContent>
         </SandpackProvider>
       </AnimatePresence>
     </div>
