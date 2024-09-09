@@ -83,7 +83,7 @@ export async function PUT(
     }, { '#updatedAt': 'updatedAt' } as Record<string, string>);
 
     // Update the artifact
-    const result = await ddbClient.update(
+    await ddbClient.update(
       TABLE_NAME,
       { PK: `PROJECT#${projectId}`, SK: `ARTIFACT#${artifactId}` },
       updateExpression,
@@ -91,7 +91,16 @@ export async function PUT(
       expressionAttributeNames
     );
 
-    return NextResponse.json(result.Attributes as Artifact);
+    // Fetch the updated artifact
+    const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${projectId}`, SK: `ARTIFACT#${artifactId}` });
+    
+    if (!result.Item) {
+      return NextResponse.json({ error: 'Failed to retrieve updated artifact' }, { status: 500 });
+    }
+
+    // Ensure the response is JSON serializable
+    const updatedArtifact = JSON.parse(JSON.stringify(result.Item));
+    return NextResponse.json(updatedArtifact);
   } catch (error) {
     console.error('Error updating artifact:', error);
     return NextResponse.json({ error: 'Failed to update artifact' }, { status: 500 });

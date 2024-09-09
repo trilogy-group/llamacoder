@@ -118,6 +118,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       const newArtifact = await artifactApi.createArtifact(project.id, {
         description,
         projectId,
+        status: "creating",
         // Add any other required fields for creating an artifact
       });
       
@@ -165,6 +166,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
 
       // Reset streaming message after completion
       setStreamingMessage(null);
+      setSelectedArtifact(prevArtifact => ({
+        ...prevArtifact!,
+        status: "idle",
+        code: generatedCode
+      }));
 
       // Update the artifact with the final generated code
       await artifactApi.updateArtifact(projectId, newArtifact.id, { code: generatedCode });
