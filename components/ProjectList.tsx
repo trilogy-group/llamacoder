@@ -6,7 +6,7 @@ interface ProjectListProps {
   projects: Project[];
   onCreateProject: () => void;
   onOpenProject: (projectId: string) => void;
-  onProjectDeleted: () => void;
+  onProjectDeleted: (projectId: string) => void;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects, onCreateProject, onOpenProject, onProjectDeleted }) => {

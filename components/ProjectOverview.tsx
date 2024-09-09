@@ -10,7 +10,7 @@ import logo from './../public/logo.png';
 
 interface ProjectOverviewProps {
   project: Project;
-  onProjectDeleted: () => void;
+  onProjectDeleted: (projectId: string) => void;
 }
 
 const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted }) => {  
@@ -51,7 +51,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
       toast.success('Project deleted successfully', {
         duration: 3000,
       });
-      onProjectDeleted();
+      onProjectDeleted(project.id);
     } catch (error) {
       console.error('Error deleting project:', error);
       if (axios.isAxiosError(error) && error.response) {

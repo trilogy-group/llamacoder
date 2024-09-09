@@ -11,13 +11,13 @@ import { artifactApi } from '../utils/apiClients/Artifact';
 
 interface AppContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
   projects: Project[];
-  setProjects: (projects: Project[]) => void;
   currentProject: Project | null;
-  setCurrentProject: (project: Project | null) => void;
   currentArtifact: Artifact | null;
-  setCurrentArtifact: (artifact: Artifact | null) => void;
+  dispatchUserUpdate: (user: User | null) => void;
+  dispatchProjectsUpdate: (projects: Project[]) => void;
+  dispatchCurrentProjectUpdate: (project: Project | null) => void;
+  dispatchCurrentArtifactUpdate: (artifact: Artifact | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -29,6 +29,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentArtifact, setCurrentArtifact] = useState<Artifact | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Dispatch functions
+  const dispatchUserUpdate = (updatedUser: User | null) => {
+    window.dispatchEvent(new CustomEvent('userUpdate', { detail: updatedUser }));
+  };
+
+  const dispatchProjectsUpdate = (updatedProjects: Project[]) => {
+    window.dispatchEvent(new CustomEvent('projectsUpdate', { detail: updatedProjects }));
+  };
+
+  const dispatchCurrentProjectUpdate = (updatedProject: Project | null) => {
+    window.dispatchEvent(new CustomEvent('currentProjectUpdate', { detail: updatedProject }));
+  };
+
+  const dispatchCurrentArtifactUpdate = (updatedArtifact: Artifact | null) => {
+    window.dispatchEvent(new CustomEvent('currentArtifactUpdate', { detail: updatedArtifact }));
+  };
+
   // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -36,20 +53,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         // Fetch user data (assuming we have a logged-in user's ID)
         const userData = await userApi.getUser('current-user-id');
-        setUser(userData);
+        dispatchUserUpdate(userData);
 
         // Fetch projects
         const projectsData = await projectApi.getProjects();
-        setProjects(projectsData);
+        dispatchProjectsUpdate(projectsData);
 
         // Set initial current project and artifact if available
         if (projectsData.length > 0) {
           const firstProject = projectsData[0];
-          setCurrentProject(firstProject);
+          dispatchCurrentProjectUpdate(firstProject);
           
           if (firstProject.artifacts && firstProject.artifacts.length > 0) {
             const firstArtifact = await artifactApi.getArtifact(firstProject.id, firstProject.artifacts[0].id);
-            setCurrentArtifact(firstArtifact);
+            dispatchCurrentArtifactUpdate(firstArtifact);
           }
         }
 
@@ -89,7 +106,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <UserProvider>
-      <AppContext.Provider value={{ user, setUser, projects, setProjects, currentProject, setCurrentProject, currentArtifact, setCurrentArtifact }}>
+      <AppContext.Provider value={{ 
+        user, 
+        projects, 
+        currentProject, 
+        currentArtifact, 
+        dispatchUserUpdate,
+        dispatchProjectsUpdate,
+        dispatchCurrentProjectUpdate,
+        dispatchCurrentArtifactUpdate
+      }}>
         {children}
       </AppContext.Provider>
     </UserProvider>
