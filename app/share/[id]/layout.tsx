@@ -1,11 +1,11 @@
-export default function Layout({
+export default function ShareLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <body className="flex min-h-full flex-col items-center justify-center">
+    <div className="flex min-h-full flex-col items-center justify-center">
       {children}
-    </body>
+    </div>
   );
 }

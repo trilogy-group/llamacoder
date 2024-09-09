@@ -1,12 +1,12 @@
 import { Artifact } from "./Artifact";
-import { Attachment } from "./Attachment";
+import { FileContext } from "./FileContext";
 
 export interface Project {
     id: string;
     title: string;
     description: string;
     thumbnail?: string;
-    context: Attachment[];
+    context: FileContext[];
     artifacts: Artifact[];
     entrypoint: Artifact;
     status: string;

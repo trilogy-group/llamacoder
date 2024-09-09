@@ -35,12 +35,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en" className="h-full">
-      <AppProvider>{children}</AppProvider>
+    <html lang="en">
+      <body>
+        <AppProvider>
+          {children}
+        </AppProvider>
+      </body>
     </html>
-  );
+  )
 }

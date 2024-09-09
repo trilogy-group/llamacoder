@@ -1,13 +1,11 @@
-export default function Layout({
+export default function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-brand antialiased">
-        <div className="isolate">{children}</div>
-      </body>
-    </html>
+    <div className="bg-brand antialiased">
+      <div className="isolate">{children}</div>
+    </div>
   );
 }

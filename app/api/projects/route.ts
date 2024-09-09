@@ -50,8 +50,9 @@ export async function POST(request: Request) {
       ...dbProject,
     });
 
+
     // Set the creator as the owner in FGA
-    await fgaClient.write({
+    const response = await fgaClient.write({
       writes: [{
         user: `user:${session.user.sub}`,
         relation: 'owner',
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
       }],
     });
     
+    console.log("Response: ", response);
+
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     console.error('Error creating project:', error);
@@ -242,9 +245,10 @@ export async function DELETE(request: Request) {
 
     // Remove all FGA relationships for this project
     await fgaClient.write({
-      deletes: [{
-        user: '*',
-        relation: '*',
+      deletes: [
+      {
+        user: `user:${session.user.sub}`,
+        relation: 'owner',
         object: `project:${id}`,
       }],
     });
