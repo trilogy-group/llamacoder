@@ -220,18 +220,20 @@ const Workspace: React.FC = () => {
           )}
           <Panel defaultSize={60} minSize={40} maxSize={100}>
             <div className="h-full">
-              <Preview artifact={currentArtifact} />
+              {currentArtifact && <Preview artifact={currentArtifact} />}
             </div>
           </Panel>
           {!isUpdateArtifactCollapsed && (
             <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />
           )}
           <Panel defaultSize={20} minSize={0} maxSize={100} collapsible={true}>
-            <UpdateArtifact
-              artifact={currentArtifact}
-              isCollapsed={isUpdateArtifactCollapsed}
-              setIsCollapsed={setIsUpdateArtifactCollapsed}
-            />
+            {currentArtifact && (
+              <UpdateArtifact
+                artifact={currentArtifact}
+                isCollapsed={isUpdateArtifactCollapsed}
+                setIsCollapsed={setIsUpdateArtifactCollapsed}
+              />
+            )}
           </Panel>
         </PanelGroup>
       </div>

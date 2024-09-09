@@ -6,6 +6,7 @@ import { Artifact } from '@/types/Artifact';
 import { FileContext } from '@/types/FileContext';
 import { getSession } from '@auth0/nextjs-auth0';
 import fgaClient from "@/lib/oktaFGA";
+import { Attachment } from '@/types/Attachment';
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
 
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
         title: result.Item.title,
         description: result.Item.description,
         thumbnail: result.Item.thumbnail,
-        context: result.Item.context as FileContext[],
+        context: result.Item.context as Attachment[],
         artifacts: result.Item.artifacts as Artifact[],
         entrypoint: result.Item.entrypoint as Artifact,
         status: result.Item.status,
@@ -130,7 +131,7 @@ export async function GET(request: Request) {
             title: result.Item.title,
             description: result.Item.description,
             thumbnail: result.Item.thumbnail,
-            context: result.Item.context as FileContext[],
+            context: result.Item.context as Attachment[],
             artifacts: result.Item.artifacts as Artifact[],
             entrypoint: result.Item.entrypoint as Artifact,
             status: result.Item.status,
@@ -202,7 +203,7 @@ export async function PUT(request: Request) {
       title: result.Item.title,
       description: result.Item.description,
       thumbnail: result.Item.thumbnail,
-      context: result.Item.context as FileContext[],
+      context: result.Item.context as Attachment[],
       artifacts: result.Item.artifacts as Artifact[],
       entrypoint: result.Item.entrypoint as Artifact,
       status: result.Item.status,
