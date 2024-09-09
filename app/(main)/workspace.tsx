@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { projectApi } from "@/utils/apiClients/Project";
 import { artifactApi } from "@/utils/apiClients/Artifact";
+import { genAiApi } from "@/utils/apiClients/GenAI";
+import { Message } from "@/types/Message";
 import { CircularProgress } from "@mui/material";
 import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
 import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
@@ -32,6 +34,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -130,9 +133,45 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       toast.success("Artifact created successfully", {
         duration: 3000,
       });
+
+      // Generate code for the artifact
+      const messages: Message[] = [
+        { role: "user", text: `Generate code for the following artifact: ${description}` }
+      ];
+
+      let generatedCode = "";
+      let currentStreamingMessage = { role: "assistant", text: "" } as Message;
+      setStreamingMessage(currentStreamingMessage);
+
+      const onChunk = (chunks: {index: number, type: string, text: string}[]) => {
+        setShowCreateForm(false);
+        setIsCreatingArtifact(false);
+        for(const chunk of chunks){
+          generatedCode += chunk.text;
+          currentStreamingMessage = {
+            ...currentStreamingMessage,
+            text: generatedCode
+          };
+          setStreamingMessage(currentStreamingMessage);
+        }
+        console.log("currentStreamingMessage: ", currentStreamingMessage);
+        setSelectedArtifact(prevArtifact => ({
+          ...prevArtifact!,
+          code: generatedCode
+        }));
+      }
+
+      await genAiApi.generateResponse(messages, onChunk);
+
+      // Reset streaming message after completion
+      setStreamingMessage(null);
+
+      // Update the artifact with the final generated code
+      await artifactApi.updateArtifact(projectId, newArtifact.id, { code: generatedCode });
+
     } catch (error) {
-      console.error("Error creating artifact:", error);
-      toast.error("Failed to create artifact", {
+      console.error("Error creating artifact or generating code:", error);
+      toast.error("Failed to create artifact or generate code", {
         duration: 3000,
       });
     } finally {
@@ -259,6 +298,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
                   artifact={selectedArtifact}
                   isCollapsed={isUpdateArtifactCollapsed}
                   setIsCollapsed={setIsUpdateArtifactCollapsed}
+                  streamingMessage={streamingMessage}
                 />
               )}
             </Panel>

@@ -4,14 +4,16 @@ import { ChatSession } from "../types/ChatSession";
 import { FiPaperclip, FiCopy } from "react-icons/fi";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Message } from "../types/Message";
 
 interface ChatHistoryProps {
   artifact: Artifact;
   chatSession: ChatSession;
+  streamingMessage: Message | null; // Add this prop
 }
 
-const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession }) => {
-  const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
+const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession, streamingMessage }) => {
+  const [hoveredMessage, setHoveredMessage] = useState<number | null>(null);
   const [hoveredCodeBlock, setHoveredCodeBlock] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -62,17 +64,17 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession }) => {
 
   return (
     <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
-      {chatSession.messages.map((message) => (
+      {chatSession.messages.map((message, index) => (
         <div
-          key={message.id}
+          key={index}
           className={`w-full rounded-lg shadow-sm relative ${
             message.role === "user" 
               ? "bg-gray-50 hover:border-blue-500" 
               : "bg-blue-50 hover:border-green-500"
           } ${
-            hoveredMessage === message.id ? "border" : "border border-transparent"
+            hoveredMessage === index ? "border" : "border border-transparent"
           } transition-colors duration-200`}
-          onMouseEnter={() => setHoveredMessage(message.id)}
+          onMouseEnter={() => setHoveredMessage(index)}
           onMouseLeave={() => setHoveredMessage(null)}
         >
           <div className="flex flex-col">
@@ -91,11 +93,11 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession }) => {
             )}
             <div className="p-3 overflow-y-auto">
               <div className="text-xs text-gray-800 break-words">
-                {renderMessageContent(message.text, message.id)}
+                {renderMessageContent(message.text, index.toString())}
               </div>
             </div>
           </div>
-          {hoveredMessage === message.id && (
+          {hoveredMessage === index && (
             <button
               onClick={() => copyToClipboard(message.text)}
               className="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded-md opacity-50 hover:opacity-100 transition-opacity duration-200"
@@ -105,6 +107,21 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession }) => {
           )}
         </div>
       ))}
+      
+      {streamingMessage && (
+        <div
+          key="streaming-message"
+          className={`w-full rounded-lg shadow-sm relative bg-blue-50 border border-transparent transition-colors duration-200`}
+        >
+          <div className="flex flex-col">
+            <div className="p-3 overflow-y-auto">
+              <div className="text-xs text-gray-800 break-words">
+                {renderMessageContent(streamingMessage.text, 'streaming-message')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

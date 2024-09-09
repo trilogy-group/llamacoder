@@ -9,11 +9,12 @@ import { Attachment } from "../types/Attachment";
 
 interface UpdateArtifactProps {
   artifact: Artifact;
+  streamingMessage: Message | null;
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
 }
 
-const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, setIsCollapsed }) => {
+const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMessage, isCollapsed, setIsCollapsed }) => {
   const [chatSession, setChatSession] = useState<ChatSession>({
     id: Date.now().toString(),
     artifactId: artifact.id,
@@ -28,7 +29,6 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
   const handleSubmit = (text: string, attachments: Attachment[]) => {
     if (text.trim()) {
       const newMessage: Message = {
-        id: Date.now().toString(),
         text: text,
         role: "user",
         attachments: attachments,
@@ -42,7 +42,6 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
       // Simulated assistant response
       setTimeout(() => {
         const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
           text: "Updated message",
           role: "assistant",
         };
@@ -97,7 +96,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
             />
           </div>
           <div className="flex-grow overflow-hidden flex flex-col">
-            <ChatHistory artifact={artifact} chatSession={chatSession} />
+            <ChatHistory artifact={artifact} chatSession={chatSession} streamingMessage={streamingMessage}/>
           </div>
           <InputForm 
             artifact={artifact} 
