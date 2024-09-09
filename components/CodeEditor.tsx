@@ -1,6 +1,5 @@
 import {
   SandpackProvider,
-  SandpackLayout,
   SandpackPreview,
   useSandpack,
   useActiveCode,
@@ -85,7 +84,12 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
     return () => {
       stopListening();
     };
-  }, [listen, statusMessage]);
+  }, [listen]);
+
+  // Add this effect to log statusMessage changes
+  useEffect(() => {
+    console.log("statusMessage: ", statusMessage);
+  }, [statusMessage]);
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -137,9 +141,6 @@ export default function CodeEditor({
     : {};
 
   const handleCodeChange = (newCode: string) => {
-    // Dispatch an event to update the artifact
-    const event = new CustomEvent('artifactCodeChange', { detail: { code: newCode } });
-    window.dispatchEvent(event);
   };
 
   return (
