@@ -5,6 +5,8 @@ import Tooltip from './Tooltip';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
+import Image from 'next/image';
+import logo from './../public/logo.png';
 
 interface ProjectOverviewProps {
   project: Project;
@@ -71,9 +73,13 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
         {project.thumbnail ? (
           <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover" />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm">
-            <FiImage className="w-8 h-8 mb-2" />
-            <span>No preview available</span>
+          <div className="w-full h-full relative">
+            <Image
+              src={logo}
+              alt="Default project image"
+              layout="fill"
+              objectFit="contain"
+            />
           </div>
         )}
       </div>

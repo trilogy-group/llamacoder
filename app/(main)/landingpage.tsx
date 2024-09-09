@@ -9,6 +9,8 @@ import HeaderV2 from "@/components/HeaderV2";
 import { RocketLaunchIcon } from '@heroicons/react/24/solid';
 import TypewriterEffect from "@/components/TypewriteEffect";
 import { useRouter } from 'next/navigation';
+import Image from "next/image";
+import logo from "../../public/logo.png";
 
 const theme = createTheme();
 
@@ -22,8 +24,6 @@ const LandingPage = () => {
   return (
     <ThemeProvider theme={theme}>
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
-        <HeaderV2 />
-        
         <div className="absolute top-4 right-4 space-x-4">
           <button className="px-6 py-3 text-blue-600 font-bold rounded-full hover:bg-blue-100 transition duration-300 ease-in-out transform hover:scale-105">
             Login
@@ -34,6 +34,7 @@ const LandingPage = () => {
         </div>
 
         <main className="mt-12 flex w-full flex-1 flex-col items-center px-4 text-center sm:mt-20">
+          <Image src={logo} alt="ArTIfacts Logo" width={100} height={100} className="mb-8 opacity-80 hover:opacity-100 transition-opacity duration-300" />
           <h1 className="my-6 max-w-3xl text-4xl font-bold text-gray-800 sm:text-6xl">
             Turn your <span className="text-blue-600">idea</span>
             <br /> into an Ar<span className="text-blue-600">TI</span>fact
