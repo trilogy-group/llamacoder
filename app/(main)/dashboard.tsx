@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import CreateProjectButton from "@/components/CreateProjectButton";
+import EmptyProjectMessage from "@/components/EmptyProjectMessage";
 import HeaderV2 from "@/components/HeaderV2";
 import ProjectList from "@/components/ProjectList";
-import CreateProjectButton from "@/components/CreateProjectButton";
 import ProjectOverviewInputForm from "@/components/ProjectOverviewInputForm";
 import { Project } from "@/types/Project";
-import EmptyProjectMessage from "@/components/EmptyProjectMessage";
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
-import { Toaster } from 'sonner';
+import { useUser } from "@auth0/nextjs-auth0/client";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { Toaster } from "sonner";
 
 const Dashboard: React.FC = () => {
+  const { user, error: userError, isLoading: userLoading } = useUser();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,12 +29,12 @@ const Dashboard: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/api/projects');
+      const response = await axios.get("/api/projects");
       console.log("Projects:", response.data);
       setProjects(response.data);
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      setError('Failed to load projects. Please try again.');
+      console.error("Error fetching projects:", error);
+      setError("Failed to load projects. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -41,12 +43,14 @@ const Dashboard: React.FC = () => {
   const handleCreateProject = async (description: string) => {
     setIsCreatingProject(true);
     try {
-      const titleResponse = await axios.post('/api/generateProjectTitle', { description });
+      const titleResponse = await axios.post("/api/generateProjectTitle", {
+        description,
+      });
       const generatedTitle = titleResponse.data.title;
 
       console.log("Generated title:", generatedTitle);
 
-      const newProject: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> = {
+      const newProject: Omit<Project, "id" | "createdAt" | "updatedAt"> = {
         title: generatedTitle,
         description: description,
         thumbnail: "",
@@ -59,12 +63,12 @@ const Dashboard: React.FC = () => {
         publishedUrl: "",
       };
 
-      const response = await axios.post('/api/projects', newProject);
+      const response = await axios.post("/api/projects", newProject);
       const createdProject = response.data;
       setProjects([...projects, createdProject]);
       setShowCreateForm(false);
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error("Error creating project:", error);
     } finally {
       setIsCreatingProject(false);
     }
@@ -78,22 +82,24 @@ const Dashboard: React.FC = () => {
     fetchProjects();
   };
 
+  if (userError) return <div>{userError.message}</div>;
+
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderV2 />
-      <main className="flex-1 w-full mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <HeaderV2 user={user} />
+      <main className="mt-16 w-full flex-1">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <div className="flex h-64 flex-col items-center justify-center">
+              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
               <p className="text-gray-600">Loading your projects...</p>
             </div>
           ) : error ? (
-            <div className="text-center text-red-500 mt-8">
+            <div className="mt-8 text-center text-red-500">
               <p>{error}</p>
-              <button 
-                onClick={fetchProjects} 
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              <button
+                onClick={fetchProjects}
+                className="mt-4 rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
               >
                 Try Again
               </button>
@@ -117,7 +123,9 @@ const Dashboard: React.FC = () => {
               />
             </>
           ) : (
-            <EmptyProjectMessage onCreateProject={() => setShowCreateForm(true)} />
+            <EmptyProjectMessage
+              onCreateProject={() => setShowCreateForm(true)}
+            />
           )}
         </div>
       </main>
@@ -125,8 +133,8 @@ const Dashboard: React.FC = () => {
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
           {isCreatingProject ? (
-            <div className="bg-white rounded-lg p-6 flex flex-col items-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <div className="flex flex-col items-center rounded-lg bg-white p-6">
+              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
               <p className="text-gray-600">Creating your project...</p>
             </div>
           ) : (
@@ -140,6 +148,6 @@ const Dashboard: React.FC = () => {
       <Toaster position="bottom-right" />
     </div>
   );
-}
+};
 
 export default Dashboard;
