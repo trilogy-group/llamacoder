@@ -1,5 +1,3 @@
-import Image from "next/image";
-import bgImg from "@/public/halo.png";
 import { AppProvider } from "@/contexts/AppContext";
 
 export default function Layout({
@@ -8,19 +6,12 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <body className="bg-brand antialiased">
-      <AppProvider>
-        <div className="absolute inset-x-0 flex justify-center">
-          <Image
-            src={bgImg}
-            alt=""
-            className="w-full max-w-[1200px] mix-blend-screen"
-            priority
-          />
-        </div>
-
-        <div className="isolate">{children}</div>
-      </AppProvider>
-    </body>
+    <html lang="en">
+      <body className="bg-brand antialiased">
+        <AppProvider>
+          <div className="isolate">{children}</div>
+        </AppProvider>
+      </body>
+    </html>
   );
 }

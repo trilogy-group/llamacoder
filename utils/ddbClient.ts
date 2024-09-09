@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
@@ -42,6 +42,15 @@ export const ddbClient = {
             UpdateExpression: updateExpression,
             ExpressionAttributeValues: expressionAttributeValues,
             ExpressionAttributeNames: expressionAttributeNames,
+        });
+        return ddbDocClient.send(command);
+    },
+
+    scan: async (tableName: string, filterExpression?: string, expressionAttributeValues?: Record<string, any>) => {
+        const command = new ScanCommand({
+            TableName: tableName,
+            FilterExpression: filterExpression,
+            ExpressionAttributeValues: expressionAttributeValues,
         });
         return ddbDocClient.send(command);
     },

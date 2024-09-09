@@ -1,18 +1,18 @@
 import { Artifact } from "./Artifact";
 import { Attachment } from "./Attachment";
 
-export type Project = {
+export interface Project {
     id: string;
     title: string;
     description: string;
     thumbnail?: string;
-    attachments: Attachment[];
+    context: Attachment[];
     artifacts: Artifact[];
     entrypoint: Artifact;
     status: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     createdBy: string;
     updatedBy: string;
     publishedUrl: string;
-};
+}

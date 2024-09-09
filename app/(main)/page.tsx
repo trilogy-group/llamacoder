@@ -1,26 +1,16 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
-import { Toaster, toast } from "sonner";
 import { useScrollTo } from "@/hooks/use-scroll-to";
-import { motion } from "framer-motion";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import FileUploader from "../../components/FileUploader";
-import PromptForm from "../../components/PromptForm";
-import ModelSelector from "../../components/ModelSelector";
-import CodeEditor from "../../components/CodeEditor";
-import { generateCode, modifyCode, getApiSpec } from "../../utils/apiClient";
-import UpdatePromptForm from "../../components/UpdatePromptForm";
-import PublishButton from "../../components/PublishButton";
-import PublishedAppLink from "../../components/PublishedAppLink";
 import { CircularProgress } from "@mui/material";
-import { readFileContent } from "../../utils/fileUtils";
+import { usePathname } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { generateCode, getApiSpec, modifyCode } from "../../utils/apiClient";
+import { readFileContent } from "../../utils/fileUtils";
 import { generateCodePrompt, modifyCodePrompt } from "../../utils/promptUtils";
 import Dashboard from "./dashboard";
 import LandingPage from "./landingpage";
-import Workspace from "./workspace";
 
 function extractComponentName(code: string): string {
   const match = code.match(/export default (\w+)/);
@@ -59,6 +49,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>("");
   const [apiSpec, setApiSpec] = useState<string>("");
+  const pathname = usePathname();
 
   const setGeneratedCode = (newGeneratedCode: {
     code: string;
@@ -238,7 +229,10 @@ export default function Home() {
     onSuccess(componentName, newGeneratedCode);
   };
 
-  const handleGenerateCode = async (e: FormEvent<HTMLFormElement>) => {
+  const handleGenerateCode = async (
+    e: FormEvent<HTMLFormElement>,
+    images: File[],
+  ) => {
     e.preventDefault();
     if (status !== "initial") {
       scrollTo({ delay: 0.5 });
@@ -259,9 +253,31 @@ export default function Home() {
 
     // Read content of selected files
     const fileContext = await getFileContext();
+
+    const imageBase64 = await Promise.all(
+      images.map(async (image) => {
+        const reader = new FileReader();
+        return new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(image);
+        });
+      }),
+    );
+
     var userPrompt = generateCodePrompt(prompt, fileContext, apiSpec);
 
-    const messages = [{ role: "user", content: userPrompt }];
+    const messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: userPrompt },
+          ...imageBase64.map((image) => ({
+            type: "image_url",
+            image_url: { url: image },
+          })),
+        ],
+      },
+    ];
     console.log("Messages: ", messages, selectedModel);
 
     const onSuccess = (
@@ -289,7 +305,10 @@ export default function Home() {
     }
   };
 
-  const handleModifyCode = async (e: FormEvent<HTMLFormElement>) => {
+  const handleModifyCode = async (
+    e: FormEvent<HTMLFormElement>,
+    images: File[],
+  ) => {
     e.preventDefault();
     setStatus("updating");
 
@@ -303,15 +322,43 @@ export default function Home() {
     }
 
     const generatedCode = localStorage.getItem("generatedCode");
-    if(!generatedCode) {
+    if (!generatedCode) {
       toast.error("No generated code found");
       setStatus("created");
       return;
     }
     const generatedCodeJson = JSON.parse(generatedCode);
     const fileContext = await getFileContext();
-    var query = modifyCodePrompt(initialPrompt, prompt, generatedCodeJson.code, fileContext, apiSpec);
-    const messages = [{ role: "user", content: query }];
+
+    const imageBase64 = await Promise.all(
+      images.map(async (image) => {
+        const reader = new FileReader();
+        return new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(image);
+        });
+      }),
+    );
+
+    var query = modifyCodePrompt(
+      initialPrompt,
+      prompt,
+      generatedCodeJson.code,
+      fileContext,
+      apiSpec,
+    );
+    const messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: query },
+          ...imageBase64.map((image) => ({
+            type: "image_url",
+            image_url: { url: image },
+          })),
+        ],
+      },
+    ];
     console.log("Messages: ", messages, selectedModel);
 
     const onSuccess = (
@@ -353,89 +400,9 @@ export default function Home() {
   }
 
   return (
-    <LandingPage />
-  )
-  // return (
-  //   <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center py-2">
-  //     <Header />
-
-  //     {status !== "initial" &&
-  //       status !== "creating" && (
-  //         <div className="fixed right-4 top-4 z-50">
-  //           <PublishButton loading={loading} onPublish={handlePublish} />
-  //         </div>
-  //       )}
-  //     <main className="mt-12 flex w-full flex-1 flex-col items-center px-4 text-center sm:mt-20">
-  //       <h1 className="my-6 max-w-3xl text-4xl font-bold text-gray-800 sm:text-6xl">
-  //         Turn your <span className="text-blue-600">idea</span>
-  //         <br /> into an Ar<span className="text-blue-600">TI</span>fact
-  //       </h1>
-
-  //       <FileUploader setSelectedFiles={setSelectedFiles} />
-
-  //       <PromptForm
-  //         loading={status === "creating"}
-  //         onSubmit={handleGenerateCode}
-  //         status={status}
-  //         initialPrompt={initialPrompt}
-  //       />
-
-  //       <ModelSelector
-  //         loading={loading}
-  //         selectedModel={selectedModel}
-  //         setSelectedModel={setSelectedModel}
-  //       />
-
-  //       <hr className="border-1 mb-20 h-px bg-gray-700 dark:bg-gray-700" />
-
-  //       {status !== "initial" && status !== "creating" && files && (
-  //         <motion.div
-  //           initial={{ height: 0 }}
-  //           animate={{
-  //             height: "auto",
-  //             overflow: "hidden",
-  //             transitionEnd: { overflow: "visible" },
-  //           }}
-  //           transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-  //           className="w-full pb-[25vh] pt-10"
-  //           onAnimationComplete={() => scrollTo()}
-  //           ref={ref}
-  //         >
-  //           <div className="flex flex-col items-center">
-  //             <div className="mb-8 flex w-full justify-center">
-  //               <div className="w-full md:w-3/5">
-  //                 <UpdatePromptForm
-  //                   loading={status === "updating"}
-  //                   onUpdate={handleModifyCode}
-  //                 />
-  //               </div>
-  //             </div>
-
-  //             {(status === "created" ||
-  //               status === "updated" ||
-  //               status === "updating") && (
-  //               <div className="w-full">
-  //                 <CodeEditor
-  //                   files={files}
-  //                   extraDependencies={generatedCode.extraLibraries || []}
-  //                 />
-  //               </div>
-  //             )}
-  //           </div>
-  //         </motion.div>
-  //       )}
-  //     </main>
-  //     <Footer />
-  //     <Toaster invert={true} />
-  //     {status !== "creating" && status !== "initial" && (
-  //       <div className="fixed bottom-4 left-4 z-50">
-  //         <PublishedAppLink url={publishedUrl} />
-  //       </div>
-  //     )}
-
-  //     {/* {(status === "creating" || status === "updating") && (
-  //       <FunFactRenderer funFact={funFact} />
-  //     )} */}
-  //   </div>
-  // );
+    <>
+      {pathname === "/" && <LandingPage />}
+      {pathname === "/dashboard" && <Dashboard />}
+    </>
+  );
 }
