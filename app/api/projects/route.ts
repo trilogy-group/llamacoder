@@ -4,12 +4,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { Project } from '@/types/Project';
 import { Artifact } from '@/types/Artifact';
 import { FileContext } from '@/types/FileContext';
+import { getSession } from '@auth0/nextjs-auth0';
+import fgaClient from "@/lib/oktaFGA";
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
+
+// Helper function to check user access
+async function checkAccess(userId: string, projectId: string, requiredRelation: string) {
+  const response = await fgaClient.check({
+    user: `user:${userId}`,
+    relation: requiredRelation,
+    object: `project:${projectId}`,
+  });
+  return response.allowed;
+}
 
 // Create a new project
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> = await request.json();
     const now = new Date();
     const project: Project = {
@@ -17,9 +34,10 @@ export async function POST(request: Request) {
       id: uuidv4(),
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
+      createdBy: session.user.sub,
+      updatedBy: session.user.sub,
     };
     
-    // Convert Date objects to ISO strings for DynamoDB
     const dbProject = {
       ...project,
       createdAt: now.toISOString(),
@@ -30,6 +48,15 @@ export async function POST(request: Request) {
       PK: `PROJECT#${project.id}`,
       SK: `PROJECT#${project.id}`,
       ...dbProject,
+    });
+
+    // Set the creator as the owner in FGA
+    await fgaClient.write({
+      writes: [{
+        user: `user:${session.user.sub}`,
+        relation: 'owner',
+        object: `project:${project.id}`,
+      }],
     });
     
     return NextResponse.json(project, { status: 201 });
@@ -42,10 +69,21 @@ export async function POST(request: Request) {
 // Read a project by ID or fetch all projects
 export async function GET(request: Request) {
   try {
+    const session = await getSession();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (id) {
+      // Check if user has access to this project
+      const hasAccess = await checkAccess(session.user.sub, id, 'can_view');
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+
       // Fetch a single project by ID
       const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
       
@@ -71,28 +109,36 @@ export async function GET(request: Request) {
 
       return NextResponse.json(project);
     } else {
-      // Fetch all projects
-      const result = await ddbClient.scan(
-        TABLE_NAME,
-        'begins_with(PK, :pk)',
-        { ':pk': 'PROJECT#' }
-      );
+      // Fetch all projects the user has access to
+      const response = await fgaClient.listObjects({
+        user: `user:${session.user.sub}`,
+        relation: 'can_view',
+        type: 'project',
+      });
 
-      const projects: Project[] = result.Items?.filter(item => item.PK.startsWith('PROJECT#')).map(item => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        thumbnail: item.thumbnail,
-        context: item.context as FileContext[],
-        artifacts: item.artifacts as Artifact[],
-        entrypoint: item.entrypoint as Artifact,
-        status: item.status,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        createdBy: item.createdBy,
-        updatedBy: item.updatedBy,
-        publishedUrl: item.publishedUrl,
-      })) || [];
+      const projectIds = response.objects.map(obj => obj.split(':')[1]);
+
+      const projects: Project[] = [];
+      for (const projectId of projectIds) {
+        const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${projectId}`, SK: `PROJECT#${projectId}` });
+        if (result.Item) {
+          projects.push({
+            id: result.Item.id,
+            title: result.Item.title,
+            description: result.Item.description,
+            thumbnail: result.Item.thumbnail,
+            context: result.Item.context as FileContext[],
+            artifacts: result.Item.artifacts as Artifact[],
+            entrypoint: result.Item.entrypoint as Artifact,
+            status: result.Item.status,
+            createdAt: result.Item.createdAt,
+            updatedAt: result.Item.updatedAt,
+            createdBy: result.Item.createdBy,
+            updatedBy: result.Item.updatedBy,
+            publishedUrl: result.Item.publishedUrl,
+          });
+        }
+      }
 
       return NextResponse.json(projects);
     }
@@ -105,6 +151,11 @@ export async function GET(request: Request) {
 // Update a project
 export async function PUT(request: Request) {
   try {
+    const session = await getSession();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updateData } = body;
     const now = new Date();
@@ -113,14 +164,22 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
     }
 
-    const updateExpression = 'SET ' + Object.keys(updateData).map(key => `#${key} = :${key}`).join(', ') + ', #updatedAt = :updatedAt';
+    // Check if user has access to modify this project
+    const hasAccess = await checkAccess(session.user.sub, id, 'can_modify');
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    const updateExpression = 'SET ' + Object.keys(updateData).map(key => `#${key} = :${key}`).join(', ') + ', #updatedAt = :updatedAt, #updatedBy = :updatedBy';
     const expressionAttributeNames = {
       ...Object.keys(updateData).reduce((acc, key) => ({ ...acc, [`#${key}`]: key }), {}),
-      '#updatedAt': 'updatedAt'
+      '#updatedAt': 'updatedAt',
+      '#updatedBy': 'updatedBy'
     };
     const expressionAttributeValues = {
       ...Object.entries(updateData).reduce((acc, [key, value]) => ({ ...acc, [`:${key}`]: value }), {}),
       ':updatedAt': now.toISOString(),
+      ':updatedBy': session.user.sub,
     };
 
     await ddbClient.update(TABLE_NAME, 
@@ -161,6 +220,11 @@ export async function PUT(request: Request) {
 // Delete a project
 export async function DELETE(request: Request) {
   try {
+    const session = await getSession();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -168,7 +232,23 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
     }
 
+    // Check if user has access to delete this project
+    const hasAccess = await checkAccess(session.user.sub, id, 'can_delete');
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     await ddbClient.delete(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
+
+    // Remove all FGA relationships for this project
+    await fgaClient.write({
+      deletes: [{
+        user: '*',
+        relation: '*',
+        object: `project:${id}`,
+      }],
+    });
+
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);

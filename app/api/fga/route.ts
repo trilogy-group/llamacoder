@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
  * @route POST /api/fga
  * @param {Object} req - The request object
  * @param {string} req.body.action - The action to perform (share, delete, check, listObjects, or listUsers)
- * @param {Array<Object>} req.body.data - An object or array of objects representing relationships or query parameters
+ * @param {Array<Object> | Object} req.body.data - An object or array of objects representing relationships or query parameters
  *   @param {string} req.body.data[].user - The user identifier in the format "user:<userId>"
  *   @param {string} req.body.data[].relation - The relation type, either "editor" or "viewer". During "check", the type can also be owner, can_share_as_viewer, can_share_as_editor, can_view, can_modify, can_delete
  *   @param {string} req.body.data[].object - The object identifier in the format "project:<projectId>"
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         response = await fgaClient.listObjects({
           user: data.user,
           relation: data.relation,
-          type: "document",
+          type: "project",
         });
         return NextResponse.json(response);
 

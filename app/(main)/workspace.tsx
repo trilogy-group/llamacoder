@@ -33,6 +33,7 @@ const Workspace: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -95,6 +96,20 @@ const Workspace: React.FC = () => {
 
   if (!currentProject || !currentArtifact) {
     return <div>Loading workspace...</div>; // Or a more sophisticated loading component
+  }
+
+  if (authError) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
+        <h2 className="text-2xl font-semibold text-red-600 mb-2">{authError}</h2>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
   }
 
   if (isLoading) {
