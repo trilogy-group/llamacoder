@@ -4,7 +4,6 @@ import { UserProfile } from "@auth0/nextjs-auth0/client";
 import Image from "next/image";
 import Link from "next/link";
 import logo from "../public/logo.png";
-import { LogoutButton } from "./AuthButtons";
 
 interface HeaderProps {
   user?: UserProfile;
@@ -34,7 +33,6 @@ export default function Header({ user }: HeaderProps) {
             />
             <span className="text-sm">{user.name}</span>
           </div>
-          <LogoutButton />
         </div>
       )}
     </header>
