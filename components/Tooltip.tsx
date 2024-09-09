@@ -1,23 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface TooltipProps {
   content: string;
-  children: React.ReactElement;
+  children: React.ReactNode;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({ content, children }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const childRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseEnter = () => setIsVisible(true);
+    const handleMouseLeave = () => setIsVisible(false);
+
+    const childElement = childRef.current;
+    if (childElement) {
+      childElement.addEventListener('mouseenter', handleMouseEnter);
+      childElement.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    return () => {
+      if (childElement) {
+        childElement.removeEventListener('mouseenter', handleMouseEnter);
+        childElement.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, []);
 
   return (
     <div className="relative inline-block">
-      {React.cloneElement(children, {
-        onMouseEnter: () => setIsVisible(true),
-        onMouseLeave: () => setIsVisible(false),
-      })}
+      <div ref={childRef}>
+        {children}
+      </div>
       {isVisible && (
-        <div className="absolute z-10 px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2 whitespace-nowrap">
+        <div
+          ref={tooltipRef}
+          className="absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md shadow-sm dark:bg-gray-700"
+          style={{
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            marginTop: '0.5rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {content}
-          <div className="absolute w-2 h-2 bg-white transform rotate-45 -bottom-1 left-1/2 -translate-x-1/2"></div>
+          <div
+            className="absolute w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45"
+            style={{
+              top: '-0.25rem',
+              left: '50%',
+              marginLeft: '-0.25rem',
+            }}
+          />
         </div>
       )}
     </div>

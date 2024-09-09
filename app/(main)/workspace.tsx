@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import HeaderV2 from "@/components/HeaderV2";
+import ProjectHeader from "@/components/ProjectHeader";
 import ArtifactList from "@/components/ArtifactLIst";
 import Preview from "@/components/Preview";
 import UpdateArtifact from "@/components/UpdateArtifact";
@@ -52,6 +53,16 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
     router.push('/dashboard');
   };
 
+  const handleShare = () => {
+    console.log("Share clicked");
+    // Implement share functionality
+  };
+
+  const handleDelete = () => {
+    console.log("Delete clicked");
+    // Implement delete functionality
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -99,60 +110,56 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-100">
       <HeaderV2 />
-      <div className="flex-1 flex flex-col mt-16 px-5">
-        <div className="flex justify-between items-center py-4">
-          <button
-            onClick={handleMyProjectsClick}
-            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-full shadow-md hover:bg-blue-700 hover:shadow-lg transition duration-300 ease-in-out transform hover:scale-105 flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            My Projects
-          </button>
-        </div>
-        <div className="flex-1 overflow-hidden bg-white rounded-lg shadow-lg border border-gray-200">
-          <PanelGroup direction="horizontal" className="h-full">
-            <Panel
-              defaultSize={20}
-              minSize={0}
-              maxSize={100}
-              collapsible={true}
-            >
-              <ArtifactList
-                artifacts={project.artifacts}
-                onSelectArtifact={handleSelectArtifact}
-                selectedArtifact={selectedArtifact}
-                isCollapsed={isArtifactListCollapsed}
-                setIsCollapsed={setIsArtifactListCollapsed}
-              />
-            </Panel>
-            {!isArtifactListCollapsed && (
-              <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-gray-300 transition-colors" />
-            )}
-            <Panel defaultSize={60} minSize={40} maxSize={100}>
-              <div className="h-full">
+      <div className="flex-1 flex flex-col" style={{ marginTop: '64px' }}>
+        <ProjectHeader
+          projectTitle={project.title}
+          projectDescription={project.description}
+          onMyProjectsClick={handleMyProjectsClick}
+          onShareClick={handleShare}
+          onDeleteClick={handleDelete}
+        />
+        <div className="flex-1 p-5">
+          <div className="h-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <PanelGroup direction="horizontal" className="h-full">
+              <Panel
+                defaultSize={20}
+                minSize={0}
+                maxSize={100}
+                collapsible={true}
+              >
+                <ArtifactList
+                  artifacts={project.artifacts}
+                  onSelectArtifact={handleSelectArtifact}
+                  selectedArtifact={selectedArtifact}
+                  isCollapsed={isArtifactListCollapsed}
+                  setIsCollapsed={setIsArtifactListCollapsed}
+                />
+              </Panel>
+              {!isArtifactListCollapsed && (
+                <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-gray-300 transition-colors" />
+              )}
+              <Panel defaultSize={60} minSize={40} maxSize={100}>
                 <Preview artifact={selectedArtifact} />
-              </div>
-            </Panel>
-            {!isUpdateArtifactCollapsed && (
-              <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-gray-300 transition-colors" />
-            )}
-            <Panel
-              defaultSize={20}
-              minSize={0}
-              maxSize={100}
-              collapsible={true}
-            >
-              <UpdateArtifact
-                artifact={selectedArtifact}
-                isCollapsed={isUpdateArtifactCollapsed}
-                setIsCollapsed={setIsUpdateArtifactCollapsed}
-              />
-            </Panel>
-          </PanelGroup>
+              </Panel>
+              {!isUpdateArtifactCollapsed && (
+                <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-gray-300 transition-colors" />
+              )}
+              <Panel
+                defaultSize={20}
+                minSize={0}
+                maxSize={100}
+                collapsible={true}
+              >
+                <UpdateArtifact
+                  artifact={selectedArtifact}
+                  isCollapsed={isUpdateArtifactCollapsed}
+                  setIsCollapsed={setIsUpdateArtifactCollapsed}
+                />
+              </Panel>
+            </PanelGroup>
+          </div>
         </div>
       </div>
     </div>
