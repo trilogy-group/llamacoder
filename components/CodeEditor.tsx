@@ -93,7 +93,7 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
 
   return (
     <div className="absolute inset-0 flex flex-col">
-      <div className="flex-grow overflow-hidden flex">
+      <div className="flex-grow overflow-hidden flex relative">
         {!isPreviewOnly && (
           <SandpackCodeEditor
             className="flex-1 h-full"
@@ -109,17 +109,17 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
           className={`relative ${isPreviewOnly ? 'w-full' : 'w-1/2'} h-full`}
         >
           <SandpackPreview className="h-full w-full" />
-          {statusMessage && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div className="text-center">
-                <CircularProgress size={60} thickness={4} color="primary" />
-                <p className="mt-2 text-lg font-semibold text-white">
-                  {statusMessage}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
+        {statusMessage && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="text-center">
+              <CircularProgress size={60} thickness={4} color="primary" />
+              <p className="mt-2 text-lg font-semibold text-white">
+                {statusMessage}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
       {statusMessage === "" && actionButtons}
     </div>
