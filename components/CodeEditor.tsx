@@ -130,21 +130,18 @@ export default function CodeEditor({
   artifact,
   children,
 }: CodeEditorProps) {
-  const normalizedDependencies = useMemo(() => 
-    Array.isArray(artifact.dependencies)
-      ? artifact.dependencies.reduce(
-          (acc, dep) => {
-            acc[dep.name] = dep.version || "latest";
-            return acc;
-          },
-          {} as Record<string, string>
-        )
-      : {},
-    [artifact.dependencies]
-  );
+  const normalizedDependencies = useMemo(() => Array.isArray(artifact.dependencies)
+    ? artifact.dependencies.reduce(
+        (acc, dep) => {
+          acc[dep.name] = dep.version || "latest";
+          return acc;
+        },
+        {} as Record<string, string>
+      )
+    : {},
+  [artifact.dependencies]);
 
   const handleCodeChange = (newCode: string) => {
-    // Handle code changes if needed
   };
 
   const sandpackFiles = useMemo(() => ({
@@ -156,14 +153,11 @@ export default function CodeEditor({
     },
   }), [artifact.code]);
 
-  // Use artifact.code as a key to force re-render
-  const sandpackKey = useMemo(() => artifact.code, [artifact.code]);
-
   return (
     <div className="relative w-full h-full">
       <AnimatePresence>
         <SandpackProvider
-          key={sandpackKey}
+          key={artifact.code}
           template="react-ts"
           options={{
             externalResources: [
