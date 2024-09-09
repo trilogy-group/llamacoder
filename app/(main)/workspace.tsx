@@ -11,10 +11,12 @@ import { Artifact } from "@/types/Artifact";
 import { Project } from "@/types/Project";
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 interface WorkspaceProps {
   params: { id: string };
 }
+
 
 const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   const [project, setProject] = useState<Project | null>(null);
@@ -23,6 +25,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,8 +63,30 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
   };
 
   const handleDelete = () => {
-    console.log("Delete clicked");
-    // Implement delete functionality
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await axios.delete(`/api/projects?id=${params.id}`);
+      toast.success('Project deleted successfully', {
+        duration: 3000,
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Failed to delete project', {
+        duration: 3000,
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
   };
 
   if (isLoading) {
@@ -162,6 +188,30 @@ const Workspace: React.FC<WorkspaceProps> = ({ params }) => {
           </div>
         </div>
       </div>
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Confirm Deletion</h3>
+            <p className="mb-6 text-gray-600">Are you sure you want to delete this project? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
