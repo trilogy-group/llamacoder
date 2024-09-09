@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { User } from '../types/User';
 import { Project } from '../types/Project';
 import { Artifact } from '../types/Artifact';
@@ -87,9 +88,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   return (
-    <AppContext.Provider value={{ user, setUser, projects, setProjects, currentProject, setCurrentProject, currentArtifact, setCurrentArtifact }}>
-      {children}
-    </AppContext.Provider>
+    <UserProvider>
+      <AppContext.Provider value={{ user, setUser, projects, setProjects, currentProject, setCurrentProject, currentArtifact, setCurrentArtifact }}>
+        {children}
+      </AppContext.Provider>
+    </UserProvider>
   );
 };
 

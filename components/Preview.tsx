@@ -3,7 +3,7 @@ import CodeEditor from "./CodeEditor";
 import { Artifact } from "../types/Artifact";
 
 interface PreviewProps {
-  artifact: Artifact | null;
+  artifact: Artifact;
 }
 
 const Preview: React.FC<PreviewProps> = ({ artifact }) => {

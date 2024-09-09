@@ -29,12 +29,16 @@ const Workspace: React.FC = () => {
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
   const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] =
     useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const router = useRouter();
+
+  console.log("CurrnetProject", currentProject);
+  console.log("CurrnetArtifact", currentArtifact);
+  console.log("Projects", projects);
 
   useEffect(() => {
     // Set the first project as current if not already set
@@ -94,9 +98,9 @@ const Workspace: React.FC = () => {
     setShowDeleteConfirmation(false);
   };
 
-  if (!currentProject || !currentArtifact) {
-    return <div>Loading workspace...</div>; // Or a more sophisticated loading component
-  }
+  // if (!currentProject || !currentArtifact) {
+  //   return <div>Loading workspace...</div>; // Or a more sophisticated loading component
+  // }
 
   if (authError) {
     return (
@@ -157,7 +161,7 @@ const Workspace: React.FC = () => {
     );
   }
 
-  if (!project) {
+  if (!currentProject) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-gray-50">
         <svg
@@ -195,8 +199,8 @@ const Workspace: React.FC = () => {
       <HeaderV2 />
       <div className="flex flex-1 flex-col" style={{ marginTop: "64px" }}>
         <ProjectHeader
-          projectTitle={project.title}
-          projectDescription={project.description}
+          projectTitle={currentProject.title}
+          projectDescription={currentProject.description}
           onMyProjectsClick={handleMyProjectsClick}
           onShareClick={handleShare}
           onDeleteClick={handleDelete}

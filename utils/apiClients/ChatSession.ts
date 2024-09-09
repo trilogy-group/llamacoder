@@ -11,8 +11,8 @@ export const chatSessionApi = {
       artifactId: artifactId,
       messages: [],
       attachments: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       user: 'user1',
       model: 'gpt-3.5-turbo'
     }];
@@ -25,8 +25,8 @@ export const chatSessionApi = {
       artifactId: artifactId,
       messages: [],
       attachments: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       user: 'user1',
       model: 'gpt-3.5-turbo'
     };
@@ -39,8 +39,8 @@ export const chatSessionApi = {
       artifactId: artifactId,
       messages: [],
       attachments: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       user: chatSessionData.user || 'user1',
       model: chatSessionData.model || 'gpt-3.5-turbo'
     };
@@ -53,8 +53,8 @@ export const chatSessionApi = {
       artifactId: artifactId,
       messages: chatSessionData.messages || [],
       attachments: chatSessionData.attachments || [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       user: chatSessionData.user || 'user1',
       model: chatSessionData.model || 'gpt-3.5-turbo'
     };

@@ -1,5 +1,3 @@
-import { AppProvider } from "@/contexts/AppContext";
-
 export default function Layout({
   children,
 }: Readonly<{
@@ -8,9 +6,7 @@ export default function Layout({
   return (
     <html lang="en">
       <body className="bg-brand antialiased">
-        <AppProvider>
-          <div className="isolate">{children}</div>
-        </AppProvider>
+        <div className="isolate">{children}</div>
       </body>
     </html>
   );

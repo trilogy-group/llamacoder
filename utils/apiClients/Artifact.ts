@@ -120,13 +120,13 @@ const dummyArtifact: Artifact = {
             { id: 'msg2', text: 'Hi there!', role: 'assistant' }
         ],
         attachments: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         user: 'user1',
         model: 'gpt-4'
     },
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
 };
 
 export const artifactApi = {
@@ -151,8 +151,8 @@ export const artifactApi = {
       code: artifactData.code || '',
       dependencies: artifactData.dependencies || [],
       chatSessions: {} as ChatSession,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
   },
   
@@ -165,8 +165,8 @@ export const artifactApi = {
       code: artifactData.code || '',
       dependencies: artifactData.dependencies || [],
       chatSessions: {} as ChatSession,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
   },
   

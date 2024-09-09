@@ -6,8 +6,8 @@ export interface ChatSession {
     artifactId: string;
     messages: Message[];
     attachments: Attachment[];
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     user: string;
     model: string;
 }

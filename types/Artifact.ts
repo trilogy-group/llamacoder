@@ -12,6 +12,6 @@ export type Artifact = {
     code: string;
     dependencies: Dependency[];
     chatSessions: ChatSession;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 };

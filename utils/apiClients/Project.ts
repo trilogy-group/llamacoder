@@ -107,13 +107,13 @@ const dummyArtifact: Artifact = {
             { id: 'msg2', text: 'Hi there!', role: 'assistant' }
         ],
         attachments: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         user: 'user1',
         model: 'gpt-4'
     },
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
 };
 
 export const projectApi = {
@@ -125,12 +125,12 @@ export const projectApi = {
                 title: 'Sample Project',
                 description: 'This is a sample project',
                 thumbnail: 'https://example.com/thumbnail.jpg',
-                attachments: [],
+                context: [],
                 artifacts: [dummyArtifact],
                 entrypoint: dummyArtifact,
                 status: 'active',
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 createdBy: 'user1',
                 updatedBy: 'user1',
                 publishedUrl: 'https://example.com/project1'
@@ -144,12 +144,12 @@ export const projectApi = {
             title: 'Sample Project',
             description: 'This is a sample project',
             thumbnail: 'https://example.com/thumbnail.jpg',
-            attachments: [],
+            context: [],
             artifacts: [dummyArtifact],
             entrypoint: dummyArtifact,
             status: 'active',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             createdBy: 'user1',
             updatedBy: 'user1',
             publishedUrl: 'https://example.com/project1'
@@ -163,12 +163,12 @@ export const projectApi = {
             title: projectData.title || 'New Project',
             description: projectData.description || 'New project description',
             thumbnail: projectData.thumbnail,
-            attachments: [],
+            context: [],
             artifacts: [dummyArtifact],
             entrypoint: dummyArtifact,
             status: 'draft',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             createdBy: 'user1',
             updatedBy: 'user1',
             publishedUrl: ''
@@ -182,12 +182,12 @@ export const projectApi = {
             title: projectData.title || 'Updated Project',
             description: projectData.description || 'Updated project description',
             thumbnail: projectData.thumbnail,
-            attachments: [],
+            context: [],
             artifacts: [dummyArtifact],
             entrypoint: dummyArtifact,
             status: projectData.status || 'active',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             createdBy: 'user1',
             updatedBy: 'user1',
             publishedUrl: projectData.publishedUrl || ''

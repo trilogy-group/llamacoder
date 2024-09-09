@@ -19,8 +19,8 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
     artifactId: artifact.id,
     messages: [],
     attachments: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     user: "current_user", // Replace with actual user info
     model: "default_model", // Replace with actual model info
   });
@@ -36,7 +36,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
       setChatSession((prev) => ({
         ...prev,
         messages: [...prev.messages, newMessage],
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       }));
       
       // Simulated assistant response
@@ -49,7 +49,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
         setChatSession((prev) => ({
           ...prev,
           messages: [...prev.messages, assistantMessage],
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         }));
       }, 1000);
     }
@@ -60,7 +60,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
     setChatSession((prev) => ({
       ...prev,
       attachments: [...prev.attachments, ...newAttachments],
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     }));
   };
 
@@ -68,7 +68,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, isCollapsed, 
     setChatSession((prev) => ({
       ...prev,
       attachments: prev.attachments.filter((attachment) => attachment.id !== id),
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     }));
   };
 
