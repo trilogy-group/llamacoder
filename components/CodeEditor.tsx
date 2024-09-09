@@ -7,7 +7,7 @@ import {
   SandpackCodeEditor,
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CodeIcon from "@mui/icons-material/Code";
@@ -130,23 +130,40 @@ export default function CodeEditor({
   artifact,
   children,
 }: CodeEditorProps) {
-  const normalizedDependencies = Array.isArray(artifact.dependencies)
-    ? artifact.dependencies.reduce(
-        (acc, dep) => {
-          acc[dep.name] = dep.version || "latest";
-          return acc;
-        },
-        {} as Record<string, string>
-      )
-    : {};
+  const normalizedDependencies = useMemo(() => 
+    Array.isArray(artifact.dependencies)
+      ? artifact.dependencies.reduce(
+          (acc, dep) => {
+            acc[dep.name] = dep.version || "latest";
+            return acc;
+          },
+          {} as Record<string, string>
+        )
+      : {},
+    [artifact.dependencies]
+  );
 
   const handleCodeChange = (newCode: string) => {
+    // Handle code changes if needed
   };
+
+  const sandpackFiles = useMemo(() => ({
+    "/App.tsx": {
+      code: artifact.code || "",
+      active: true,
+      hidden: false,
+      readOnly: false,
+    },
+  }), [artifact.code]);
+
+  // Use artifact.code as a key to force re-render
+  const sandpackKey = useMemo(() => artifact.code, [artifact.code]);
 
   return (
     <div className="relative w-full h-full">
       <AnimatePresence>
         <SandpackProvider
+          key={sandpackKey}
           template="react-ts"
           options={{
             externalResources: [
@@ -157,14 +174,7 @@ export default function CodeEditor({
           customSetup={{
             dependencies: normalizedDependencies,
           }}
-          files={{
-            "/App.tsx": {
-              code: artifact.code || "",
-              active: true,
-              hidden: false,
-              readOnly: false,
-            },
-          }}
+          files={sandpackFiles}
         >
           <SandpackContent onCodeChange={handleCodeChange}>{children}</SandpackContent>
         </SandpackProvider>
