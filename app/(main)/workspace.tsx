@@ -18,6 +18,7 @@ import { Message } from "@/types/Message";
 import { CircularProgress } from "@mui/material";
 import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
 import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
+import { ChatSession } from "@/types/ChatSession";
 
 interface WorkspaceProps {
   projectId: string;
@@ -25,16 +26,21 @@ interface WorkspaceProps {
 
 const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
-  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(
+    null,
+  );
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
-  const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] = useState(false);
+  const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] =
+    useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState<Message | null>(
+    null,
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -49,10 +55,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         console.log("Fetched project:", fetchedProject); // Add this log
         const artifacts = await artifactApi.getArtifacts(projectId);
         console.log("Fetched artifacts:", artifacts); // Add this log
-        
+
         setProject({
           ...fetchedProject,
-          artifacts: artifacts
+          artifacts: artifacts,
         });
 
         if (artifacts.length > 0) {
@@ -121,11 +127,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         status: "creating",
         // Add any other required fields for creating an artifact
       });
-      
+
       // Update the project's artifacts list
-      setProject(prevProject => ({
+      setProject((prevProject) => ({
         ...prevProject!,
-        artifacts: [...(prevProject?.artifacts || []), newArtifact]
+        artifacts: [...(prevProject?.artifacts || []), newArtifact],
       }));
 
       // Select the newly created artifact
@@ -137,44 +143,122 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
 
       // Generate code for the artifact
       const messages: Message[] = [
-        { role: "user", text: `Generate code for the following artifact: ${description}` }
+        {
+          role: "user",
+          text: `Generate code for the following artifact: ${description}`,
+        },
       ];
 
-      let generatedCode = "";
-      let currentStreamingMessage = { role: "assistant", text: "" } as Message;
-      setStreamingMessage(currentStreamingMessage);
-
-      const onChunk = (chunks: {index: number, type: string, text: string}[]) => {
+      let response = "";
+      const onChunk = (
+        chunks: { index: number; type: string; text: string }[],
+      ) => {
         setShowCreateForm(false);
         setIsCreatingArtifact(false);
-        for(const chunk of chunks){
-          generatedCode += chunk.text;
-          currentStreamingMessage = {
-            ...currentStreamingMessage,
-            text: generatedCode
-          };
-          setStreamingMessage(currentStreamingMessage);
+        for (const chunk of chunks) {
+          response += chunk.text;
+          setStreamingMessage({
+            role: "assistant",
+            text: response,
+          });
         }
-        console.log("currentStreamingMessage: ", currentStreamingMessage);
-        setSelectedArtifact(prevArtifact => ({
-          ...prevArtifact!,
-          code: generatedCode
-        }));
-      }
+      };
 
-      await genAiApi.generateResponse(messages, onChunk);
+      const { code, dependencies } = await genAiApi.generateResponse(messages, onChunk);
 
-      // Reset streaming message after completion
-      setStreamingMessage(null);
-      setSelectedArtifact(prevArtifact => ({
-        ...prevArtifact!,
+      console.log("code: ", code);      
+      console.log("dependencies: ", dependencies);
+
+      // Create a new chat session
+      const newChatSession: ChatSession = {
+        id: Date.now().toString(), // Generate a unique ID
+        artifactId: newArtifact.id,
+        messages: [
+          { role: "user", text: messages[0].text },
+          { role: "assistant", text: response }
+        ],
+        attachments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        user: "user", // Replace with actual user ID if available
+        model: "gpt-4", // Replace with the actual model used
+      };
+
+      // Update the artifact with the final generated code and chat session
+  
+    const defaultDependencies = [
+      {
+        name: "lucide-react",
+        version: "latest",
+      },
+      {
+        name: "recharts",
+        version: "2.9.0",
+      },
+      {
+        name: "axios",
+        version: "latest",
+      },
+      {
+        name: "react-dom",
+        version: "latest",
+      },
+      {
+        name: "react-router-dom",
+        version: "latest",
+      },
+      {
+        name: "react-ui",
+        version: "latest",
+      },
+      {
+        name: "@mui/material",
+        version: "latest",
+      },
+      {
+        name: "@emotion/react",
+        version: "latest",
+      },
+      {
+        name: "@emotion/styled",
+        version: "latest",
+      },
+      {
+        name: "@mui/icons-material",
+        version: "latest",
+      },
+      {
+        name: "react-player",
+        version: "latest",
+      },
+    ];
+
+    const extractComponentName = (code: string): string => {
+      const match = code.match(/export default (\w+)/);
+      return match ? match[1] : "MyApp";
+    }
+
+    const componentName = extractComponentName(code);
+
+     await artifactApi.updateArtifact(projectId, newArtifact.id, {
+        name: componentName,
+        code: code,
+        dependencies: [...defaultDependencies, ...dependencies],
         status: "idle",
-        code: generatedCode
+        chatSession: newChatSession,
+      });
+
+      const updatedArtifact = await artifactApi.getArtifact(projectId, newArtifact.id);
+      setSelectedArtifact(updatedArtifact);
+      setStreamingMessage(null);
+
+      // Update the project's artifacts list
+      setProject((prevProject) => ({
+        ...prevProject!,
+        artifacts: prevProject?.artifacts?.map(a => 
+          a.id === updatedArtifact.id ? updatedArtifact : a
+        ),
       }));
-
-      // Update the artifact with the final generated code
-      await artifactApi.updateArtifact(projectId, newArtifact.id, { code: generatedCode });
-
     } catch (error) {
       console.error("Error creating artifact or generating code:", error);
       toast.error("Failed to create artifact or generate code", {
@@ -277,7 +361,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         />
         {project.artifacts && project.artifacts.length > 0 ? (
           <PanelGroup direction="horizontal" className="h-full">
-            <Panel defaultSize={20} minSize={0} maxSize={100} collapsible={true}>
+            <Panel
+              defaultSize={20}
+              minSize={0}
+              maxSize={100}
+              collapsible={true}
+            >
               <ArtifactList
                 artifacts={project.artifacts || []}
                 onSelectArtifact={handleSelectArtifact}
@@ -298,7 +387,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
             {!isUpdateArtifactCollapsed && (
               <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />
             )}
-            <Panel defaultSize={20} minSize={0} maxSize={100} collapsible={true}>
+            <Panel
+              defaultSize={20}
+              minSize={0}
+              maxSize={100}
+              collapsible={true}
+            >
               {selectedArtifact && (
                 <UpdateArtifact
                   artifact={selectedArtifact}
@@ -310,7 +404,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
             </Panel>
           </PanelGroup>
         ) : (
-          <EmptyArtifactsMessage onCreateArtifact={() => setShowCreateForm(true)} />
+          <EmptyArtifactsMessage
+            onCreateArtifact={() => setShowCreateForm(true)}
+          />
         )}
       </div>
       {showDeleteConfirmation && (

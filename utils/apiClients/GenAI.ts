@@ -1,7 +1,11 @@
 import { Message } from '@/types/Message';
+import { Dependency } from '@/types/Artifact';
 
 export const genAiApi = {
-  generateResponse: async (messages: Message[], onChunk: (chunk: any[]) => void): Promise<void> => {
+  generateResponse: async (
+    messages: Message[],
+    onChunk: (chunks: { index: number; type: string; text: string }[]) => void
+  ): Promise<{ code: string; dependencies: Dependency[] }> => {
     const response = await fetch('/api/genai', {
       method: 'POST',
       headers: {
@@ -20,17 +24,76 @@ export const genAiApi = {
     }
 
     const decoder = new TextDecoder();
+    let fullResponse = '';
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value);
+      const chunk = decoder.decode(value);      
       const lines = chunk.split('\n');
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const jsonData = JSON.parse(line.slice(6));
-          onChunk(JSON.parse(jsonData.content));
+          const chunks = JSON.parse(jsonData.content);
+          for (const chunk of chunks) {
+            fullResponse += chunk.text;
+          }
+          onChunk(chunks);
         }
       }
     }
+
+    const parsedResponse = parseResponse(fullResponse);
+    return {
+      code: parsedResponse.CODE || '',
+      dependencies: parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || ''),
+    };
   },
 };
+
+function parseResponse(response: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const sections = ['ANALYSIS', 'EXTRA_LIBRARIES', 'CODE', 'VERIFICATION'];
+
+  for (const section of sections) {
+    const content = extractContent(response, section);
+    if (content) {
+      result[section] = content;
+    }
+  }
+
+  return result;
+}
+
+function extractContent(text: string, tag: string): string | null {
+  const openTag = `<${tag}>`;
+  const closeTag = `</${tag}>`;
+  const startIndex = text.indexOf(openTag);
+
+  if (startIndex === -1) return null;
+
+  const endIndex = text.indexOf(closeTag, startIndex + openTag.length);
+
+  if (endIndex === -1) {
+    // If closing tag is not found, return everything after the opening tag
+    return text.slice(startIndex + openTag.length).trim();
+  } else {
+    // If both tags are found, return content between them
+    return text.slice(startIndex + openTag.length, endIndex).trim();
+  }
+}
+
+function parseExtraLibraries(extraLibrariesString: string): Dependency[] {
+  const libraries: Dependency[] = [];
+  const libraryRegex = /<LIBRARY>\s*<NAME>(.*?)<\/NAME>\s*<VERSION>(.*?)<\/VERSION>\s*<\/LIBRARY>/g;
+  let match;
+
+  while ((match = libraryRegex.exec(extraLibrariesString)) !== null) {
+    libraries.push({
+      name: match[1],
+      version: match[2],
+    });
+  }
+
+  return libraries;
+}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ChatHistory from "./ChatHistory";
 import InputForm from "./InputForm";
 import ChatContext from "./ChatContext";
@@ -15,16 +15,28 @@ interface UpdateArtifactProps {
 }
 
 const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMessage, isCollapsed, setIsCollapsed }) => {
-  const [chatSession, setChatSession] = useState<ChatSession>({
-    id: Date.now().toString(),
-    artifactId: artifact.id,
-    messages: [],
-    attachments: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    user: "current_user", // Replace with actual user info
-    model: "default_model", // Replace with actual model info
+  const [chatSession, setChatSession] = useState<ChatSession>(() => {
+    if (artifact.chatSession) {
+      return artifact.chatSession;
+    } else {
+      return {
+        id: Date.now().toString(),
+        artifactId: artifact.id,
+        messages: [],
+        attachments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        user: "current_user", // Replace with actual user info
+        model: "default_model", // Replace with actual model info
+      };
+    }
   });
+
+  useEffect(() => {
+    if (artifact.chatSession) {
+      setChatSession(artifact.chatSession);
+    }
+  }, [artifact.chatSession]);
 
   const handleSubmit = (text: string, attachments: Attachment[]) => {
     if (text.trim()) {
