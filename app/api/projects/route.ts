@@ -6,7 +6,6 @@ import { FileContext } from '@/types/FileContext';
 // @ts-ignore
 import { getSession } from '@auth0/nextjs-auth0';
 import fgaClient from "@/lib/oktaFGA";
-import { Attachment } from '@/types/Attachment';
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
 

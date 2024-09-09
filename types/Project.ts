@@ -1,4 +1,5 @@
 import { FileContext } from "./FileContext";
+import { Artifact } from "./Artifact";
 
 export interface Project {
     id: string;
@@ -6,6 +7,7 @@ export interface Project {
     description: string;
     thumbnail?: string;
     context?: FileContext[];
+    artifacts?: Artifact[];
     entrypoint?: string;
     status: string;
     createdAt: string;

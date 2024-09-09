@@ -3,5 +3,5 @@
 import Workspace from '../../workspace';
 
 export default function WorkspacePage({ params }: { params: { projectId: string } }) {
-  return <Workspace/>;
+  return <Workspace projectId={params.projectId} />;
 }
