@@ -1,4 +1,3 @@
-import { Artifact } from "./Artifact";
 import { FileContext } from "./FileContext";
 
 export interface Project {
@@ -6,13 +5,12 @@ export interface Project {
     title: string;
     description: string;
     thumbnail?: string;
-    context: FileContext[];
-    artifacts: Artifact[];
-    entrypoint: Artifact;
+    context?: FileContext[];
+    entrypoint?: string;
     status: string;
     createdAt: string;
     updatedAt: string;
-    createdBy: string;
-    updatedBy: string;
-    publishedUrl: string;
+    createdBy?: string | null | undefined;
+    updatedBy?: string | null | undefined;
+    publishedUrl?: string;
 }

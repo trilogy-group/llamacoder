@@ -10,36 +10,17 @@ import { Project } from "@/types/Project";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Toaster, toast } from "sonner";
 import { projectApi } from "@/utils/apiClients/Project";
+import { CircularProgress } from "@mui/material";
 
 const Dashboard: React.FC = () => {
   const { user, error: userError, isLoading: userLoading } = useUser();
-  const { projects, dispatchProjectsUpdate } = useAppContext();
+  const { projects, dispatchProjectsUpdate, projectsLoading } = useAppContext();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const fetchedProjects = await projectApi.getProjects();
-      dispatchProjectsUpdate(fetchedProjects);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-      setError("Failed to load projects. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCreateProject = async (description: string) => {
     setIsCreatingProject(true);
@@ -54,12 +35,7 @@ const Dashboard: React.FC = () => {
         description: description,
         thumbnail: "",
         context: [],
-        artifacts: [],
-        entrypoint: {} as any,
-        status: "Inactive",
-        createdBy: "user",
-        updatedBy: "user",
-        publishedUrl: "",
+        status: "Inactive"
       };
 
       const createdProject = await projectApi.createProject(newProject);
@@ -87,6 +63,14 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  if (userLoading || projectsLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <CircularProgress size={60} />
+      </div>
+    );
+  }
+
   if (userError) return <div>{userError.message}</div>;
 
   return (
@@ -94,22 +78,7 @@ const Dashboard: React.FC = () => {
       <HeaderV2 user={user} />
       <main className="mt-16 w-full flex-1">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {isLoading ? (
-            <div className="flex h-64 flex-col items-center justify-center">
-              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
-              <p className="text-gray-600">Loading your projects...</p>
-            </div>
-          ) : error ? (
-            <div className="mt-8 text-center text-red-500">
-              <p>{error}</p>
-              <button
-                onClick={fetchProjects}
-                className="mt-4 rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : projects.length > 0 ? (
+          {projects.length > 0 ? (
             <>
               <div className="mb-8 mt-8 flex items-center justify-between">
                 <h2 className="text-4xl font-bold text-gray-800">

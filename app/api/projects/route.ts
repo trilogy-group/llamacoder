@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { ddbClient } from '@/utils/ddbClient';
 import { v4 as uuidv4 } from 'uuid';
 import { Project } from '@/types/Project';
-import { Artifact } from '@/types/Artifact';
 import { FileContext } from '@/types/FileContext';
+// @ts-ignore
 import { getSession } from '@auth0/nextjs-auth0';
 import fgaClient from "@/lib/oktaFGA";
 import { Attachment } from '@/types/Attachment';
@@ -100,9 +100,8 @@ export async function GET(request: Request) {
         title: result.Item.title,
         description: result.Item.description,
         thumbnail: result.Item.thumbnail,
-        context: result.Item.context as Attachment[],
-        artifacts: result.Item.artifacts as Artifact[],
-        entrypoint: result.Item.entrypoint as Artifact,
+        context: result.Item.context as FileContext[],
+        entrypoint: result.Item.entrypoint,
         status: result.Item.status,
         createdAt: result.Item.createdAt,
         updatedAt: result.Item.updatedAt,
@@ -131,9 +130,8 @@ export async function GET(request: Request) {
             title: result.Item.title,
             description: result.Item.description,
             thumbnail: result.Item.thumbnail,
-            context: result.Item.context as Attachment[],
-            artifacts: result.Item.artifacts as Artifact[],
-            entrypoint: result.Item.entrypoint as Artifact,
+            context: result.Item.context as FileContext[],
+            entrypoint: result.Item.entrypoint,
             status: result.Item.status,
             createdAt: result.Item.createdAt,
             updatedAt: result.Item.updatedAt,
@@ -203,9 +201,8 @@ export async function PUT(request: Request) {
       title: result.Item.title,
       description: result.Item.description,
       thumbnail: result.Item.thumbnail,
-      context: result.Item.context as Attachment[],
-      artifacts: result.Item.artifacts as Artifact[],
-      entrypoint: result.Item.entrypoint as Artifact,
+      context: result.Item.context as FileContext[],
+      entrypoint: result.Item.entrypoint,
       status: result.Item.status,
       createdAt: result.Item.createdAt,
       updatedAt: result.Item.updatedAt,

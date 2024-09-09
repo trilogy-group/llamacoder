@@ -10,6 +10,7 @@ export type Artifact = {
     name: string;
     prompt: string;
     code: string;
+    projectId: string;
     dependencies: Dependency[];
     chatSessions: ChatSession;
     createdAt: string;
