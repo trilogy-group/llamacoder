@@ -8,6 +8,7 @@ interface ArtifactListProps {
   selectedArtifact: Artifact | null;
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
+  onCreateArtifact: () => void;
 }
 
 const ArtifactList: React.FC<ArtifactListProps> = ({ 
@@ -15,13 +16,14 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
   onSelectArtifact, 
   selectedArtifact, 
   isCollapsed,
-  setIsCollapsed 
+  setIsCollapsed,
+  onCreateArtifact
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const filteredArtifacts = artifacts.filter((artifact) =>
-    artifact.name.toLowerCase().includes(searchTerm.toLowerCase())
+    artifact.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const otherArtifacts = filteredArtifacts.filter(artifact => artifact.id !== selectedArtifact?.id);
@@ -98,7 +100,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
       </div>
       <button
         className="mt-4 flex items-center justify-center space-x-2 rounded-full bg-blue-600 px-6 py-3 font-semibold text-white shadow-md transition duration-300 ease-in-out hover:bg-blue-700"
-        onClick={() => {/* Add new artifact logic here */}}
+        onClick={() => {onCreateArtifact()}}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

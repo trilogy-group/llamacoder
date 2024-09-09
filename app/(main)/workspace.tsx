@@ -15,6 +15,7 @@ import { projectApi } from "@/utils/apiClients/Project";
 import { artifactApi } from "@/utils/apiClients/Artifact";
 import { CircularProgress } from "@mui/material";
 import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
+import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
 
 interface WorkspaceProps {
   projectId: string;
@@ -29,6 +30,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,6 +45,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         const fetchedProject = await projectApi.getProject(projectId);
         console.log("Fetched project:", fetchedProject); // Add this log
         const artifacts = await artifactApi.getArtifacts(projectId);
+        console.log("Fetched artifacts:", artifacts); // Add this log
         
         setProject({
           ...fetchedProject,
@@ -102,10 +106,39 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     setShowDeleteConfirmation(false);
   };
 
-  const handleCreateArtifact = () => {
-    // Implement the logic to create a new artifact
-    console.log("Create artifact clicked");
-    // You'll need to implement this function to create a new artifact
+  const handleCreateArtifact = async (description: string) => {
+    setIsCreatingArtifact(true);
+    try {
+      if (!project) {
+        throw new Error("Project is not loaded");
+      }
+      const newArtifact = await artifactApi.createArtifact(project.id, {
+        description,
+        projectId,
+        // Add any other required fields for creating an artifact
+      });
+      
+      // Update the project's artifacts list
+      setProject(prevProject => ({
+        ...prevProject!,
+        artifacts: [...(prevProject?.artifacts || []), newArtifact]
+      }));
+
+      // Select the newly created artifact
+      setSelectedArtifact(newArtifact);
+
+      toast.success("Artifact created successfully", {
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error creating artifact:", error);
+      toast.error("Failed to create artifact", {
+        duration: 3000,
+      });
+    } finally {
+      setIsCreatingArtifact(false);
+      setShowCreateForm(false);
+    }
   };
 
   if (isLoading) {
@@ -206,6 +239,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
                 selectedArtifact={selectedArtifact}
                 isCollapsed={isArtifactListCollapsed}
                 setIsCollapsed={setIsArtifactListCollapsed}
+                onCreateArtifact={() => setShowCreateForm(true)}
               />
             </Panel>
             {!isArtifactListCollapsed && (
@@ -230,7 +264,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
             </Panel>
           </PanelGroup>
         ) : (
-          <EmptyArtifactsMessage onCreateArtifact={handleCreateArtifact} />
+          <EmptyArtifactsMessage onCreateArtifact={() => setShowCreateForm(true)} />
         )}
       </div>
       {showDeleteConfirmation && (
@@ -258,6 +292,21 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {showCreateForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
+          {isCreatingArtifact ? (
+            <div className="flex flex-col items-center rounded-lg bg-white p-6">
+              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
+              <p className="text-gray-600">Creating your project...</p>
+            </div>
+          ) : (
+            <ArtifactOverviewInputForm
+              onCancel={() => setShowCreateForm(false)}
+              onNext={handleCreateArtifact}
+            />
+          )}
         </div>
       )}
     </div>

@@ -7,12 +7,12 @@ export type Dependency = {
 
 export type Artifact = {
     id: string;
-    name: string;
-    prompt: string;
-    code: string;
+    description: string;
     projectId: string;
-    dependencies: Dependency[];
-    chatSessions: ChatSession;
-    createdAt: string;
-    updatedAt: string;
+    name?: string;
+    code?: string;
+    dependencies?: Dependency[];
+    chatSessions?: ChatSession[];
+    createdAt?: string;
+    updatedAt?: string;
 };

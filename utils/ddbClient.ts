@@ -15,11 +15,15 @@ export const ddbClient = {
         return ddbDocClient.send(command);
     },
 
-    query: async (tableName: string, keyConditionExpression: string, expressionAttributeValues: Record<string, any>) => {
+    query: async (tableName: string, params: {
+        KeyConditionExpression: string;
+        ExpressionAttributeValues?: Record<string, any>;
+        ExpressionAttributeNames?: Record<string, string>;
+        FilterExpression?: string;
+    }) => {
         const command = new QueryCommand({
             TableName: tableName,
-            KeyConditionExpression: keyConditionExpression,
-            ExpressionAttributeValues: expressionAttributeValues,
+            ...params
         });
         return ddbDocClient.send(command);
     },

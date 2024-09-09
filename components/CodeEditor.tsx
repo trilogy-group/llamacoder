@@ -158,7 +158,7 @@ export default function CodeEditor({
           }}
           files={{
             "/App.tsx": {
-              code: artifact.code,
+              code: artifact.code || "",
               active: true,
               hidden: false,
               readOnly: false,
