@@ -38,7 +38,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(
     null,
   );
@@ -118,27 +117,97 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   };
 
   const handleCreateArtifact = async (description: string) => {
-    setIsCreatingArtifact(true);
+    setShowCreateForm(false);
+    setMode('editor');
     try {
       if (!project) {
         throw new Error("Project is not loaded");
       }
-      const newArtifact = await artifactApi.createArtifact(project.id, {
-        description,
-        projectId,
-        status: "creating",
-        // Add any other required fields for creating an artifact
-      });
 
-      // Update the project's artifacts list
+      const defaultDependencies = [
+        {
+          name: "lucide-react",
+          version: "latest",
+        },
+        {
+          name: "recharts",
+          version: "2.9.0",
+        },
+        {
+          name: "axios",
+          version: "latest",
+        },
+        {
+          name: "react-dom",
+          version: "latest",
+        },
+        {
+          name: "react-router-dom",
+          version: "latest",
+        },
+        {
+          name: "react-ui",
+          version: "latest",
+        },
+        {
+          name: "@mui/material",
+          version: "latest",
+        },
+        {
+          name: "@emotion/react",
+          version: "latest",
+        },
+        {
+          name: "@emotion/styled",
+          version: "latest",
+        },
+        {
+          name: "@mui/icons-material",
+          version: "latest",
+        },
+        {
+          name: "react-player",
+          version: "latest",
+        },
+      ];
+  
+      let newArtifact = {
+          name: "New Artifact",
+          code: `import React from 'react';
+          const App = () => {
+            return <div></div>;
+          };
+          export default App;`,
+          dependencies: defaultDependencies,
+          description,
+          projectId,
+          status: "creating",
+      } as Artifact;
+
       setProject((prevProject) => ({
         ...prevProject!,
         artifacts: [...(prevProject?.artifacts || []), newArtifact],
       }));
 
-      toast.success("Artifact created successfully", {
-        duration: 3000,
-      });
+      const prevArtifacts = project?.artifacts || [];
+      setSelectedArtifact(newArtifact);
+      setProject((prevProject) => ({
+        ...prevProject!,
+        artifacts: [...prevArtifacts, newArtifact],
+      }));
+
+      newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
+
+      setProject((prevProject) => ({
+        ...prevProject!,
+        artifacts: [...(prevProject?.artifacts || []), newArtifact],
+      }));
+
+      setSelectedArtifact(newArtifact);
+      setProject((prevProject) => ({
+        ...prevProject!,
+        artifacts: [...prevArtifacts, newArtifact],
+      }));
 
       // Generate code for the artifact
       const messages: Message[] = [
@@ -152,12 +221,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       const onChunk = (
         chunks: { index: number; type: string; text: string }[],
       ) => {
-        setShowCreateForm(false);
-        setIsCreatingArtifact(false);
         for (const chunk of chunks) {
           response += chunk.text;
-          if(response.includes("<CODE>")) {
-            setMode('editor');
+          if(response.includes("</CODE>")) {
+            setMode('preview');
           }
           setStreamingMessage({
             role: "assistant",
@@ -184,53 +251,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
 
       // Update the artifact with the final generated code and chat session
   
-    const defaultDependencies = [
-      {
-        name: "lucide-react",
-        version: "latest",
-      },
-      {
-        name: "recharts",
-        version: "2.9.0",
-      },
-      {
-        name: "axios",
-        version: "latest",
-      },
-      {
-        name: "react-dom",
-        version: "latest",
-      },
-      {
-        name: "react-router-dom",
-        version: "latest",
-      },
-      {
-        name: "react-ui",
-        version: "latest",
-      },
-      {
-        name: "@mui/material",
-        version: "latest",
-      },
-      {
-        name: "@emotion/react",
-        version: "latest",
-      },
-      {
-        name: "@emotion/styled",
-        version: "latest",
-      },
-      {
-        name: "@mui/icons-material",
-        version: "latest",
-      },
-      {
-        name: "react-player",
-        version: "latest",
-      },
-    ];
-
     const extractComponentName = (code: string): string => {
       const match = code.match(/export default (\w+)/);
       return match ? match[1] : "MyApp";
@@ -264,7 +284,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         duration: 3000,
       });
     } finally {
-      setIsCreatingArtifact(false);
       setShowCreateForm(false);
     }
   };
@@ -384,7 +403,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
                   mode === 'preview' ? (
                     <Preview artifact={selectedArtifact} initialMode={mode} />
                   ) : (
-                    <CodeViewer code={extractContent(streamingMessage?.text || "", "CODE") || ""} />
+                    <CodeViewer status={selectedArtifact.status} code={extractContent(streamingMessage?.text || "", "CODE") || ""} />
                   )
                 )}
               </div>
@@ -443,17 +462,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       )}
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
-          {isCreatingArtifact ? (
-            <div className="flex flex-col items-center rounded-lg bg-white p-6">
-              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
-              <p className="text-gray-600">Creating your project...</p>
-            </div>
-          ) : (
             <ArtifactOverviewInputForm
               onCancel={() => setShowCreateForm(false)}
               onNext={handleCreateArtifact}
             />
-          )}
         </div>
       )}
     </div>

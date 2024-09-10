@@ -6,6 +6,7 @@ import { Artifact } from "../types/Artifact";
 import { Message } from "../types/Message";
 import { ChatSession } from "../types/ChatSession";
 import { Attachment } from "../types/Attachment";
+import { FiLoader } from "react-icons/fi"; // Add this import
 
 interface UpdateArtifactProps {
   artifact: Artifact;
@@ -103,6 +104,30 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
     updatedBy: "current_user", // Replace with actual user info
   });
 
+  const renderContent = () => {
+    if (!streamingMessage && (artifact.status === "creating" || artifact.status === "updating")) {
+      return (
+        <div className="flex-grow flex items-center justify-center">
+          <FiLoader className="animate-spin text-blue-500" size={24} />
+          <span className="text-gray-700 text-xs">Thinking...</span>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div className="flex-grow overflow-hidden flex flex-col">
+          <ChatHistory artifact={artifact} chatSession={chatSession} streamingMessage={streamingMessage}/>
+        </div>
+        <InputForm 
+          artifact={artifact} 
+          onSubmit={handleSubmit} 
+          isEmpty={chatSession.messages.length === 0} 
+        />
+      </>
+    );
+  };
+
   return (
     <div className="w-full h-full flex flex-col bg-white shadow-sm rounded-lg overflow-hidden">
       {!isCollapsed && (
@@ -115,14 +140,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
               onRemove={handleContextAttachmentRemove}
             />
           </div>
-          <div className="flex-grow overflow-hidden flex flex-col">
-            <ChatHistory artifact={artifact} chatSession={chatSession} streamingMessage={streamingMessage}/>
-          </div>
-          <InputForm 
-            artifact={artifact} 
-            onSubmit={handleSubmit} 
-            isEmpty={chatSession.messages.length === 0} 
-          />
+          {renderContent()}
         </>
       )}
     </div>

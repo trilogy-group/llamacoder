@@ -22,7 +22,7 @@ interface CodeEditorProps {
   initialMode: 'preview' | 'editor';
 }
 
-function SandpackContent({ children, onCodeChange, initialMode }: { children: React.ReactNode, onCodeChange: (code: string) => void, initialMode: 'preview' | 'editor' }) {
+function SandpackContent({ children, status, onCodeChange, initialMode }: { children: React.ReactNode, status: 'idle' | 'creating' | 'updating', onCodeChange: (code: string) => void, initialMode: 'preview' | 'editor' }) {
   const [mode, setMode] = useState<'preview' | 'editor'>(initialMode);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
@@ -69,7 +69,7 @@ function SandpackContent({ children, onCodeChange, initialMode }: { children: Re
 
   useEffect(() => {
     const stopListening = listen((msg) => {
-      console.log("msg: ", msg);
+      console.log("msg: ", msg, status);
       if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
@@ -87,7 +87,7 @@ function SandpackContent({ children, onCodeChange, initialMode }: { children: Re
     return () => {
       stopListening();
     };
-  }, [listen]);
+  }, [listen, status]);
 
   // Add this effect to log statusMessage changes
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function CodeEditor({
           }}
           files={sandpackFiles}
         >
-          <SandpackContent onCodeChange={handleCodeChange} initialMode={initialMode}>{children}</SandpackContent>
+          <SandpackContent status={artifact.status} onCodeChange={handleCodeChange} initialMode={initialMode}>{children}</SandpackContent>
         </SandpackProvider>
       </AnimatePresence>
     </div>
