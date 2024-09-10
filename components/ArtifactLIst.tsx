@@ -26,7 +26,8 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
     artifact.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const otherArtifacts = filteredArtifacts.filter(artifact => artifact.id !== selectedArtifact?.id);
+  // Remove this line
+  // const otherArtifacts = filteredArtifacts.filter(artifact => artifact.id !== selectedArtifact?.id);
 
   if (isCollapsed) {
     return (
@@ -70,25 +71,13 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
         <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
       </div>
       <div className="flex-1 overflow-hidden border-t border-b border-gray-200 bg-gray-50 flex flex-col">
-        {selectedArtifact && (
-          <div className="p-1">
-            <ArtifactItem
-              artifact={selectedArtifact}
-              isSelected={true}
-              onClick={() => onSelectArtifact(selectedArtifact)}
-              onDelete={(artifact) => {/* Add delete logic */}}
-              onPreview={(artifact) => {/* Add preview logic */}}
-              onEdit={(artifact) => {/* Add edit logic */}}
-            />
-          </div>
-        )}
         <div className="flex-1 overflow-y-auto p-1">
           <ul className="space-y-1">
-            {otherArtifacts.map((artifact) => (
+            {filteredArtifacts.map((artifact) => (
               <ArtifactItem
                 key={artifact.id}
                 artifact={artifact}
-                isSelected={false}
+                isSelected={artifact.id === selectedArtifact?.id}
                 onClick={() => onSelectArtifact(artifact)}
                 onDelete={(artifact) => {/* Add delete logic */}}
                 onPreview={(artifact) => {/* Add preview logic */}}
