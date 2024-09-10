@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { ddbClient } from '@/utils/ddbClient';
-import { v4 as uuidv4 } from 'uuid';
 import { Artifact } from '@/types/Artifact';
 // @ts-ignore
 import { getSession } from '@auth0/nextjs-auth0';
@@ -65,11 +64,10 @@ export async function POST(
     }
 
     const { projectId } = params;
-    const body: Omit<Artifact, 'id' | 'createdAt' | 'updatedAt'> = await request.json();
+    const body: Omit<Artifact, 'createdAt' | 'updatedAt'> = await request.json();
     const now = new Date().toISOString();
     const artifact: Artifact = {
       ...body,
-      id: uuidv4(),
       projectId,
       createdAt: now,
       updatedAt: now,

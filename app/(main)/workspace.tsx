@@ -21,6 +21,7 @@ import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
 import { ChatSession } from "@/types/ChatSession";
 import CodeViewer from "@/components/CodeViewer";
 import ProjectShareModal from "@/components/ProjectShareModal";
+import { v4 as uuidv4 } from "uuid";
 
 interface WorkspaceProps {
   projectId: string;
@@ -173,6 +174,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       ];
 
       let newArtifact = {
+        id: uuidv4(),
         name: "New Artifact",
         code: `import React from 'react';
 const App = () => {
