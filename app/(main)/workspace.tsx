@@ -169,6 +169,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         version: "latest",
       },
       {
+        name: "@mui/styles",
+        version: "latest",
+      },
+      {
         name: "@emotion/react",
         version: "latest",
       },
@@ -198,6 +202,8 @@ export default App;`,
       description,
       projectId,
       status: "creating",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     } as Artifact;
 
     setProject((prevProject) => ({
@@ -205,11 +211,10 @@ export default App;`,
       artifacts: [...(prevProject?.artifacts || []), newArtifact],
     }));
 
-    const prevArtifacts = project?.artifacts || [];
     setSelectedArtifact(newArtifact);
     setProject((prevProject) => ({
       ...prevProject!,
-      artifacts: [...prevArtifacts, newArtifact],
+      artifacts: [...prevProject?.artifacts || [], newArtifact],
     }));
 
     try {
@@ -217,18 +222,7 @@ export default App;`,
         throw new Error("Project is not loaded");
       }
 
-      newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
-
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: [...(prevProject?.artifacts || []), newArtifact],
-      }));
-
-      setSelectedArtifact(newArtifact);
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: [...prevArtifacts, newArtifact],
-      }));
+      await artifactApi.createArtifact(project.id, newArtifact);
 
       // Generate code for the artifact
       const messages: Message[] = [
@@ -276,6 +270,7 @@ export default App;`,
         messages,
         onChunk,
       );
+      
       // Create a new chat session
       const newChatSession: ChatSession = {
         id: Date.now().toString(), // Generate a unique ID
@@ -293,6 +288,25 @@ export default App;`,
 
       const componentName = extractComponentName(code);
 
+      newArtifact = {
+        ...newArtifact,
+        name: componentName,
+        code: code,
+        dependencies: [...defaultDependencies, ...dependencies],
+        status: "idle",
+        chatSession: newChatSession,
+      };
+
+      setSelectedArtifact(newArtifact);
+      setProject((prevProject) => ({
+        ...prevProject!,
+        artifacts: prevProject?.artifacts?.map((a) =>
+          a.id === newArtifact.id ? newArtifact : a,
+        ),
+      }));
+      setStreamingMessage(null);
+      setMode("preview");
+
       await artifactApi.updateArtifact(projectId, newArtifact.id, {
         name: componentName,
         code: code,
@@ -301,21 +315,6 @@ export default App;`,
         chatSession: newChatSession,
       });
 
-      const updatedArtifact = await artifactApi.getArtifact(
-        projectId,
-        newArtifact.id,
-      );
-      setSelectedArtifact(updatedArtifact);
-      setStreamingMessage(null);
-      setMode("preview");
-
-      // Update the project's artifacts list
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: prevProject?.artifacts?.map((a) =>
-          a.id === updatedArtifact.id ? updatedArtifact : a,
-        ),
-      }));
       showAlert("success", "Artifact created successfully");
     } catch (error) {
       console.error("Error creating artifact or generating code:", error);
