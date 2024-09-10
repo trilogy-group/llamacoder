@@ -137,13 +137,10 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
   isSelected,
   onClick,
   onDelete,
-  onPreview,
-  onEdit,
   onHover,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const itemRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -174,7 +171,6 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 
   return (
     <li
-      ref={itemRef}
       className={`p-3 rounded-md cursor-pointer transition-all duration-300 flex items-center relative ${
         isSelected
           ? "bg-blue-100 text-blue-700"
@@ -187,7 +183,7 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
           onMouseEnter={(e) => onHover(artifact, e)}
           onMouseLeave={(e) => onHover(null, e)}
         >
-          {getStatusIcon()}
+          <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />
         </div>
         <span className="font-medium truncate max-w-[70%]">{artifact.name}</span>
       </div>
@@ -202,45 +198,25 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
           <FiMoreHorizontal className="w-4 h-4 text-gray-600" />
         </button>
         {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-            <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-              <button
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                role="menuitem"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(artifact);
-                  setIsMenuOpen(false);
-                }}
-              >
-                <FiTrash2 className="mr-3 h-5 w-5 text-gray-400" />
-                Delete
-              </button>
-              <button
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                role="menuitem"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPreview(artifact);
-                  setIsMenuOpen(false);
-                }}
-              >
-                <FiEye className="mr-3 h-5 w-5 text-gray-400" />
-                Preview
-              </button>
-              <button
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                role="menuitem"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(artifact);
-                  setIsMenuOpen(false);
-                }}
-              >
-                <FiEdit className="mr-3 h-5 w-5 text-gray-400" />
-                Edit
-              </button>
-            </div>
+          <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-hidden">
+            <button
+              className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out flex items-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(artifact);
+                setIsMenuOpen(false);
+              }}
+            >
+              <FiTrash2 className="mr-2 h-4 w-4 text-red-500" />
+              Delete
+            </button>
+            <button
+              className="w-full px-4 py-2 text-sm text-left text-gray-400 flex items-center cursor-not-allowed"
+              disabled
+            >
+              <FiAlertCircle className="mr-2 h-4 w-4 text-gray-400" />
+              Deprecate
+            </button>
           </div>
         )}
       </div>
