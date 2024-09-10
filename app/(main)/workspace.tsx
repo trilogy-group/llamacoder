@@ -24,6 +24,7 @@ import ProjectShareModal from "@/components/ProjectShareModal";
 import { v4 as uuidv4 } from "uuid";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import ArtifactInfoCard from "@/components/ArtifactInfoCard";
+import Alert from "@/components/Alert";
 
 interface WorkspaceProps {
   projectId: string;
@@ -47,10 +48,18 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   );
   const [mode, setMode] = useState<"preview" | "editor">("preview");
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] = useState(false);
-  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
+  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] =
+    useState(false);
+  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(
+    null,
+  );
   const [hoveredArtifact, setHoveredArtifact] = useState<Artifact | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [alert, setAlert] = useState<{
+    type: "error" | "info" | "warning" | "success";
+    message: string;
+  } | null>(null);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -85,6 +94,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     fetchProjectAndArtifacts();
   }, [projectId]);
 
+  const showAlert = (
+    type: "error" | "info" | "warning" | "success",
+    message: string,
+  ) => {
+    setAlert({ type, message });
+  };
+
   const handleSelectArtifact = (artifact: Artifact) => {
     setSelectedArtifact(artifact);
   };
@@ -105,15 +121,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     setIsDeleting(true);
     try {
       await projectApi.deleteProject(projectId);
-      toast.success("Project deleted successfully", {
-        duration: 3000,
-      });
+      showAlert("success", "Project deleted successfully!");
       router.push("/dashboard");
     } catch (error) {
       console.error("Error deleting project:", error);
-      toast.error("Failed to delete project", {
-        duration: 3000,
-      });
+      showAlert("error", "Failed to delete project");
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirmation(false);
@@ -127,83 +139,83 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const handleCreateArtifact = async (description: string) => {
     setShowCreateForm(false);
     setMode("editor");
+    const defaultDependencies = [
+      {
+        name: "lucide-react",
+        version: "latest",
+      },
+      {
+        name: "recharts",
+        version: "latest",
+      },
+      {
+        name: "axios",
+        version: "latest",
+      },
+      {
+        name: "react-dom",
+        version: "latest",
+      },
+      {
+        name: "react-router-dom",
+        version: "latest",
+      },
+      {
+        name: "react-ui",
+        version: "latest",
+      },
+      {
+        name: "@mui/material",
+        version: "latest",
+      },
+      {
+        name: "@emotion/react",
+        version: "latest",
+      },
+      {
+        name: "@emotion/styled",
+        version: "latest",
+      },
+      {
+        name: "@mui/icons-material",
+        version: "latest",
+      },
+      {
+        name: "react-player",
+        version: "latest",
+      },
+    ];
+
+    let newArtifact = {
+      id: uuidv4(),
+      name: "New Artifact",
+      code: `import React from 'react';
+const App = () => {
+return <div>Hello World</div>;
+};
+export default App;`,
+      dependencies: defaultDependencies,
+      description,
+      projectId,
+      status: "creating",
+    } as Artifact;
+
+    setProject((prevProject) => ({
+      ...prevProject!,
+      artifacts: [...(prevProject?.artifacts || []), newArtifact],
+    }));
+
+    const prevArtifacts = project?.artifacts || [];
+    setSelectedArtifact(newArtifact);
+    setProject((prevProject) => ({
+      ...prevProject!,
+      artifacts: [...prevArtifacts, newArtifact],
+    }));
+
     try {
       if (!project) {
         throw new Error("Project is not loaded");
       }
-
-      const defaultDependencies = [
-        {
-          name: "lucide-react",
-          version: "latest",
-        },
-        {
-          name: "recharts",
-          version: "latest",
-        },
-        {
-          name: "axios",
-          version: "latest",
-        },
-        {
-          name: "react-dom",
-          version: "latest",
-        },
-        {
-          name: "react-router-dom",
-          version: "latest",
-        },
-        {
-          name: "react-ui",
-          version: "latest",
-        },
-        {
-          name: "@mui/material",
-          version: "latest",
-        },
-        {
-          name: "@emotion/react",
-          version: "latest",
-        },
-        {
-          name: "@emotion/styled",
-          version: "latest",
-        },
-        {
-          name: "@mui/icons-material",
-          version: "latest",
-        },
-        {
-          name: "react-player",
-          version: "latest",
-        },
-      ];
-
-      let newArtifact = {
-        id: uuidv4(),
-        name: "New Artifact",
-        code: `import React from 'react';
-const App = () => {
-  return <div>Hello World</div>;
-};
-export default App;`,
-        dependencies: defaultDependencies,
-        description,
-        projectId,
-        status: "creating",
-      } as Artifact;
-
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: [...(prevProject?.artifacts || []), newArtifact],
-      }));
-
-      const prevArtifacts = project?.artifacts || [];
-      setSelectedArtifact(newArtifact);
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: [...prevArtifacts, newArtifact],
-      }));
 
       newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
 
@@ -304,13 +316,16 @@ export default App;`,
           a.id === updatedArtifact.id ? updatedArtifact : a,
         ),
       }));
+      showAlert("success", "Artifact created successfully");
     } catch (error) {
       console.error("Error creating artifact or generating code:", error);
       toast.error("Failed to create artifact or generate code", {
         duration: 3000,
       });
+      showAlert("error", "Failed to create artifact");
     } finally {
       setShowCreateForm(false);
+      setMode("preview");
     }
   };
 
@@ -319,7 +334,10 @@ export default App;`,
     setShowDeleteArtifactConfirmation(true);
   };
 
-  const handleArtifactHover = (artifact: Artifact | null, event: React.MouseEvent) => {
+  const handleArtifactHover = (
+    artifact: Artifact | null,
+    event: React.MouseEvent,
+  ) => {
     setHoveredArtifact(artifact);
     setMousePosition({ x: event.clientX, y: event.clientY });
   };
@@ -328,9 +346,12 @@ export default App;`,
     if (artifactToDelete) {
       try {
         await artifactApi.deleteArtifact(projectId, artifactToDelete.id);
-        
+
         setProject((prevProject) => {
-          const updatedArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactToDelete.id) || [];
+          const updatedArtifacts =
+            prevProject?.artifacts?.filter(
+              (a) => a.id !== artifactToDelete.id,
+            ) || [];
           return {
             ...prevProject!,
             artifacts: updatedArtifacts,
@@ -339,23 +360,21 @@ export default App;`,
 
         if (selectedArtifact?.id === artifactToDelete.id) {
           setProject((prevProject) => {
-            const remainingArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactToDelete.id) || [];
-            const newSelectedArtifact = remainingArtifacts.length > 0 ? remainingArtifacts[0] : null;
+            const remainingArtifacts =
+              prevProject?.artifacts?.filter(
+                (a) => a.id !== artifactToDelete.id,
+              ) || [];
+            const newSelectedArtifact =
+              remainingArtifacts.length > 0 ? remainingArtifacts[0] : null;
             setSelectedArtifact(newSelectedArtifact);
             return prevProject;
           });
         }
-
-        toast.success("Artifact deleted successfully", {
-          duration: 3000,
-        });
-
+        showAlert('success', 'Artifact deleted successfully');
         return "Artifact deleted successfully"; // Return a success message
       } catch (error) {
         console.error("Error deleting artifact:", error);
-        toast.error("Failed to delete artifact", {
-          duration: 3000,
-        });
+        showAlert('error', 'Failed to delete artifact');
         return "Failed to delete artifact"; // Return an error message
       } finally {
         setShowDeleteArtifactConfirmation(false);
@@ -468,15 +487,15 @@ export default App;`,
               collapsible={true}
             >
               <ArtifactList
-                  artifacts={project.artifacts || []}
-                  onSelectArtifact={handleSelectArtifact}
-                  selectedArtifact={selectedArtifact}
-                  isCollapsed={isArtifactListCollapsed}
-                  setIsCollapsed={setIsArtifactListCollapsed}
-                  onCreateArtifact={() => setShowCreateForm(true)}
-                  onDeleteArtifact={handleDeleteArtifact}
-                  onArtifactHover={handleArtifactHover}
-                />
+                artifacts={project.artifacts || []}
+                onSelectArtifact={handleSelectArtifact}
+                selectedArtifact={selectedArtifact}
+                isCollapsed={isArtifactListCollapsed}
+                setIsCollapsed={setIsArtifactListCollapsed}
+                onCreateArtifact={() => setShowCreateForm(true)}
+                onDeleteArtifact={handleDeleteArtifact}
+                onArtifactHover={handleArtifactHover}
+              />
             </Panel>
             {!isArtifactListCollapsed && (
               <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />
@@ -570,13 +589,21 @@ export default App;`,
         />
       )}
       {showDeleteArtifactConfirmation && artifactToDelete && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowDeleteArtifactConfirmation(false)}></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50"
+            onClick={() => setShowDeleteArtifactConfirmation(false)}
+          ></div>
           <div className="relative z-10">
             <ConfirmationDialog
               message={
                 <>
-                  Are you sure you want to <i>permanently</i> delete the artifact <span className="font-semibold text-blue-600">{artifactToDelete.name}</span>?
+                  Are you sure you want to <i>permanently</i> delete the
+                  artifact{" "}
+                  <span className="font-semibold text-blue-600">
+                    {artifactToDelete.name}
+                  </span>
+                  ?
                 </>
               }
               onConfirm={confirmDeleteArtifact}
@@ -590,6 +617,13 @@ export default App;`,
           artifact={hoveredArtifact}
           position={mousePosition}
           onClose={() => setHoveredArtifact(null)}
+        />
+      )}
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
         />
       )}
     </div>

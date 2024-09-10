@@ -183,7 +183,7 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
           onMouseEnter={(e) => onHover(artifact, e)}
           onMouseLeave={(e) => onHover(null, e)}
         >
-          <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />
+          {getStatusIcon()}
         </div>
         <span className="font-medium truncate max-w-[70%]">{artifact.name}</span>
       </div>
