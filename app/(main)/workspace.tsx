@@ -136,9 +136,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     setShowDeleteConfirmation(false);
   };
 
-  const handleCreateArtifact = async (description: string) => {
-    setShowCreateForm(false);
-    setMode("editor");
+  const handleCreateArtifact = async (description: string, callback: () => void) => {
     const defaultDependencies = [
       {
         name: "lucide-react",
@@ -206,23 +204,20 @@ export default App;`,
       updatedAt: new Date().toISOString(),
     } as Artifact;
 
-    setProject((prevProject) => ({
-      ...prevProject!,
-      artifacts: [...(prevProject?.artifacts || []), newArtifact],
-    }));
-
-    setSelectedArtifact(newArtifact);
-    setProject((prevProject) => ({
-      ...prevProject!,
-      artifacts: [...(prevProject?.artifacts || []), newArtifact],
-    }));
-
     try {
       if (!project) {
         throw new Error("Project is not loaded");
       }
 
-      await artifactApi.createArtifact(project.id, newArtifact);
+      newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
+      callback();
+      setShowCreateForm(false);
+      setMode("editor");  
+      setSelectedArtifact(newArtifact);
+      setProject((prevProject) => ({
+        ...prevProject!,
+        artifacts: [...(prevProject?.artifacts || []), newArtifact],
+      }));
 
       // Generate code for the artifact
       const messages: Message[] = [
