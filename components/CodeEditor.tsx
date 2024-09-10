@@ -19,10 +19,14 @@ import { Artifact } from "../types/Artifact";
 interface CodeEditorProps {
   artifact: Artifact;
   children?: React.ReactNode;
+  initialMode: 'preview' | 'editor';
 }
 
-function SandpackContent({ children, onCodeChange }: { children: React.ReactNode, onCodeChange: (code: string) => void }) {
-  const [isPreviewOnly, setIsPreviewOnly] = useState(true);
+function SandpackContent({ children, onCodeChange, initialMode }: { children: React.ReactNode, onCodeChange: (code: string) => void, initialMode: 'preview' | 'editor' }) {
+  const [mode, setMode] = useState<'preview' | 'editor'>(initialMode);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
+  const { code } = useActiveCode();
 
   const handleDownload = () => {
     const blob = new Blob([code], {
@@ -34,16 +38,16 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
   const actionButtons = (
     <div className="absolute bottom-2 left-2 z-10 flex gap-2">
       <button
-        onClick={() => setIsPreviewOnly(!isPreviewOnly)}
+        onClick={() => setMode(mode === 'preview' ? 'editor' : 'preview')}
         className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2"
-        title={isPreviewOnly ? "Show Editor" : "Show Preview"}
+        title={mode === 'preview' ? "Show Editor" : "Show Preview"}
       >
-        {isPreviewOnly ? (
+        {mode === 'preview' ? (
           <CodeIcon style={{ width: "16px", height: "16px" }} />
         ) : (
           <VisibilityIcon style={{ width: "16px", height: "16px" }} />
         )}
-        <span>{isPreviewOnly ? "Editor" : "Preview"}</span>
+        <span>{mode === 'preview' ? "Editor" : "Preview"}</span>
       </button>
       <button
         onClick={handleDownload}
@@ -51,14 +55,13 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
         title="Download Code"
       >
         <DownloadIcon style={{ width: "16px", height: "16px" }} />
+        <span>Download</span>
       </button>
     </div>
   );
 
   const { listen } = useSandpack();
-  const { code } = useActiveCode();
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
+  const [isPreviewOnly, setIsPreviewOnly] = useState(true);
 
   useEffect(() => {
     onCodeChange(code);
@@ -94,9 +97,9 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
   return (
     <div className="absolute inset-0 flex flex-col">
       <div className="flex-grow overflow-hidden flex relative">
-        {!isPreviewOnly && (
+        {mode === 'editor' ? (
           <SandpackCodeEditor
-            className="flex-1 h-full"
+            className="w-full h-full"
             showRunButton={true}
             showInlineErrors={true}
             wrapContent={true}
@@ -104,12 +107,11 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
             showTabs={true}
             showReadOnly={true}
           />
+        ) : (
+          <div className="w-full h-full">
+            <SandpackPreview className="h-full w-full" />
+          </div>
         )}
-        <div
-          className={`relative ${isPreviewOnly ? 'w-full' : 'w-1/2'} h-full`}
-        >
-          <SandpackPreview className="h-full w-full" />
-        </div>
         {statusMessage && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
             <div className="text-center">
@@ -125,9 +127,11 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
     </div>
   );
 }
+
 export default function CodeEditor({
   artifact,
   children,
+  initialMode,
 }: CodeEditorProps) {
   const [key, setKey] = useState(0);
 
@@ -176,7 +180,7 @@ export default function CodeEditor({
           }}
           files={sandpackFiles}
         >
-          <SandpackContent onCodeChange={handleCodeChange}>{children}</SandpackContent>
+          <SandpackContent onCodeChange={handleCodeChange} initialMode={initialMode}>{children}</SandpackContent>
         </SandpackProvider>
       </AnimatePresence>
     </div>

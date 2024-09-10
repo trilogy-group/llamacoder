@@ -13,12 +13,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { projectApi } from "@/utils/apiClients/Project";
 import { artifactApi } from "@/utils/apiClients/Artifact";
-import { genAiApi } from "@/utils/apiClients/GenAI";
+import { genAiApi, extractContent } from "@/utils/apiClients/GenAI";
 import { Message } from "@/types/Message";
 import { CircularProgress } from "@mui/material";
 import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
 import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
 import { ChatSession } from "@/types/ChatSession";
+import CodeViewer from "@/components/CodeViewer";
 
 interface WorkspaceProps {
   projectId: string;
@@ -41,6 +42,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(
     null,
   );
+  const [mode, setMode] = useState<'preview' | 'editor'>('preview');
   const router = useRouter();
 
   useEffect(() => {
@@ -134,9 +136,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         artifacts: [...(prevProject?.artifacts || []), newArtifact],
       }));
 
-      // Select the newly created artifact
-      setSelectedArtifact(newArtifact);
-
       toast.success("Artifact created successfully", {
         duration: 3000,
       });
@@ -157,6 +156,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         setIsCreatingArtifact(false);
         for (const chunk of chunks) {
           response += chunk.text;
+          if(response.includes("<CODE>")) {
+            setMode('editor');
+          }
           setStreamingMessage({
             role: "assistant",
             text: response,
@@ -164,11 +166,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         }
       };
 
-      const { code, dependencies } = await genAiApi.generateResponse(messages, onChunk);
-
-      console.log("code: ", code);      
-      console.log("dependencies: ", dependencies);
-
+      const { code, dependencies } = await genAiApi.generateResponse(messages, onChunk);  
       // Create a new chat session
       const newChatSession: ChatSession = {
         id: Date.now().toString(), // Generate a unique ID
@@ -242,7 +240,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
 
      await artifactApi.updateArtifact(projectId, newArtifact.id, {
         name: componentName,
-        code: code,
+        code:  code,
         dependencies: [...defaultDependencies, ...dependencies],
         status: "idle",
         chatSession: newChatSession,
@@ -251,6 +249,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       const updatedArtifact = await artifactApi.getArtifact(projectId, newArtifact.id);
       setSelectedArtifact(updatedArtifact);
       setStreamingMessage(null);
+      setMode('preview');
 
       // Update the project's artifacts list
       setProject((prevProject) => ({
@@ -381,7 +380,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
             )}
             <Panel defaultSize={60} minSize={40} maxSize={100}>
               <div className="h-full">
-                {selectedArtifact && <Preview artifact={selectedArtifact} />}
+                {selectedArtifact && (
+                  mode === 'preview' ? (
+                    <Preview artifact={selectedArtifact} initialMode={mode} />
+                  ) : (
+                    <CodeViewer code={extractContent(streamingMessage?.text || "", "CODE") || ""} />
+                  )
+                )}
               </div>
             </Panel>
             {!isUpdateArtifactCollapsed && (

@@ -4,13 +4,15 @@ import { Artifact } from "../types/Artifact";
 
 interface PreviewProps {
   artifact: Artifact;
+  initialMode: 'preview' | 'editor';
 }
 
-const Preview: React.FC<PreviewProps> = ({ artifact }) => {
+const Preview: React.FC<PreviewProps> = ({ artifact, initialMode }) => {
   return (
     <div className="w-full h-full">
       <CodeEditor 
         artifact={artifact}
+        initialMode={initialMode}
       />
     </div>
   );

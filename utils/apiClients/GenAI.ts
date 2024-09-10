@@ -65,7 +65,7 @@ function parseResponse(response: string): Record<string, string> {
   return result;
 }
 
-function extractContent(text: string, tag: string): string | null {
+export function extractContent(text: string, tag: string): string | null {
   const openTag = `<${tag}>`;
   const closeTag = `</${tag}>`;
   const startIndex = text.indexOf(openTag);
