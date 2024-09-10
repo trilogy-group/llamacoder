@@ -308,6 +308,39 @@ export default App;`,
     }
   };
 
+  const handleDeleteArtifact = async (artifactId: string) => {
+    try {
+      await artifactApi.deleteArtifact(projectId, artifactId);
+      
+      setProject((prevProject) => {
+        const updatedArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactId) || [];
+        return {
+          ...prevProject!,
+          artifacts: updatedArtifacts,
+        };
+      });
+
+      if (selectedArtifact?.id === artifactId) {
+        // If the deleted artifact was selected, select the first available artifact or set to null
+        setProject((prevProject) => {
+          const remainingArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactId) || [];
+          const newSelectedArtifact = remainingArtifacts.length > 0 ? remainingArtifacts[0] : null;
+          setSelectedArtifact(newSelectedArtifact);
+          return prevProject;
+        });
+      }
+
+      toast.success("Artifact deleted successfully", {
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error deleting artifact:", error);
+      toast.error("Failed to delete artifact", {
+        duration: 3000,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-gray-50">
@@ -417,6 +450,7 @@ export default App;`,
                 isCollapsed={isArtifactListCollapsed}
                 setIsCollapsed={setIsArtifactListCollapsed}
                 onCreateArtifact={() => setShowCreateForm(true)}
+                onDeleteArtifact={handleDeleteArtifact}
               />
             </Panel>
             {!isArtifactListCollapsed && (
