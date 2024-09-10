@@ -402,7 +402,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
               <div className="h-full">
                 {selectedArtifact && (
                   mode === 'preview' ? (
-                    <Preview artifact={selectedArtifact} initialMode={mode} />
+                    <Preview project={project} selectedArtifact={selectedArtifact} initialMode={mode} />
                   ) : (
                     <CodeViewer status={selectedArtifact.status} code={extractContent(streamingMessage?.text || "", "CODE") || ""} />
                   )

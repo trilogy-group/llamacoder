@@ -3,8 +3,10 @@ import {
   SandpackPreview,
   useSandpack,
   useActiveCode,
-  useSandpackConsole,
   SandpackCodeEditor,
+  SandpackFileExplorer,
+  SandpackLayout,
+  useSandpackConsole,
 } from "@codesandbox/sandpack-react";
 import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { useEffect, useState, useMemo } from "react";
@@ -15,18 +17,35 @@ import DownloadIcon from "@mui/icons-material/GetApp"; // Changed to a more appr
 import { saveAs } from "file-saver";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Artifact } from "../types/Artifact";
+import { Project } from "../types/Project"; // Assuming you have a Project type
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 interface CodeEditorProps {
-  artifact: Artifact;
+  project: Project;
+  selectedArtifact: Artifact;
+  onFixIt?: (errorMessage: string) => void;
   children?: React.ReactNode;
-  initialMode: 'preview' | 'editor';
 }
 
-function SandpackContent({ children, status, onCodeChange, initialMode }: { children: React.ReactNode, status: 'idle' | 'creating' | 'updating', onCodeChange: (code: string) => void, initialMode: 'preview' | 'editor' }) {
-  const [mode, setMode] = useState<'preview' | 'editor'>(initialMode);
+function SandpackContent({
+  children,
+  status,
+  onFixIt,
+}: {
+  children: React.ReactNode;
+  status: "idle" | "creating" | "updating";
+  onFixIt: (errorMessage: string) => void;
+}) {
+  const [isPreviewOnly, setIsPreviewOnly] = useState(true);
+  const [hasCompilationError, setHasCompilationError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isFixButtonDisabled, setIsFixButtonDisabled] = useState(false);
+
+  const { sandpack, listen } = useSandpack();
+  const { files, activeFile, updateFile } = sandpack;
+  const { code } = useActiveCode();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
-  const { code } = useActiveCode();
 
   const handleDownload = () => {
     const blob = new Blob([code], {
@@ -35,19 +54,26 @@ function SandpackContent({ children, status, onCodeChange, initialMode }: { chil
     saveAs(blob, "App.tsx");
   };
 
+  const handleFixIt = () => {
+    if (errorMessage) {
+      onFixIt(errorMessage);
+      setIsFixButtonDisabled(true);
+    }
+  };
+
   const actionButtons = (
     <div className="absolute bottom-2 left-2 z-10 flex gap-2">
       <button
-        onClick={() => setMode(mode === 'preview' ? 'editor' : 'preview')}
+        onClick={() => setIsPreviewOnly(!isPreviewOnly)}
         className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2"
-        title={mode === 'preview' ? "Show Editor" : "Show Preview"}
+        title={isPreviewOnly ? "Show Editor" : "Show Preview"}
       >
-        {mode === 'preview' ? (
+        {isPreviewOnly ? (
           <CodeIcon style={{ width: "16px", height: "16px" }} />
         ) : (
           <VisibilityIcon style={{ width: "16px", height: "16px" }} />
         )}
-        <span>{mode === 'preview' ? "Editor" : "Preview"}</span>
+        <span>{isPreviewOnly ? "Editor" : "Preview"}</span>
       </button>
       <button
         onClick={handleDownload}
@@ -55,21 +81,27 @@ function SandpackContent({ children, status, onCodeChange, initialMode }: { chil
         title="Download Code"
       >
         <DownloadIcon style={{ width: "16px", height: "16px" }} />
-        <span>Download</span>
       </button>
     </div>
   );
 
-  const { listen } = useSandpack();
+  useEffect(() => {
+    updateFile("/App.tsx", code);
+  }, [code, activeFile]);
 
   useEffect(() => {
-    onCodeChange(code);
-  }, [code, onCodeChange]);
+    console.log("files: ", files);
+  }, [files]);
 
   useEffect(() => {
     const stopListening = listen((msg) => {
-      console.log("msg: ", msg, status);
-      if (msg.type === "dependencies") {
+      console.log("msg: ", msg);
+      if(status === "creating" || status === "updating") {
+        setStatusMessage("🚀 Generating code...");
+      } else if (msg.type === "action" && msg.action === "show-error") {
+        setErrorMessage(msg.message);
+        setIsFixButtonDisabled(false);
+      } else if (msg.type === "dependencies") {
         setStatusMessage("📦 Installing dependencies...");
       } else if (msg.type === "status") {
         if (msg.status === "transpiling") {
@@ -80,25 +112,29 @@ function SandpackContent({ children, status, onCodeChange, initialMode }: { chil
           setStatusMessage("");
         }
       } else if (msg.type == "done") {
+        if ("compilatonError" in msg) {
+          setHasCompilationError(msg.compilatonError);
+          if (msg.compilatonError) {
+            setIsFixButtonDisabled(false);
+          }
+        }
         console.log("logs: ", logs);
       }
     });
     return () => {
       stopListening();
     };
-  }, [listen, status, logs]);
-
-  // Add this effect to log statusMessage changes
-  useEffect(() => {
-    console.log("statusMessage: ", statusMessage);
-  }, [statusMessage]);
+  }, [listen, statusMessage, status]);
 
   return (
-    <div className="absolute inset-0 flex flex-col">
-      <div className="flex-grow overflow-hidden flex relative">
-        {mode === 'editor' ? (
+    <div className="relative">
+      <div className="flex items-center gap-4 py-2">
+        {children}
+      </div>
+      <SandpackLayout>
+        {!isPreviewOnly && (
           <SandpackCodeEditor
-            className="w-full h-full"
+            style={{ height: "calc(80vh - 40px)", width: "50%" }}
             showRunButton={true}
             showInlineErrors={true}
             wrapContent={true}
@@ -106,67 +142,109 @@ function SandpackContent({ children, status, onCodeChange, initialMode }: { chil
             showTabs={true}
             showReadOnly={true}
           />
-        ) : (
-          <div className="w-full h-full">
-            <SandpackPreview className="h-full w-full" />
-          </div>
         )}
-        {statusMessage && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="text-center">
-              <CircularProgress size={60} thickness={4} color="primary" />
-              <p className="mt-2 text-lg font-semibold text-white">
-                {statusMessage}
-              </p>
+        <div
+          className="relative"
+          style={{
+            height: "calc(80vh - 40px)",
+            width: isPreviewOnly ? "100%" : "50%",
+          }}
+        >
+          <SandpackPreview
+            style={{
+              height: "calc(80vh - 40px)",
+              width: "100%"
+            }}
+          />
+          {statusMessage && (
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center"
+              style={{ backgroundColor: '#1e2029' }}
+            >
+              <div className="flex flex-col items-center">
+                <CircularProgress size={60} thickness={4} color="primary" />
+                <p className="mt-2 text-lg font-semibold text-white">
+                  {statusMessage}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-      {statusMessage === "" && actionButtons}
+          )}
+        </div>
+        {statusMessage === "" && actionButtons}
+      </SandpackLayout>
+      {errorMessage && (
+        <button
+          onClick={handleFixIt}
+          className={`flex items-center gap-2 absolute top-6 right-2 z-50 font-medium py-2 px-4 rounded-full transition-colors
+            ${isFixButtonDisabled 
+              ? 'bg-blue-300 text-white cursor-not-allowed' 
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          title="Fix Compilation Error"
+          disabled={isFixButtonDisabled}
+        >
+          <ErrorOutlineIcon style={{ width: "16px", height: "16px" }} />
+          <span>Auto Fix</span>
+        </button>
+      )}
     </div>
   );
 }
 
 export default function CodeEditor({
-  artifact,
+  project,
+  selectedArtifact,
   children,
-  initialMode,
 }: CodeEditorProps) {
-  const [key, setKey] = useState(0);
+  const normalizedDependencies = useMemo(() => {
+    const allDependencies =
+      project.artifacts?.flatMap((artifact) => artifact.dependencies || []) ||
+      [];
+    return allDependencies.reduce(
+      (acc, dep) => {
+        acc[dep.name] =  "latest";
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+  }, [project.artifacts]);
 
-  const normalizedDependencies = useMemo(() => Array.isArray(artifact.dependencies)
-    ? artifact.dependencies.reduce(
-        (acc, dep) => {
-          acc[dep.name] = dep.version || "latest";
-          return acc;
-        },
-        {} as Record<string, string>
-      )
-    : {},
-  [artifact.dependencies]);
+  const sandpackFiles = useMemo(() => {
+    const files: Record<
+      string,
+      { code: string; active: boolean; hidden: boolean; readOnly: boolean }
+    > = {};
 
-  const sandpackFiles = useMemo(() => ({
-    "/App.tsx": {
-      code: artifact.code || "",
-      active: true,
-      hidden: false,
-      readOnly: false,
-    },
-  }), [artifact.code]);
+    // Add all project artifacts as files
+    project.artifacts?.forEach((artifact) => {
+      files[`/${artifact.name}.tsx`] = {
+        code: artifact.code || "",
+        active: artifact.id === selectedArtifact.id,
+        hidden: artifact.id !== selectedArtifact.id,
+        readOnly: false,
+      };
+    });
 
-  useEffect(() => {
-    setKey(prevKey => prevKey + 1);
-  }, [artifact]);
+    // Add App.tsx with the selected artifact's code, but hidden
+    files["/App.tsx"] = {
+      code: selectedArtifact.code || "",
+      active: false,
+      hidden: true,
+      readOnly: true,
+    };
 
-  const handleCodeChange = (newCode: string) => {
-    // Implement code change handling if needed
+    return files;
+  }, [project.artifacts, selectedArtifact]);
+
+  const handleFixIt = (errorMessage: string) => {
+    console.log("errorMessage: ", errorMessage);
   };
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative h-full w-full">
       <AnimatePresence>
         <SandpackProvider
-          key={`${key}-${artifact.code}`}
+          // key={`${key}-${selectedArtifact.code}`}
           template="react-ts"
           options={{
             externalResources: [
@@ -179,10 +257,14 @@ export default function CodeEditor({
           }}
           files={sandpackFiles}
         >
-          <SandpackContent status={artifact.status} onCodeChange={handleCodeChange} initialMode={initialMode}>{children}</SandpackContent>
+          <SandpackContent
+            status={selectedArtifact.status}
+            onFixIt={handleFixIt}
+          >
+            {children}
+          </SandpackContent>
         </SandpackProvider>
       </AnimatePresence>
     </div>
   );
 }
-

@@ -1,18 +1,20 @@
 import React from "react";
 import CodeEditor from "./CodeEditor";
+import { Project } from "../types/Project";
 import { Artifact } from "../types/Artifact";
 
 interface PreviewProps {
-  artifact: Artifact;
+  project: Project;
+  selectedArtifact: Artifact;
   initialMode: 'preview' | 'editor';
 }
 
-const Preview: React.FC<PreviewProps> = ({ artifact, initialMode }) => {
+const Preview: React.FC<PreviewProps> = ({ project, selectedArtifact, initialMode }) => {
   return (
     <div className="w-full h-full">
       <CodeEditor 
-        artifact={artifact}
-        initialMode={initialMode}
+        project={project}
+        selectedArtifact={selectedArtifact}
       />
     </div>
   );
