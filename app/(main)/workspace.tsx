@@ -574,7 +574,11 @@ export default App;`,
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowDeleteArtifactConfirmation(false)}></div>
           <div className="relative z-10">
             <ConfirmationDialog
-              message={`Are you sure you want to delete the artifact "${artifactToDelete.name}"?`}
+              message={
+                <>
+                  Are you sure you want to <i>permanently</i> delete the artifact <span className="font-semibold text-blue-600">{artifactToDelete.name}</span>?
+                </>
+              }
               onConfirm={confirmDeleteArtifact}
               onCancel={() => setShowDeleteArtifactConfirmation(false)}
             />

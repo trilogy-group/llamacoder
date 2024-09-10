@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 
 interface ConfirmationDialogProps {
-  message: string;
+  message: ReactNode;
   onConfirm: () => Promise<string>;
   onCancel: () => void;
 }
@@ -27,9 +27,9 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   };
 
   return (
-    <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-xl p-8 max-w-md w-full transition-all duration-300 bg-gradient-to-br from-blue-50/80 to-white/70">
-      <h3 className="text-xl font-semibold mb-4 text-gray-800">Confirm Action</h3>
-      <p className="mb-6 text-gray-600">{message}</p>
+    <div className="bg-gray-100 rounded-2xl shadow-lg p-6 w-full max-w-lg">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Confirm Action</h2>
+      <div className="mb-6 text-gray-600">{message}</div>
       {result ? (
         <div className="mb-6 text-center">
           <p className={`text-lg ${result.includes('error') ? 'text-red-600' : 'text-green-600'}`}>
@@ -37,24 +37,26 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           </p>
         </div>
       ) : (
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-end space-x-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+            className="px-6 py-2 text-sm font-medium text-gray-600 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-300 ease-in-out"
             disabled={isConfirming}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors relative"
+            className={`px-6 py-2 text-sm font-medium text-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-300 ease-in-out flex items-center justify-center relative ${
+              isConfirming ? 'bg-red-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'
+            }`}
             disabled={isConfirming}
           >
             {isConfirming ? (
               <>
                 <span className="opacity-0">Confirm</span>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-5 h-5 border-t-2 border-white border-solid rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               </>
             ) : (

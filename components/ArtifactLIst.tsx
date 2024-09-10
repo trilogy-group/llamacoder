@@ -174,12 +174,15 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
           ? "bg-blue-100 text-blue-700"
           : "bg-white/60 text-gray-700 hover:bg-gray-100"
       }`}
-      onMouseEnter={(e) => onHover(artifact, e)}
-      onMouseLeave={(e) => onHover(null, e)}
       onClick={onClick}
     >
       <div className="flex-grow flex items-center overflow-hidden">
-        {getStatusIcon()}
+        <div
+          onMouseEnter={(e) => onHover(artifact, e)}
+          onMouseLeave={(e) => onHover(null, e)}
+        >
+          {getStatusIcon()}
+        </div>
         <span className="font-medium truncate max-w-[70%]">{artifact.name}</span>
       </div>
       <div className="relative" ref={menuRef}>
