@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FiBox, FiSearch, FiPackage, FiChevronLeft, FiChevronRight, FiTrash2, FiEye, FiEdit, FiMoreHorizontal, FiLoader, FiAlertCircle } from "react-icons/fi";
 import { Artifact } from "@/types/Artifact";
-import ConfirmationDialog from "./ConfirmationDialog";
 
 interface ArtifactListProps {
   artifacts: Artifact[];
@@ -10,7 +9,7 @@ interface ArtifactListProps {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   onCreateArtifact: () => void;
-  onDeleteArtifact: (artifactId: string) => void;
+  onDeleteArtifact: (artifact: Artifact) => void; // Change this line
 }
 
 const ArtifactList: React.FC<ArtifactListProps> = ({
@@ -24,9 +23,6 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
-  const [deleteResult, setDeleteResult] = useState<string | null>(null);
 
   const filteredArtifacts = artifacts.filter((artifact) =>
     artifact.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -54,30 +50,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
   }
 
   const handleDeleteArtifact = (artifact: Artifact) => {
-    setArtifactToDelete(artifact);
-    setShowDeleteConfirmation(true);
-    setDeleteResult(null);
-  };
-
-  const confirmDelete = async (): Promise<string> => {
-    if (artifactToDelete) {
-      try {
-        await onDeleteArtifact(artifactToDelete.id);
-        return `Successfully deleted artifact "${artifactToDelete.name}"`;
-      } catch (error) {
-        throw new Error(`Failed to delete artifact: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-    throw new Error("No artifact selected for deletion");
-  };
-
-  const handleDeleteResult = (result: string) => {
-    setDeleteResult(result);
-    setTimeout(() => {
-      setShowDeleteConfirmation(false);
-      setArtifactToDelete(null);
-      setDeleteResult(null);
-    }, 2000); // Close the dialog after 2 seconds
+    onDeleteArtifact(artifact);
   };
 
   return (
@@ -144,18 +117,6 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
         </svg>
         <span>Create New Artifact</span>
       </button>
-
-      {showDeleteConfirmation && artifactToDelete && (
-        <ConfirmationDialog
-          message={`Are you sure you want to delete the artifact "${artifactToDelete.name}"?`}
-          onConfirm={async () => {
-            const result = await confirmDelete();
-            handleDeleteResult(result);
-            return result;
-          }}
-          onCancel={() => setShowDeleteConfirmation(false)}
-        />
-      )}
     </div>
   );
 };

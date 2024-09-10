@@ -22,6 +22,7 @@ import { ChatSession } from "@/types/ChatSession";
 import CodeViewer from "@/components/CodeViewer";
 import ProjectShareModal from "@/components/ProjectShareModal";
 import { v4 as uuidv4 } from "uuid";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
 interface WorkspaceProps {
   projectId: string;
@@ -45,6 +46,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   );
   const [mode, setMode] = useState<"preview" | "editor">("preview");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] = useState(false);
+  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -308,37 +311,50 @@ export default App;`,
     }
   };
 
-  const handleDeleteArtifact = async (artifactId: string) => {
-    try {
-      await artifactApi.deleteArtifact(projectId, artifactId);
-      
-      setProject((prevProject) => {
-        const updatedArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactId) || [];
-        return {
-          ...prevProject!,
-          artifacts: updatedArtifacts,
-        };
-      });
+  const handleDeleteArtifact = (artifact: Artifact) => {
+    setArtifactToDelete(artifact);
+    setShowDeleteArtifactConfirmation(true);
+  };
 
-      if (selectedArtifact?.id === artifactId) {
-        // If the deleted artifact was selected, select the first available artifact or set to null
+  const confirmDeleteArtifact = async (): Promise<string> => {
+    if (artifactToDelete) {
+      try {
+        await artifactApi.deleteArtifact(projectId, artifactToDelete.id);
+        
         setProject((prevProject) => {
-          const remainingArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactId) || [];
-          const newSelectedArtifact = remainingArtifacts.length > 0 ? remainingArtifacts[0] : null;
-          setSelectedArtifact(newSelectedArtifact);
-          return prevProject;
+          const updatedArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactToDelete.id) || [];
+          return {
+            ...prevProject!,
+            artifacts: updatedArtifacts,
+          };
         });
-      }
 
-      toast.success("Artifact deleted successfully", {
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error("Error deleting artifact:", error);
-      toast.error("Failed to delete artifact", {
-        duration: 3000,
-      });
+        if (selectedArtifact?.id === artifactToDelete.id) {
+          setProject((prevProject) => {
+            const remainingArtifacts = prevProject?.artifacts?.filter((a) => a.id !== artifactToDelete.id) || [];
+            const newSelectedArtifact = remainingArtifacts.length > 0 ? remainingArtifacts[0] : null;
+            setSelectedArtifact(newSelectedArtifact);
+            return prevProject;
+          });
+        }
+
+        toast.success("Artifact deleted successfully", {
+          duration: 3000,
+        });
+
+        return "Artifact deleted successfully"; // Return a success message
+      } catch (error) {
+        console.error("Error deleting artifact:", error);
+        toast.error("Failed to delete artifact", {
+          duration: 3000,
+        });
+        return "Failed to delete artifact"; // Return an error message
+      } finally {
+        setShowDeleteArtifactConfirmation(false);
+        setArtifactToDelete(null);
+      }
     }
+    return "No artifact to delete"; // Return a message if there's no artifact to delete
   };
 
   if (isLoading) {
@@ -543,6 +559,18 @@ export default App;`,
           projectId={project.id}
           projectTitle={project.title}
         />
+      )}
+      {showDeleteArtifactConfirmation && artifactToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowDeleteArtifactConfirmation(false)}></div>
+          <div className="relative z-10">
+            <ConfirmationDialog
+              message={`Are you sure you want to delete the artifact "${artifactToDelete.name}"?`}
+              onConfirm={confirmDeleteArtifact}
+              onCancel={() => setShowDeleteArtifactConfirmation(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
