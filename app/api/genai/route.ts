@@ -31,29 +31,28 @@ export async function POST(req: Request) {
       streaming: true,
     });
 
-    const llmWithTools = bedrock.bindTools([perplexitySearchTool]);
+    const llmWithTools = bedrock; // bedrock.bindTools([perplexitySearchTool]);
 
     const stream = new ReadableStream({
       async start(controller) {
         const sendChunk = (chunk: string) => {
           controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
         };
-        
+
         const streamResponse = async (response: AsyncIterable<BaseMessageChunk>) => {
           let gathered = undefined;
 
           for await (const chunk of response) {
             gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
-            
+
             if (chunk.content) {
-              sendChunk(typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content));
-              console.log("Chunk content: ", chunk.content);
+              sendChunk(typeof chunk.content === 'string' ? JSON.stringify([{ 'index': 0, 'text': chunk.content, 'type': 'text_delta' }]) : JSON.stringify(chunk.content));
             }
           }
 
           return gathered;
         }
-        
+
         let responseStream = await llmWithTools.stream(allMessages);
         let response = await streamResponse(responseStream);
 
