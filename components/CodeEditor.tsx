@@ -4,7 +4,6 @@ import {
   useSandpack,
   useActiveCode,
   SandpackCodeEditor,
-  SandpackFileExplorer,
   SandpackLayout,
   useSandpackConsole,
 } from "@codesandbox/sandpack-react";
