@@ -95,9 +95,7 @@ function SandpackContent({
   useEffect(() => {
     const stopListening = listen((msg) => {
       console.log("msg: ", msg);
-      if(status === "creating" || status === "updating") {
-        setStatusMessage("🚀 Generating code...");
-      } else if (msg.type === "action" && msg.action === "show-error") {
+      if (msg.type === "action" && msg.action === "show-error") {
         setErrorMessage(msg.message);
         setIsFixButtonDisabled(false);
       } else if (msg.type === "dependencies") {
@@ -123,7 +121,7 @@ function SandpackContent({
     return () => {
       stopListening();
     };
-  }, [listen, statusMessage, status]);
+  }, [listen, statusMessage]);
 
   return (
     <div className="relative">
@@ -133,7 +131,7 @@ function SandpackContent({
       <SandpackLayout>
         {!isPreviewOnly && (
           <SandpackCodeEditor
-            style={{ height: "calc(80vh - 40px)", width: "50%" }}
+            style={{ height: "calc(80vh - 10px)", width: "50%" }}
             showRunButton={true}
             showInlineErrors={true}
             wrapContent={true}
@@ -145,13 +143,13 @@ function SandpackContent({
         <div
           className="relative"
           style={{
-            height: "calc(80vh - 40px)",
+            height: "calc(80vh - 10px)",
             width: isPreviewOnly ? "100%" : "50%",
           }}
         >
           <SandpackPreview
             style={{
-              height: "calc(80vh - 40px)",
+              height: "calc(80vh - 10px)",
               width: "100%"
             }}
           />
