@@ -18,6 +18,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { Artifact } from "../types/Artifact";
 import { Project } from "../types/Project"; // Assuming you have a Project type
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface CodeEditorProps {
   project: Project;
@@ -30,10 +31,12 @@ function SandpackContent({
   children,
   status,
   onFixIt,
+  onReset,
 }: {
   children: React.ReactNode;
   status: "idle" | "creating" | "updating";
   onFixIt: (errorMessage: string) => void;
+  onReset: () => void;
 }) {
   const [isPreviewOnly, setIsPreviewOnly] = useState(true);
   const [hasCompilationError, setHasCompilationError] = useState(false);
@@ -61,7 +64,7 @@ function SandpackContent({
   };
 
   const actionButtons = (
-    <div className="absolute bottom-2 left-2 z-10 flex gap-2">
+    <div className="absolute bottom-2 left-2 z-20 flex gap-2">
       <button
         onClick={() => setIsPreviewOnly(!isPreviewOnly)}
         className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2"
@@ -169,6 +172,16 @@ function SandpackContent({
         </div>
         {statusMessage === "" && actionButtons}
       </SandpackLayout>
+      <div className="absolute bottom-2 left-0 right-0 flex justify-center z-10">
+        <button
+          onClick={onReset}
+          className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button flex items-center gap-2 border border-gray-300 rounded-full px-4 py-2"
+          title="Reset Sandbox"
+        >
+          <RefreshIcon style={{ width: "16px", height: "16px" }} />
+          <span>Reset</span>
+        </button>
+      </div>
       {errorMessage && (
         <button
           onClick={handleFixIt}
@@ -193,6 +206,8 @@ export default function CodeEditor({
   selectedArtifact,
   children,
 }: CodeEditorProps) {
+  const [key, setKey] = useState(0);
+
   const normalizedDependencies = useMemo(() => {
     const allDependencies =
       project.artifacts?.flatMap((artifact) => artifact.dependencies || []) ||
@@ -237,11 +252,16 @@ export default function CodeEditor({
     console.log("errorMessage: ", errorMessage);
   };
 
+  const handleReset = () => {
+    console.log("handleReset: ", key);
+    setKey(prevKey => prevKey + 1);
+  };
+
   return (
     <div className="relative h-full w-full">
       <AnimatePresence>
         <SandpackProvider
-          // key={`${key}-${selectedArtifact.code}`}
+          key={key}
           template="react-ts"
           options={{
             externalResources: [
@@ -257,6 +277,7 @@ export default function CodeEditor({
           <SandpackContent
             status={selectedArtifact.status}
             onFixIt={handleFixIt}
+            onReset={handleReset}
           >
             {children}
           </SandpackContent>
