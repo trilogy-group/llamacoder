@@ -125,11 +125,12 @@ function SandpackContent({ children, onCodeChange }: { children: React.ReactNode
     </div>
   );
 }
-
 export default function CodeEditor({
   artifact,
   children,
 }: CodeEditorProps) {
+  const [key, setKey] = useState(0);
+
   const normalizedDependencies = useMemo(() => Array.isArray(artifact.dependencies)
     ? artifact.dependencies.reduce(
         (acc, dep) => {
@@ -141,9 +142,6 @@ export default function CodeEditor({
     : {},
   [artifact.dependencies]);
 
-  const handleCodeChange = (newCode: string) => {
-  };
-
   const sandpackFiles = useMemo(() => ({
     "/App.tsx": {
       code: artifact.code || "",
@@ -153,11 +151,19 @@ export default function CodeEditor({
     },
   }), [artifact.code]);
 
+  useEffect(() => {
+    setKey(prevKey => prevKey + 1);
+  }, [artifact]);
+
+  const handleCodeChange = (newCode: string) => {
+    // Implement code change handling if needed
+  };
+
   return (
     <div className="relative w-full h-full">
       <AnimatePresence>
         <SandpackProvider
-          key={artifact.code}
+          key={`${key}-${artifact.code}`}
           template="react-ts"
           options={{
             externalResources: [
@@ -176,3 +182,4 @@ export default function CodeEditor({
     </div>
   );
 }
+
