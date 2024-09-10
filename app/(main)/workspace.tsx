@@ -42,7 +42,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(
     null,
   );
-  const [mode, setMode] = useState<'preview' | 'editor'>('preview');
+  const [mode, setMode] = useState<"preview" | "editor">("preview");
   const [showShareModal, setShowShareModal] = useState(false);
   const router = useRouter();
 
@@ -119,7 +119,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
 
   const handleCreateArtifact = async (description: string) => {
     setShowCreateForm(false);
-    setMode('editor');
+    setMode("editor");
     try {
       if (!project) {
         throw new Error("Project is not loaded");
@@ -132,7 +132,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         },
         {
           name: "recharts",
-          version: "2.9.0",
+          version: "latest",
         },
         {
           name: "axios",
@@ -171,18 +171,18 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
           version: "latest",
         },
       ];
-  
+
       let newArtifact = {
-          name: "New Artifact",
-          code: `import React from 'react';
+        name: "New Artifact",
+        code: `import React from 'react';
           const App = () => {
             return <div></div>;
           };
           export default App;`,
-          dependencies: defaultDependencies,
-          description,
-          projectId,
-          status: "creating",
+        dependencies: defaultDependencies,
+        description,
+        projectId,
+        status: "creating",
       } as Artifact;
 
       setProject((prevProject) => ({
@@ -224,8 +224,19 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       ) => {
         for (const chunk of chunks) {
           response += chunk.text;
-          if(response.includes("</CODE>")) {
-            setMode('preview');
+          if (response.includes("</CODE>")) {
+            if(mode === "editor") {
+            newArtifact.code = response;
+            newArtifact.name = extractComponentName(response);
+            setSelectedArtifact(newArtifact);
+            setProject((prevProject) => ({
+              ...prevProject!,
+              artifacts: prevProject?.artifacts?.map((a) =>
+                a.id === newArtifact.id ? newArtifact : a,
+              ),
+            }));
+          }
+            setMode("preview");
           }
           setStreamingMessage({
             role: "assistant",
@@ -234,14 +245,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         }
       };
 
-      const { code, dependencies } = await genAiApi.generateResponse(messages, onChunk);  
+      const { code, dependencies } = await genAiApi.generateResponse(
+        messages,
+        onChunk,
+      );
       // Create a new chat session
       const newChatSession: ChatSession = {
         id: Date.now().toString(), // Generate a unique ID
         artifactId: newArtifact.id,
         messages: [
           { role: "user", text: messages[0].text },
-          { role: "assistant", text: response }
+          { role: "assistant", text: response },
         ],
         attachments: [],
         createdAt: new Date().toISOString(),
@@ -251,32 +265,35 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       };
 
       // Update the artifact with the final generated code and chat session
-  
-    const extractComponentName = (code: string): string => {
-      const match = code.match(/export default (\w+)/);
-      return match ? match[1] : "MyApp";
-    }
 
-    const componentName = extractComponentName(code);
+      const extractComponentName = (code: string): string => {
+        const match = code.match(/export default (\w+)/);
+        return match ? match[1] : "MyApp";
+      };
 
-     await artifactApi.updateArtifact(projectId, newArtifact.id, {
+      const componentName = extractComponentName(code);
+
+      await artifactApi.updateArtifact(projectId, newArtifact.id, {
         name: componentName,
-        code:  code,
+        code: code,
         dependencies: [...defaultDependencies, ...dependencies],
         status: "idle",
         chatSession: newChatSession,
       });
 
-      const updatedArtifact = await artifactApi.getArtifact(projectId, newArtifact.id);
+      const updatedArtifact = await artifactApi.getArtifact(
+        projectId,
+        newArtifact.id,
+      );
       setSelectedArtifact(updatedArtifact);
       setStreamingMessage(null);
-      setMode('preview');
+      setMode("preview");
 
       // Update the project's artifacts list
       setProject((prevProject) => ({
         ...prevProject!,
-        artifacts: prevProject?.artifacts?.map(a => 
-          a.id === updatedArtifact.id ? updatedArtifact : a
+        artifacts: prevProject?.artifacts?.map((a) =>
+          a.id === updatedArtifact.id ? updatedArtifact : a,
         ),
       }));
     } catch (error) {
@@ -371,7 +388,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   return (
     <div className="flex h-screen flex-col">
       <HeaderV2 />
-      <div className="flex flex-1 flex-col overflow-hidden" style={{ marginTop: "64px" }}>
+      <div
+        className="flex flex-1 flex-col overflow-hidden"
+        style={{ marginTop: "64px" }}
+      >
         <ProjectHeader
           projectTitle={project.title}
           projectDescription={project.description}
@@ -402,13 +422,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
             )}
             <Panel defaultSize={60} minSize={40} maxSize={100}>
               <div className="h-full">
-                {selectedArtifact && (
-                  mode === 'preview' ? (
-                    <Preview project={project} selectedArtifact={selectedArtifact} initialMode={mode} />
+                {selectedArtifact &&
+                  (mode === "preview" ? (
+                    <Preview
+                      project={project}
+                      selectedArtifact={selectedArtifact}
+                      initialMode={mode}
+                    />
                   ) : (
-                    <CodeViewer status={selectedArtifact.status} code={extractContent(streamingMessage?.text || "", "CODE") || ""} />
-                  )
-                )}
+                    <CodeViewer
+                      status={selectedArtifact.status}
+                      code={
+                        extractContent(streamingMessage?.text || "", "CODE") ||
+                        ""
+                      }
+                    />
+                  ))}
               </div>
             </Panel>
             {!isUpdateArtifactCollapsed && (
@@ -465,10 +494,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       )}
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
-            <ArtifactOverviewInputForm
-              onCancel={() => setShowCreateForm(false)}
-              onNext={handleCreateArtifact}
-            />
+          <ArtifactOverviewInputForm
+            onCancel={() => setShowCreateForm(false)}
+            onNext={handleCreateArtifact}
+          />
         </div>
       )}
       {showShareModal && (
