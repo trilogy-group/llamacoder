@@ -61,7 +61,6 @@ function SandpackContent({ children, status, onCodeChange, initialMode }: { chil
   );
 
   const { listen } = useSandpack();
-  const [isPreviewOnly, setIsPreviewOnly] = useState(true);
 
   useEffect(() => {
     onCodeChange(code);
@@ -87,7 +86,7 @@ function SandpackContent({ children, status, onCodeChange, initialMode }: { chil
     return () => {
       stopListening();
     };
-  }, [listen, status]);
+  }, [listen, status, logs]);
 
   // Add this effect to log statusMessage changes
   useEffect(() => {

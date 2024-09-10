@@ -24,8 +24,9 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   const contributors = [1, 2, 3];
 
   // Function to generate a color based on the createdBy string
-  const getColorFromString = (str: string) => {
+  const getColorFromString = (str: string | null | undefined) => {
     const colors = ['red', 'green', "yellow"];
+    if (!str) return colors[1];
     const hash = str.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
     return colors[hash % colors.length];
   };
@@ -103,7 +104,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center flex-grow">
           <div className={`w-8 h-8 bg-${projectColor}-500 rounded-full flex items-center justify-center text-white font-medium text-sm mr-3`}>
-            {project.createdBy[0].toUpperCase()}
+            {project.createdBy ? project.createdBy[0].toUpperCase() : ''}
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800">{project.title}</h3>

@@ -354,6 +354,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
           Project Not Found
         </h2>
         <p className="mb-4 text-gray-500">
+          {/* eslint-disable-next-line react/no-unescaped-entities */}
           The project you're looking for doesn't exist or has been deleted.
         </p>
         <button
