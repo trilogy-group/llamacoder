@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiCopy } from 'react-icons/fi';
 import { toast } from 'sonner';
 import axios from 'axios';
+import EditAccessModal from './EditAccessModal';
 
 interface ShareProjectModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
   const [accessLevel, setAccessLevel] = useState('viewer');
   const [isSharing, setIsSharing] = useState(false);
   const [projectUsers, setProjectUsers] = useState<ProjectUser[]>([]);
+  const [editingUser, setEditingUser] = useState<ProjectUser | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -44,10 +46,10 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           relation: 'viewer'
         }
       });
-  
+
       const editors = editorResponse.data.users;
       const viewers = viewerResponse.data.users;
-  
+
       const allUsers: ProjectUser[] = [];
       const userSet: { [key: string]: boolean } = {};
 
@@ -75,12 +77,46 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
         }
       }
 
-      console.log('allUsers', allUsers);
-  
+      console.log(allUsers);
+
       setProjectUsers(allUsers);
+
+      console.log(projectUsers);
     } catch (error) {
       console.error('Error fetching project users:', error);
       toast.error('Failed to fetch project users');
+    }
+  };
+
+  const handleEditAccess = (user: ProjectUser) => {
+    setEditingUser(user);
+  };
+
+  const handleAccessUpdate = async (email: string, newAccessLevel: string) => {
+    try {
+      const response = await axios.post('/api/projects/share', {
+        projectId,
+        email,
+        accessLevel: newAccessLevel
+      });
+
+      if (response.data.success) {
+        setProjectUsers(prevUsers =>
+          prevUsers.map(user =>
+            user.email === email
+              ? { ...user, accessLevel: newAccessLevel === 'revoke' ? 'revoked' : newAccessLevel }
+              : user
+          )
+        );
+        toast.success(`Access level for ${email} updated to ${newAccessLevel === 'revoke' ? 'revoked' : newAccessLevel}`);
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error updating access level:', error);
+      toast.error(`Failed to update access level for ${email}`);
+    } finally {
+      setEditingUser(null);
     }
   };
 
@@ -93,8 +129,10 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
         accessLevel
       });
 
-      if (response.status === 200) {
-        toast.success('Project shared successfully');
+      console.log(response.data);
+
+      if (response.data.success) {
+        toast.success(`Project shared successfully with ${email}`);
         fetchProjectUsers();
         setEmail('');
       } else {
@@ -102,7 +140,10 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
       }
     } catch (error) {
       console.error('Error sharing project:', error);
-      toast.error('Failed to share project');
+      toast.error('Failed to share project', {
+        duration: 3000,
+        position: 'top-center',
+      });
     } finally {
       setIsSharing(false);
     }
@@ -160,15 +201,27 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
         <div className="mt-4">
           <h3 className="mb-2 font-semibold">Users with access:</h3>
           <ul className="max-h-40 overflow-y-auto">
-            {projectUsers.map((user) => (
-              <li key={user.userId} className="mb-1 flex items-center justify-between">
-                <span>{user.email}</span>
-                <span className="text-sm text-gray-500">{user.accessLevel}</span>
+            {projectUsers.map((user, index) => (
+              <li key={index} className="mb-1 flex items-center justify-between">
+                <span>{typeof user === 'string' ? user : user.email}</span>
+                <button
+                  onClick={() => handleEditAccess(user)}
+                  className="ml-2 rounded bg-blue-500 px-2 py-1 text-sm text-white hover:bg-blue-600"
+                >
+                  Edit Access
+                </button>
               </li>
             ))}
           </ul>
         </div>
       </div>
+      {editingUser && (
+        <EditAccessModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onUpdateAccess={handleAccessUpdate}
+        />
+      )}
     </div>
   );
 };
