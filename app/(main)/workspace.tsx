@@ -175,10 +175,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
       let newArtifact = {
         name: "New Artifact",
         code: `import React from 'react';
-          const App = () => {
-            return <div></div>;
-          };
-          export default App;`,
+const App = () => {
+  return <div>Hello World</div>;
+};
+export default App;`,
         dependencies: defaultDependencies,
         description,
         projectId,
@@ -218,24 +218,31 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         },
       ];
 
+      const extractComponentName = (code: string): string => {
+        const match = code.match(/export default (\w+)/);
+        return match ? match[1] : "MyApp";
+      };
+
       let response = "";
+      let generatedCode = "";
       const onChunk = (
         chunks: { index: number; type: string; text: string }[],
       ) => {
         for (const chunk of chunks) {
           response += chunk.text;
           if (response.includes("</CODE>")) {
-            if(mode === "editor") {
-            newArtifact.code = response;
-            newArtifact.name = extractComponentName(response);
-            setSelectedArtifact(newArtifact);
-            setProject((prevProject) => ({
-              ...prevProject!,
-              artifacts: prevProject?.artifacts?.map((a) =>
-                a.id === newArtifact.id ? newArtifact : a,
-              ),
-            }));
-          }
+            if (generatedCode === "") {
+              generatedCode = extractContent(response, "CODE") || "";
+              newArtifact.code = generatedCode;
+              newArtifact.name = extractComponentName(response);
+              setSelectedArtifact(newArtifact);
+              setProject((prevProject) => ({
+                ...prevProject!,
+                artifacts: prevProject?.artifacts?.map((a) =>
+                  a.id === newArtifact.id ? newArtifact : a,
+                ),
+              }));
+            }
             setMode("preview");
           }
           setStreamingMessage({
@@ -262,13 +269,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         updatedAt: new Date().toISOString(),
         user: "user", // Replace with actual user ID if available
         model: "gpt-4", // Replace with the actual model used
-      };
-
-      // Update the artifact with the final generated code and chat session
-
-      const extractComponentName = (code: string): string => {
-        const match = code.match(/export default (\w+)/);
-        return match ? match[1] : "MyApp";
       };
 
       const componentName = extractComponentName(code);
