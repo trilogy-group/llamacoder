@@ -157,10 +157,16 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
+  
   const getStatusIcon = () => {
     if (artifact.status !== "idle") {
-      return <FiAlertCircle className="w-5 h-5 mr-3 text-red-500" />;
+      return (
+        <div className="w-5 h-5 mr-3 relative">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      );
     } else {
       return <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />;
     }
