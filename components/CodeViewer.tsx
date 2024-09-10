@@ -26,9 +26,9 @@ function SandpackContent({
   useEffect(() => {
     if (code === "") {
       if (status === "creating") {
-        setStatusMessage("Please wait while we create your artifact...");
+        setStatusMessage("⚙️ Please wait while we create your artifact...");
       } else if (status === "updating") {
-        setStatusMessage("Please wait while we update your artifact...");
+        setStatusMessage("⚙️ Please wait while we update your artifact...");
       }
     } else {
       setStatusMessage("");

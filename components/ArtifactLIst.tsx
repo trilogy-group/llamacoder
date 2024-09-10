@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FiBox, FiSearch, FiPackage, FiChevronLeft, FiChevronRight, FiTrash2, FiEye, FiEdit, FiMoreHorizontal, FiLoader } from "react-icons/fi";
+import { FiBox, FiSearch, FiPackage, FiChevronLeft, FiChevronRight, FiTrash2, FiEye, FiEdit, FiMoreHorizontal, FiLoader, FiAlertCircle } from "react-icons/fi";
 import { Artifact } from "@/types/Artifact";
 
 interface ArtifactListProps {
@@ -26,8 +26,13 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
     artifact.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Remove this line
-  // const otherArtifacts = filteredArtifacts.filter(artifact => artifact.id !== selectedArtifact?.id);
+  // Update this part to find the last idle artifact
+  const lastIdleArtifactIndex = filteredArtifacts.reduce((acc, artifact, index) => {
+    if (acc === -1 && artifact.status !== "idle") {
+      return index;
+    }
+    return acc;
+  }, -1);
 
   if (isCollapsed) {
     return (
@@ -73,11 +78,12 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
       <div className="flex-1 overflow-hidden border-t border-b border-gray-200 bg-gray-50 flex flex-col">
         <div className="flex-1 overflow-y-auto p-1">
           <ul className="space-y-1">
-            {filteredArtifacts.map((artifact) => (
+            {filteredArtifacts.map((artifact, index) => (
               <ArtifactItem
                 key={artifact.id}
                 artifact={artifact}
                 isSelected={artifact.id === selectedArtifact?.id}
+                isInProgress={index === lastIdleArtifactIndex}
                 onClick={() => onSelectArtifact(artifact)}
                 onDelete={(artifact) => {/* Add delete logic */}}
                 onPreview={(artifact) => {/* Add preview logic */}}
@@ -112,13 +118,14 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
 interface ArtifactItemProps {
   artifact: Artifact;
   isSelected: boolean;
+  isInProgress: boolean;
   onClick: () => void;
   onDelete: (artifact: Artifact) => void;
   onPreview: (artifact: Artifact) => void;
   onEdit: (artifact: Artifact) => void;
 }
 
-const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, onClick, onDelete, onPreview, onEdit }) => {
+const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, isInProgress, onClick, onDelete, onPreview, onEdit }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -135,7 +142,15 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, onCli
     };
   }, []);
 
-  const isInProgress = artifact.status !== "idle";
+  const getStatusIcon = () => {
+    if (isInProgress) {
+      return <FiLoader className="w-5 h-5 mr-3 text-blue-500 animate-spin" />;
+    } else if (artifact.status !== "idle") {
+      return <FiAlertCircle className="w-5 h-5 mr-3 text-red-500" />;
+    } else {
+      return <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />;
+    }
+  };
 
   return (
     <li
@@ -146,70 +161,62 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, onCli
       }`}
     >
       <div className="flex-grow flex items-center" onClick={onClick}>
-        {isInProgress ? (
-          <div className="w-5 h-5 mr-3 animate-spin">
-            <FiLoader className="w-full h-full text-blue-500" />
-          </div>
-        ) : (
-          <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />
-        )}
+        {getStatusIcon()}
         <span className="font-medium">{artifact.name}</span>
       </div>
-      {!isInProgress && (
-        <div className="relative" ref={menuRef}>
-          <button
-            className="p-1 rounded-full hover:bg-gray-200 transition-colors duration-200"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMenuOpen(!isMenuOpen);
-            }}
-          >
-            <FiMoreHorizontal className="w-4 h-4 text-gray-600" />
-          </button>
-          {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-              <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                <button
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                  role="menuitem"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(artifact);
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  <FiTrash2 className="mr-3 h-5 w-5 text-gray-400" />
-                  Delete
-                </button>
-                <button
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                  role="menuitem"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPreview(artifact);
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  <FiEye className="mr-3 h-5 w-5 text-gray-400" />
-                  Preview
-                </button>
-                <button
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                  role="menuitem"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(artifact);
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  <FiEdit className="mr-3 h-5 w-5 text-gray-400" />
-                  Edit
-                </button>
-              </div>
+      <div className="relative" ref={menuRef}>
+        <button
+          className="p-1 rounded-full hover:bg-gray-200 transition-colors duration-200"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(!isMenuOpen);
+          }}
+        >
+          <FiMoreHorizontal className="w-4 h-4 text-gray-600" />
+        </button>
+        {isMenuOpen && (
+          <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+            <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+              <button
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(artifact);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <FiTrash2 className="mr-3 h-5 w-5 text-gray-400" />
+                Delete
+              </button>
+              <button
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreview(artifact);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <FiEye className="mr-3 h-5 w-5 text-gray-400" />
+                Preview
+              </button>
+              <button
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(artifact);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <FiEdit className="mr-3 h-5 w-5 text-gray-400" />
+                Edit
+              </button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </li>
   );
 };
