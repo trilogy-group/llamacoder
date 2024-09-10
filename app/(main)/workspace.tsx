@@ -20,6 +20,7 @@ import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
 import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
 import { ChatSession } from "@/types/ChatSession";
 import CodeViewer from "@/components/CodeViewer";
+import ProjectShareModal from "@/components/ProjectShareModal";
 
 interface WorkspaceProps {
   projectId: string;
@@ -42,6 +43,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     null,
   );
   const [mode, setMode] = useState<'preview' | 'editor'>('preview');
+  const [showShareModal, setShowShareModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -85,8 +87,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   };
 
   const handleShare = () => {
-    console.log("Share clicked");
-    // Implement share functionality
+    setShowShareModal(true);
   };
 
   const handleDelete = () => {
@@ -377,6 +378,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
           onMyProjectsClick={handleMyProjectsClick}
           onShareClick={handleShare}
           onDeleteClick={handleDelete}
+          projectId={project.id}
         />
         {project.artifacts && project.artifacts.length > 0 ? (
           <PanelGroup direction="horizontal" className="flex-1">
@@ -468,6 +470,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
               onNext={handleCreateArtifact}
             />
         </div>
+      )}
+      {showShareModal && (
+        <ProjectShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          projectId={project.id}
+          projectTitle={project.title}
+        />
       )}
     </div>
   );

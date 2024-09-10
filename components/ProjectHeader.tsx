@@ -6,8 +6,9 @@ interface ProjectHeaderProps {
   projectTitle: string;
   projectDescription: string;
   onMyProjectsClick: () => void;
-  onShareClick: () => void;
+  onShareClick: (projectId: string) => void;
   onDeleteClick: () => void;
+  projectId: string;
 }
 
 const ProjectHeader: React.FC<ProjectHeaderProps> = ({
@@ -15,7 +16,8 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   projectDescription,
   onMyProjectsClick,
   onShareClick,
-  onDeleteClick
+  onDeleteClick,
+  projectId
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
             <button
               onClick={() => {
-                onShareClick();
+                onShareClick(projectId);
                 setShowMenu(false);
               }}
               className="w-full text-left px-4 py-2 hover:bg-indigo-50 flex items-center"

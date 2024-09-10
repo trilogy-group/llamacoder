@@ -111,14 +111,31 @@ export async function GET(request: Request) {
 
       return NextResponse.json(project);
     } else {
+
       // Fetch all projects the user has access to
-      const response = await fgaClient.listObjects({
+      const ownedProjects = await fgaClient.listObjects({
         user: `user:${session.user.sub}`,
         relation: 'can_view',
         type: 'project',
       });
 
-      const projectIds = response.objects.map(obj => obj.split(':')[1]);
+      const sharedViewProjects = await fgaClient.listObjects({
+        user: `user:${session.user.email}`,
+        relation: 'viewer',
+        type: 'project',
+      });
+
+      const sharedEditProjects = await fgaClient.listObjects({
+        user: `user:${session.user.email}`,
+        relation: 'editor',
+        type: 'project',
+      });
+
+      const projectIds = Array.from(new Set([
+        ...ownedProjects.objects.map(obj => obj.split(':')[1]),
+        ...sharedViewProjects.objects.map(obj => obj.split(':')[1]),
+        ...sharedEditProjects.objects.map(obj => obj.split(':')[1])
+      ]));
 
       const projects: Project[] = [];
       for (const projectId of projectIds) {
