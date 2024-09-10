@@ -48,11 +48,11 @@ const Alert: React.FC<AlertProps> = ({ type, message, duration = 5000, onClose }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <div className={`rounded-2xl shadow-lg p-4 max-w-sm border-l-4 ${getAlertStyles()}`}>
+    <div className="fixed bottom-4 right-4 z-50">
+      <div className={`rounded-lg shadow-lg p-3 max-w-sm border-l-4 ${getAlertStyles()}`}>
         <div className="flex items-center">
-          <span className="text-2xl mr-3">{getIcon()}</span>
-          <p className="text-sm font-medium">{message}</p>
+          <span className="text-xl mr-2">{getIcon()}</span>
+          <p className="text-xs font-medium">{message}</p>
         </div>
       </div>
     </div>
