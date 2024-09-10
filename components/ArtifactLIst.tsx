@@ -9,7 +9,8 @@ interface ArtifactListProps {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   onCreateArtifact: () => void;
-  onDeleteArtifact: (artifact: Artifact) => void; // Change this line
+  onDeleteArtifact: (artifact: Artifact) => void;
+  onArtifactHover: (artifact: Artifact | null, event: React.MouseEvent) => void;
 }
 
 const ArtifactList: React.FC<ArtifactListProps> = ({
@@ -20,6 +21,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
   setIsCollapsed,
   onCreateArtifact,
   onDeleteArtifact,
+  onArtifactHover,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -28,7 +30,6 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
     artifact.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Update this part to find the last idle artifact
   const lastIdleArtifactIndex = filteredArtifacts.reduce((acc, artifact, index) => {
     if (acc === -1 && artifact.status !== "idle") {
       return index;
@@ -84,16 +85,16 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
       <div className="flex-1 overflow-hidden border-t border-b border-gray-200 bg-gray-50 flex flex-col">
         <div className="flex-1 overflow-y-auto p-1">
           <ul className="space-y-1">
-            {filteredArtifacts.map((artifact, index) => (
+            {filteredArtifacts.map((artifact) => (
               <ArtifactItem
                 key={artifact.id}
                 artifact={artifact}
                 isSelected={artifact.id === selectedArtifact?.id}
-                isInProgress={index === lastIdleArtifactIndex}
                 onClick={() => onSelectArtifact(artifact)}
                 onDelete={handleDeleteArtifact}
                 onPreview={(artifact) => {/* Add preview logic */}}
                 onEdit={(artifact) => {/* Add edit logic */}}
+                onHover={onArtifactHover}
               />
             ))}
           </ul>
@@ -124,16 +125,25 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
 interface ArtifactItemProps {
   artifact: Artifact;
   isSelected: boolean;
-  isInProgress: boolean;
   onClick: () => void;
   onDelete: (artifact: Artifact) => void;
   onPreview: (artifact: Artifact) => void;
   onEdit: (artifact: Artifact) => void;
+  onHover: (artifact: Artifact | null, event: React.MouseEvent) => void;
 }
 
-const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, isInProgress, onClick, onDelete, onPreview, onEdit }) => {
+const ArtifactItem: React.FC<ArtifactItemProps> = ({
+  artifact,
+  isSelected,
+  onClick,
+  onDelete,
+  onPreview,
+  onEdit,
+  onHover,
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const itemRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -149,9 +159,7 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, isInP
   }, []);
 
   const getStatusIcon = () => {
-    if (isInProgress) {
-      return <FiLoader className="w-5 h-5 mr-3 text-blue-500 animate-spin" />;
-    } else if (artifact.status !== "idle") {
+    if (artifact.status !== "idle") {
       return <FiAlertCircle className="w-5 h-5 mr-3 text-red-500" />;
     } else {
       return <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />;
@@ -160,13 +168,17 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, isInP
 
   return (
     <li
-      className={`p-3 rounded-md cursor-pointer transition-all duration-300 flex items-center ${
+      ref={itemRef}
+      className={`p-3 rounded-md cursor-pointer transition-all duration-300 flex items-center relative ${
         isSelected
           ? "bg-blue-100 text-blue-700"
           : "bg-white/60 text-gray-700 hover:bg-gray-100"
       }`}
+      onMouseEnter={(e) => onHover(artifact, e)}
+      onMouseLeave={(e) => onHover(null, e)}
+      onClick={onClick}
     >
-      <div className="flex-grow flex items-center overflow-hidden" onClick={onClick}>
+      <div className="flex-grow flex items-center overflow-hidden">
         {getStatusIcon()}
         <span className="font-medium truncate max-w-[70%]">{artifact.name}</span>
       </div>

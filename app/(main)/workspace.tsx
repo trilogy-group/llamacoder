@@ -23,6 +23,7 @@ import CodeViewer from "@/components/CodeViewer";
 import ProjectShareModal from "@/components/ProjectShareModal";
 import { v4 as uuidv4 } from "uuid";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
+import ArtifactInfoCard from "@/components/ArtifactInfoCard";
 
 interface WorkspaceProps {
   projectId: string;
@@ -48,6 +49,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] = useState(false);
   const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
+  const [hoveredArtifact, setHoveredArtifact] = useState<Artifact | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const router = useRouter();
 
   useEffect(() => {
@@ -316,6 +319,11 @@ export default App;`,
     setShowDeleteArtifactConfirmation(true);
   };
 
+  const handleArtifactHover = (artifact: Artifact | null, event: React.MouseEvent) => {
+    setHoveredArtifact(artifact);
+    setMousePosition({ x: event.clientX, y: event.clientY });
+  };
+
   const confirmDeleteArtifact = async (): Promise<string> => {
     if (artifactToDelete) {
       try {
@@ -460,14 +468,15 @@ export default App;`,
               collapsible={true}
             >
               <ArtifactList
-                artifacts={project.artifacts || []}
-                onSelectArtifact={handleSelectArtifact}
-                selectedArtifact={selectedArtifact}
-                isCollapsed={isArtifactListCollapsed}
-                setIsCollapsed={setIsArtifactListCollapsed}
-                onCreateArtifact={() => setShowCreateForm(true)}
-                onDeleteArtifact={handleDeleteArtifact}
-              />
+                  artifacts={project.artifacts || []}
+                  onSelectArtifact={handleSelectArtifact}
+                  selectedArtifact={selectedArtifact}
+                  isCollapsed={isArtifactListCollapsed}
+                  setIsCollapsed={setIsArtifactListCollapsed}
+                  onCreateArtifact={() => setShowCreateForm(true)}
+                  onDeleteArtifact={handleDeleteArtifact}
+                  onArtifactHover={handleArtifactHover}
+                />
             </Panel>
             {!isArtifactListCollapsed && (
               <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />
@@ -571,6 +580,13 @@ export default App;`,
             />
           </div>
         </div>
+      )}
+      {hoveredArtifact && (
+        <ArtifactInfoCard
+          artifact={hoveredArtifact}
+          position={mousePosition}
+          onClose={() => setHoveredArtifact(null)}
+        />
       )}
     </div>
   );
