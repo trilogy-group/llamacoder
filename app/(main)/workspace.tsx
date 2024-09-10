@@ -214,7 +214,7 @@ export default App;`,
     setSelectedArtifact(newArtifact);
     setProject((prevProject) => ({
       ...prevProject!,
-      artifacts: [...prevProject?.artifacts || [], newArtifact],
+      artifacts: [...(prevProject?.artifacts || []), newArtifact],
     }));
 
     try {
@@ -270,7 +270,7 @@ export default App;`,
         messages,
         onChunk,
       );
-      
+
       // Create a new chat session
       const newChatSession: ChatSession = {
         id: Date.now().toString(), // Generate a unique ID
@@ -369,11 +369,11 @@ export default App;`,
             return prevProject;
           });
         }
-        showAlert('success', 'Artifact deleted successfully');
+        showAlert("success", "Artifact deleted successfully");
         return "Artifact deleted successfully"; // Return a success message
       } catch (error) {
         console.error("Error deleting artifact:", error);
-        showAlert('error', 'Failed to delete artifact');
+        showAlert("error", "Failed to delete artifact");
         return "Failed to delete artifact"; // Return an error message
       } finally {
         setShowDeleteArtifactConfirmation(false);
