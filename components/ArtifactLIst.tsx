@@ -166,9 +166,9 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({ artifact, isSelected, isInP
           : "bg-white/60 text-gray-700 hover:bg-gray-100"
       }`}
     >
-      <div className="flex-grow flex items-center" onClick={onClick}>
+      <div className="flex-grow flex items-center overflow-hidden" onClick={onClick}>
         {getStatusIcon()}
-        <span className="font-medium">{artifact.name}</span>
+        <span className="font-medium truncate max-w-[70%]">{artifact.name}</span>
       </div>
       <div className="relative" ref={menuRef}>
         <button
