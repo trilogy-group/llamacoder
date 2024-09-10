@@ -351,7 +351,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   return (
     <div className="flex h-screen flex-col">
       <HeaderV2 />
-      <div className="flex flex-1 flex-col" style={{ marginTop: "64px" }}>
+      <div className="flex flex-1 flex-col overflow-hidden" style={{ marginTop: "64px" }}>
         <ProjectHeader
           projectTitle={project.title}
           projectDescription={project.description}
@@ -360,7 +360,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
           onDeleteClick={handleDelete}
         />
         {project.artifacts && project.artifacts.length > 0 ? (
-          <PanelGroup direction="horizontal" className="h-full">
+          <PanelGroup direction="horizontal" className="flex-1">
             <Panel
               defaultSize={20}
               minSize={0}
