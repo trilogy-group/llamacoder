@@ -25,8 +25,8 @@ export async function POST(request: Request) {
       id: uuidv4(),
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
-      createdBy: session.user.sub,
-      updatedBy: session.user.sub,
+      createdBy: session.user.email,
+      updatedBy: session.user.email,
     };
     
     const dbProject = {
@@ -188,7 +188,7 @@ export async function PUT(request: Request) {
     const expressionAttributeValues = {
       ...Object.entries(updateData).reduce((acc, [key, value]) => ({ ...acc, [`:${key}`]: value }), {}),
       ':updatedAt': now.toISOString(),
-      ':updatedBy': session.user.sub,
+      ':updatedBy': session.user.email,
     };
 
     await ddbClient.update(TABLE_NAME, 

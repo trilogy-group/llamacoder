@@ -91,11 +91,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
         }
       }
 
-      console.log(allUsers);
-
       setProjectUsers(allUsers);
-
-      console.log(projectUsers);
     } catch (error) {
       console.error('Error fetching project users:', error);
       toast.error('Failed to fetch project users');
