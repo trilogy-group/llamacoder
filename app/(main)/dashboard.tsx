@@ -12,9 +12,9 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Toaster, toast } from "sonner";
-import { projectApi } from "@/utils/apiClients/Project";
+import Alert from "@/components/Alert";
 import { CircularProgress } from "@mui/material";
+import { projectApi } from "@/utils/apiClients/Project";
 
 const Dashboard: React.FC = () => {
   const { user, error: userError, isLoading: userLoading } = useUser();
@@ -23,6 +23,7 @@ const Dashboard: React.FC = () => {
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [alert, setAlert] = useState<{ type: 'error' | 'info' | 'warning' | 'success'; message: string } | null>(null);
 
   const router = useRouter();
 
@@ -45,16 +46,13 @@ const Dashboard: React.FC = () => {
       const createdProject = await projectApi.createProject(newProject);
       dispatchProjectsUpdate([...projects, createdProject]);
       setShowCreateForm(false);
+      router.push(`/workspaces/${createdProject.id}`);
     } catch (error) {
       console.error("Error creating project:", error);
-      toast.error("Failed to create project. Please try again.");
+      setAlert({ type: 'error', message: "Failed to create project. Please try again." });
     } finally {
       setIsCreatingProject(false);
     }
-  };
-
-  const handleOpenProject = (projectId: string) => {
-    router.push(`/workspaces/${projectId}`);
   };
 
   const handleShareClick = (projectId: string) => {
@@ -65,10 +63,11 @@ const Dashboard: React.FC = () => {
   const handleProjectDeleted = async (deletedProjectId: string) => {
     try {
       await projectApi.deleteProject(deletedProjectId);
+      setAlert({ type: 'success', message: "Project deleted successfully." });
       dispatchProjectsUpdate(projects.filter(project => project.id !== deletedProjectId));
     } catch (error) {
       console.error("Error deleting project:", error);
-      toast.error("Failed to delete project. Please try again.");
+      setAlert({ type: 'error', message: "Failed to delete project. Please try again." });
     }
   };
 
@@ -90,13 +89,15 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
-
-  if (userError) return <div>{userError.message}</div>;
+  
+  if (userError) {
+    router.push("/api/auth/login");
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderV2 user={user} />
-      <main className="mt-16 w-full flex-1">
+      <main className="mt-24 w-full flex-1">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {projects.length > 0 ? (
             <>
@@ -111,8 +112,6 @@ const Dashboard: React.FC = () => {
               </div>
               <ProjectList
                 projects={projects}
-                onCreateProject={() => setShowCreateForm(true)}
-                onOpenProject={handleOpenProject}
                 onProjectDeleted={handleProjectDeleted}
                 onShareClick={handleShareClick}
               />
@@ -128,9 +127,9 @@ const Dashboard: React.FC = () => {
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
           {isCreatingProject ? (
-            <div className="flex flex-col items-center rounded-lg bg-white p-6">
-              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
-              <p className="text-gray-600">Creating your project...</p>
+            <div className="flex flex-col items-center justify-center rounded-2xl bg-white p-20 shadow-lg">
+              <CircularProgress size={80} thickness={4} className="mb-6" />
+              <p className="text-xl text-gray-800 font-medium">Creating your project...</p>
             </div>
           ) : (
             <ProjectOverviewInputForm
@@ -140,7 +139,13 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       )}
-      <Toaster position="bottom-right" />
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       {showShareModal && selectedProjectId && (
       <ProjectShareModal
         isOpen={showShareModal}

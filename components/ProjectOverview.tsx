@@ -7,6 +7,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import logo from './../public/logo.png';
+import CircularProgress from '@mui/material/CircularProgress';
 
 interface ProjectOverviewProps {
   project: Project;
@@ -18,6 +19,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   const router = useRouter();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
 
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
@@ -39,6 +41,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   };
 
   const handleOpenProject = () => {
+    setIsOpeningWorkspace(true);
     router.push(`/workspaces/${project.id}`);
   };
 
@@ -86,7 +89,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   };
 
   return (
-    <div className="bg-white/60 backdrop-blur-md rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] bg-gradient-to-br from-blue-50/80 to-white/70">
+    <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] bg-gradient-to-br from-blue-50/80 to-white/70 flex flex-col h-full">
       <div className="relative aspect-video mb-4 bg-gray-100 rounded-lg overflow-hidden">
         {project.thumbnail ? (
           <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover" />
@@ -135,7 +138,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
         ))}
       </div>
 
-      <div className="flex justify-between items-center mt-4">
+      <div className="flex justify-between items-center mt-auto">
         <div className="flex space-x-2">
           <Tooltip content="Share project">
             <button
@@ -172,9 +175,19 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
           <button 
             onClick={handleOpenProject}
             className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2"
+            disabled={isOpeningWorkspace}
           >
-            <FiEdit3 className="w-5 h-5" />
-            <span className="text-sm font-medium">Open</span>
+            {isOpeningWorkspace ? (
+              <>
+              <CircularProgress size={20} color="inherit" />
+              <span className="text-sm font-medium">Opening...</span>
+              </>
+            ) : (
+              <>
+                <FiEdit3 className="w-5 h-5" />
+                <span className="text-sm font-medium">Open</span>
+              </>
+            )}
           </button>
         </Tooltip>
       </div>
