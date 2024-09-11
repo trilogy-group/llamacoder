@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, memo, useEffect, useRef, useCallback, useMemo, ReactNode } from "react";
 import { Artifact } from "../types/Artifact";
 import { ChatSession } from "../types/ChatSession";
 import { FiCopy, FiLoader } from "react-icons/fi";
@@ -16,16 +16,27 @@ interface ChatHistoryProps {
   streamingMessage: Message | null;
 }
 
-const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession, streamingMessage }) => {
+interface RenderMessageContentProps {
+  renderMessageContent: (text: string, messageId: string, isStreaming?: boolean) => ReactNode;
+}
+
+const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, streamingMessage }) => {
   const [hoveredMessage, setHoveredMessage] = useState<number | null>(null);
   const [hoveredCodeBlock, setHoveredCodeBlock] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const streamingMessageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatSession.messages, streamingMessage]);
+
+  useEffect(() => {
+    if (streamingMessageRef.current) {
+      streamingMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [streamingMessage]);
 
   const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
@@ -119,47 +130,51 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession, stream
     );
   }, []);
 
-  const renderMessageContent = useCallback((text: string, messageId: string, isStreaming: boolean = false) => {
+  const renderMessageContent = useCallback((text: string, messageId: string, isStreaming: boolean = false): ReactNode => {
     const parts = text.split(/(<CODE>[\s\S]*?<\/CODE>|<ANALYSIS>[\s\S]*?<\/ANALYSIS>|<VERIFICATION>[\s\S]*?<\/VERIFICATION>|<EXTRA_LIBRARIES>[\s\S]*?<\/EXTRA_LIBRARIES>)/);
   
-    return parts.map((part, index) => {
-      if (!part.trim()) return null;
+    return (
+      <React.Fragment>
+        {parts.map((part, index) => {
+          if (!part.trim()) return null;
 
-      if (part.startsWith('<CODE>') && part.endsWith('</CODE>')) {
-        return renderCodeBlock(part.slice(6, -7).trim(), `${messageId}-code-${index}`);
-      } else if (part.startsWith('<ANALYSIS>') && part.endsWith('</ANALYSIS>')) {
-        return renderSpecialBlock(part.slice(10, -11).trim(), 'Analysis', messageId, index, '🔬', 'purple');
-      } else if (part.startsWith('<VERIFICATION>') && part.endsWith('</VERIFICATION>')) {
-        return renderSpecialBlock(part.slice(14, -15).trim(), 'Verification', messageId, index, '✅', 'green');
-      } else if (part.startsWith('<EXTRA_LIBRARIES>') && part.endsWith('</EXTRA_LIBRARIES>')) {
-        return renderCodeBlock(part.slice(17, -18).trim(), `${messageId}-libraries-${index}`, 'bash');
-      }
+          if (part.startsWith('<CODE>') && part.endsWith('</CODE>')) {
+            return renderCodeBlock(part.slice(6, -7).trim(), `${messageId}-code-${index}`);
+          } else if (part.startsWith('<ANALYSIS>') && part.endsWith('</ANALYSIS>')) {
+            return renderSpecialBlock(part.slice(10, -11).trim(), 'Analysis', messageId, index, '🔬', 'purple');
+          } else if (part.startsWith('<VERIFICATION>') && part.endsWith('</VERIFICATION>')) {
+            return renderSpecialBlock(part.slice(14, -15).trim(), 'Verification', messageId, index, '✅', 'green');
+          } else if (part.startsWith('<EXTRA_LIBRARIES>') && part.endsWith('</EXTRA_LIBRARIES>')) {
+            return renderCodeBlock(part.slice(17, -18).trim(), `${messageId}-libraries-${index}`, 'bash');
+          }
 
-      if (isStreaming) {
-        const match = part.match(/<(CODE|ANALYSIS|VERIFICATION|EXTRA_LIBRARIES)>/);
-        if (match) {
-          const type = match[1];
+          if (isStreaming) {
+            const match = part.match(/<(CODE|ANALYSIS|VERIFICATION|EXTRA_LIBRARIES)>/);
+            if (match) {
+              const type = match[1];
+              return (
+                <React.Fragment key={`${messageId}-streaming-${index}`}>
+                  <Markdown remarkPlugins={[remarkGfm]} className="text-xs">
+                    {part.slice(0, match.index).trim()}
+                  </Markdown>
+                  {renderStreamingIndicator(type)}
+                </React.Fragment>
+              );
+            }
+          }
+
           return (
-            <React.Fragment key={`${messageId}-streaming-${index}`}>
-              <Markdown remarkPlugins={[remarkGfm]} className="text-xs">
-                {part.slice(0, match.index).trim()}
-              </Markdown>
-              {renderStreamingIndicator(type)}
-            </React.Fragment>
+            <Markdown
+              key={`${messageId}-${index}`}
+              remarkPlugins={[remarkGfm]}
+              className="text-xs"
+            >
+              {part.trim()}
+            </Markdown>
           );
-        }
-      }
-
-      return (
-        <Markdown
-          key={`${messageId}-${index}`}
-          remarkPlugins={[remarkGfm]}
-          className="text-xs"
-        >
-          {part.trim()}
-        </Markdown>
-      );
-    }).filter(Boolean);
+        })}
+      </React.Fragment>
+    );
   }, [renderCodeBlock, renderSpecialBlock, renderStreamingIndicator]);
 
   const renderAttachments = useCallback((attachments: Attachment[], isUserMessage: boolean) => {
@@ -176,56 +191,108 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession, stream
     );
   }, []);
 
+  const renderedMessages = useMemo(() => {
+    return chatSession.messages.map((message, index) => (
+      <MessageItem
+        key={`${message.role}-${index}`}
+        message={message}
+        index={index}
+        hoveredMessage={hoveredMessage}
+        setHoveredMessage={setHoveredMessage}
+        renderMessageContent={renderMessageContent}
+        renderAttachments={renderAttachments}
+        copyToClipboard={copyToClipboard}
+      />
+    ));
+  }, [chatSession.messages, hoveredMessage, renderMessageContent, renderAttachments, copyToClipboard]);
+
   return (
     <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
-      {chatSession.messages.map((message, index) => (
-        <div
-          key={index}
-          className={`w-full rounded-lg shadow-sm relative ${
-            message.role === "user" 
-              ? "bg-gray-50 hover:border-blue-500" 
-              : "bg-blue-50 hover:border-green-500"
-          } ${
-            hoveredMessage === index ? "border" : "border border-transparent"
-          } transition-colors duration-200`}
-          onMouseEnter={() => setHoveredMessage(index)}
-          onMouseLeave={() => setHoveredMessage(null)}
-        >
-          <div className="flex flex-col p-3">
-            {message.attachments && message.attachments.length > 0 && renderAttachments(message.attachments, message.role === "user")}
-            <div className="overflow-y-auto">
-              <div className="text-xs text-gray-800 break-words">
-                {renderMessageContent(message.text, index.toString())}
-              </div>
-            </div>
-          </div>
-          {hoveredMessage === index && (
-            <button
-              onClick={() => copyToClipboard(message.text)}
-              className="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded-md opacity-50 hover:opacity-100 transition-opacity duration-200"
-            >
-              <FiCopy size={14} />
-            </button>
-          )}
+      {streamingMessage ? (
+        <div ref={streamingMessageRef}>
+          <StreamingMessage
+            message={streamingMessage}
+            renderMessageContent={renderMessageContent}
+          />
         </div>
-      ))}
-      
-      {streamingMessage && (
-        <div
-          key="streaming-message"
-          className={`w-full rounded-lg shadow-sm relative bg-blue-50 border border-transparent transition-colors duration-200`}
-        >
-          <div className="flex flex-col">
-            <div className="p-3 overflow-y-auto">
-              <div className="text-xs text-gray-800 break-words">
-                {renderMessageContent(streamingMessage.text, 'streaming-message', true)}
-              </div>
-            </div>
-          </div>
-        </div>
+      ) : (
+        renderedMessages
       )}
     </div>
   );
-};
+});
+
+interface MessageItemProps {
+  message: Message;
+  index: number;
+  hoveredMessage: number | null;
+  setHoveredMessage: React.Dispatch<React.SetStateAction<number | null>>;
+  renderMessageContent: (text: string, messageId: string, isStreaming?: boolean) => ReactNode;
+  renderAttachments: (attachments: Attachment[], isUserMessage: boolean) => ReactNode | null;
+  copyToClipboard: (text: string) => void;
+}
+
+const MessageItem: React.FC<MessageItemProps> = memo(({
+  message,
+  index,
+  hoveredMessage,
+  setHoveredMessage,
+  renderMessageContent,
+  renderAttachments,
+  copyToClipboard
+}) => {
+  return (
+    <div
+      className={`w-full rounded-lg shadow-sm relative ${
+        message.role === "user" 
+          ? "bg-gray-50 hover:border-blue-500" 
+          : "bg-blue-50 hover:border-green-500"
+      } ${
+        hoveredMessage === index ? "border" : "border border-transparent"
+      } transition-colors duration-200`}
+      onMouseEnter={() => setHoveredMessage(index)}
+      onMouseLeave={() => setHoveredMessage(null)}
+    >
+      <div className="flex flex-col p-3">
+        {message.attachments && message.attachments.length > 0 && renderAttachments(message.attachments, message.role === "user")}
+        <div className="overflow-y-auto">
+          <div className="text-xs text-gray-800 break-words">
+            {renderMessageContent(message.text, index.toString())}
+          </div>
+        </div>
+      </div>
+      {hoveredMessage === index && (
+        <button
+          onClick={() => copyToClipboard(message.text)}
+          className="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded-md opacity-50 hover:opacity-100 transition-opacity duration-200"
+        >
+          <FiCopy size={14} />
+        </button>
+      )}
+    </div>
+  );
+});
+
+const StreamingMessage: React.FC<{ message: Message } & RenderMessageContentProps> = memo(({ message, renderMessageContent }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [message.text]);
+
+  return (
+    <div className="w-full rounded-lg shadow-sm relative bg-blue-50 border border-transparent transition-colors duration-200">
+      <div className="flex flex-col">
+        <div ref={contentRef} className="p-3 overflow-y-auto max-h-[300px]">
+          <div className="text-xs text-gray-800 break-words">
+            {renderMessageContent(message.text, 'streaming-message', true)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default React.memo(ChatHistory);

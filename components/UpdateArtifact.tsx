@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ChatHistory from "./ChatHistory";
 import InputForm from "./InputForm";
 import ArtifactInfo from "./ArtifactInfo"; // Add this import
@@ -6,30 +6,34 @@ import { Artifact } from "../types/Artifact";
 import { Message } from "../types/Message";
 import { ChatSession } from "../types/ChatSession";
 import { FiLoader } from "react-icons/fi"; // Add this import
+import { Attachment } from "../types/Attachment";
 
 interface UpdateArtifactProps {
   artifact: Artifact;
   streamingMessage: Message | null;
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
+  onUpdateArtifact: (chatSession: ChatSession, artifact: Artifact) => void;
 }
 
-const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMessage, isCollapsed, setIsCollapsed }) => {
+const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ 
+  artifact, 
+  streamingMessage, 
+  isCollapsed, 
+  setIsCollapsed,
+  onUpdateArtifact
+}) => {
   const [chatSession, setChatSession] = useState<ChatSession>(() => {
-    if (artifact.chatSession) {
-      return artifact.chatSession;
-    } else {
-      return {
-        id: Date.now().toString(),
-        artifactId: artifact.id,
-        messages: [],
-        attachments: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        user: "current_user", // Replace with actual user info
-        model: "default_model", // Replace with actual model info
-      };
-    }
+    return artifact.chatSession || {
+      id: Date.now().toString(),
+      artifactId: artifact.id,
+      messages: [],
+      attachments: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      user: "current_user",
+      model: "default_model",
+    };
   });
 
   useEffect(() => {
@@ -38,32 +42,22 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
     }
   }, [artifact.chatSession]);
 
-  const handleSubmit = (text: string) => {
+  const handleSubmit = useCallback((text: string, attachments: Attachment[]) => {
     if (text.trim()) {
       const newMessage: Message = {
         text: text,
         role: "user",
+        attachments: attachments,
       };
-      setChatSession((prev) => ({
-        ...prev,
-        messages: [...prev.messages, newMessage],
+      const updatedSession = {
+        ...chatSession,
+        messages: [...chatSession.messages, newMessage],
         updatedAt: new Date().toISOString(),
-      }));
-      
-      // Simulated assistant response
-      setTimeout(() => {
-        const assistantMessage: Message = {
-          text: "Updated message",
-          role: "assistant",
-        };
-        setChatSession((prev) => ({
-          ...prev,
-          messages: [...prev.messages, assistantMessage],
-          updatedAt: new Date().toISOString(),
-        }));
-      }, 1000);
+      };
+      setChatSession(updatedSession);
+      onUpdateArtifact(updatedSession, artifact);
     }
-  };
+  }, [chatSession, artifact, onUpdateArtifact]);
 
   const renderContent = () => {
     if (!streamingMessage && (artifact.status === "creating" || artifact.status === "updating")) {
@@ -103,4 +97,4 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
   );
 };
 
-export default UpdateArtifact;
+export default React.memo(UpdateArtifact);

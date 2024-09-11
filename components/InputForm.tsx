@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FiPlus, FiSend } from "react-icons/fi";
 import AttachmentList from "./AttachmentList";
 import ModelSelector from "./ModelSelector";
@@ -11,7 +11,7 @@ interface InputFormProps {
   isEmpty: boolean;
 }
 
-const InputForm: React.FC<InputFormProps> = ({ artifact, onSubmit, isEmpty }) => {
+const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, isEmpty }) => {
   const [inputMessage, setInputMessage] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ const InputForm: React.FC<InputFormProps> = ({ artifact, onSubmit, isEmpty }) =>
     }
   }, [inputMessage]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (inputMessage.trim()) {
       onSubmit(inputMessage, attachments);
@@ -67,7 +67,7 @@ const InputForm: React.FC<InputFormProps> = ({ artifact, onSubmit, isEmpty }) =>
     } else {
       setError("Please enter a message before sending.");
     }
-  };
+  }, [inputMessage, attachments, onSubmit]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputMessage(e.target.value);
@@ -131,6 +131,6 @@ const InputForm: React.FC<InputFormProps> = ({ artifact, onSubmit, isEmpty }) =>
       )}
     </form>
   );
-};
+});
 
 export default InputForm;

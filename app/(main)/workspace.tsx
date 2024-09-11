@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import HeaderV2 from "@/components/HeaderV2";
 import ProjectHeader from "@/components/ProjectHeader";
 import ArtifactList from "@/components/ArtifactLIst";
@@ -32,7 +32,7 @@ interface WorkspaceProps {
   projectId: string;
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
+const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
@@ -150,6 +150,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     setShowDeleteConfirmation(false);
   };
 
+  const extractComponentName = (code: string): string => {
+    const match = code.match(/export default (\w+)/);
+    return match ? match[1] : "MyApp";
+  };
+
   const handleCreateArtifact = async (description: string, instructions: string, attachments: Attachment[], callback: () => void) => {
     console.log("Creating artifact with description:", description);
     console.log("Creating artifact with instructions:", instructions);
@@ -227,11 +232,6 @@ ${instructions}
           attachments: attachments,
         },
       ];
-
-      const extractComponentName = (code: string): string => {
-        const match = code.match(/export default (\w+)/);
-        return match ? match[1] : "MyApp";
-      };
 
       let response = "";
       let generatedCode = "";
@@ -369,6 +369,103 @@ ${instructions}
     }
     return "No artifact to delete"; // Return a message if there's no artifact to delete
   };
+
+  const handleUpdateArtifact = useCallback(async (chatSession: ChatSession, artifact: Artifact) => {
+    try {
+      // Update the project state with the new chat session
+      updateProjectAndArtifact(
+        (prevProject) => ({
+          ...prevProject!,
+          artifacts: prevProject?.artifacts?.map((a) =>
+            a.id === artifact.id ? { ...a, status: "updating", chatSession } : a
+          ) || [],
+        }),
+        { ...artifact, status: "updating", chatSession } as Artifact
+      );
+      setMode("editor");
+      let response = "";
+      let generatedCode = "";
+      const onChunk = (
+        chunks: { index: number; type: string; text: string }[]
+      ) => {
+        for (const chunk of chunks) {
+          response += chunk.text;
+          if (response.includes("</CODE>")) {
+            if (generatedCode === "") {
+              generatedCode = extractContent(response, "CODE") || "";
+              artifact.code = generatedCode;
+              artifact.name = extractComponentName(generatedCode);
+              updateProjectAndArtifact(
+                (prevProject) => ({
+                  ...prevProject!,
+                  artifacts: prevProject?.artifacts?.map((a) =>
+                    a.id === artifact.id ? artifact : a
+                  ) || [],
+                }),
+                artifact
+              );
+            }
+            setMode("preview");
+          }
+          setStreamingMessage({
+            role: "assistant",
+            text: response,
+          });
+        }
+      };
+
+      console.log("Generating response with messages:", chatSession.messages);
+      const { code, dependencies: extractedDependencies } = await genAiApi.generateResponse(
+        chatSession.messages,
+        onChunk
+      );
+
+      console.log("Generated code:", code);
+      console.log("Dependencies:", extractedDependencies);
+      console.log("Response:", response);
+
+      const updatedChatSession = {
+        ...chatSession,
+        messages: [...chatSession.messages, { role: "assistant", text: response }],
+      } as ChatSession;
+
+      const componentName = extractComponentName(code);
+
+      const updatedArtifact = {
+        ...artifact,
+        name: componentName,
+        code: code,
+        dependencies: [...defaultDependencies, ...extractedDependencies, artifact.dependencies],
+        status: "idle",
+        chatSession: updatedChatSession,
+      } as Artifact;
+
+      updateProjectAndArtifact(
+        (prevProject) => ({
+          ...prevProject!,
+          artifacts: prevProject?.artifacts?.map((a) =>
+            a.id === updatedArtifact.id ? updatedArtifact : a
+          ) || [],
+        }),
+        updatedArtifact
+      );
+      setStreamingMessage(null);
+      setMode("preview");
+
+      await artifactApi.updateArtifact(projectId, updatedArtifact.id, {
+        name: componentName,
+        code: code,
+        dependencies: [...defaultDependencies, ...extractedDependencies],
+        status: "idle",
+        chatSession: updatedChatSession,
+      });
+
+      showAlert("success", "Artifact updated successfully");
+    } catch (error) {
+      console.error("Error updating artifact or generating code:", error);
+      showAlert("error", "Failed to update artifact or generate code");
+    }
+  }, [updateProjectAndArtifact, projectId, showAlert]);
 
   if (isLoading) {
     return (
@@ -521,6 +618,7 @@ ${instructions}
                   isCollapsed={isUpdateArtifactCollapsed}
                   setIsCollapsed={setIsUpdateArtifactCollapsed}
                   streamingMessage={streamingMessage}
+                  onUpdateArtifact={handleUpdateArtifact}
                 />
               )}
             </Panel>
@@ -614,6 +712,6 @@ ${instructions}
       )}
     </div>
   );
-};
+});
 
 export default Workspace;
