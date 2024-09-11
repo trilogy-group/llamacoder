@@ -27,6 +27,7 @@ import ArtifactInfoCard from "@/components/ArtifactInfoCard";
 import Alert from "@/components/Alert";
 import { Attachment } from "@/types/Attachment";
 import { defaultDependencies } from "@/utils/config";
+import { checkAccess } from "@/utils/access";
 
 interface WorkspaceProps {
   projectId: string;
@@ -53,6 +54,7 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
     type: "error" | "info" | "warning" | "success";
     message: string;
   } | null>(null);
+  const [accessLevel, setAccessLevel] = useState<string>("none");
 
   const router = useRouter();
 
@@ -77,6 +79,9 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
         console.log("Fetched project:", project);
         const artifacts = await artifactApi.getArtifacts(projectId);
         console.log("Fetched artifacts:", artifacts);
+        
+        console.log("Access level:", accessLevel);
+        setAccessLevel(accessLevel);
 
         // Update artifacts to ensure each message in the chat session has attachments set to an empty array
         const updatedArtifacts = artifacts.map(artifact => ({
@@ -107,6 +112,8 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
 
     fetchProjectAndArtifacts();
   }, [projectId, updateProjectAndArtifact]);
+
+  const isViewer = accessLevel === 'viewer';
 
   const showAlert = (
     type: "error" | "info" | "warning" | "success",
@@ -574,6 +581,7 @@ ${instructions}
           onShareClick={handleShare}
           onDeleteClick={handleDelete}
           projectId={project.id}
+          isViewer={isViewer}
         />
         {project.artifacts && project.artifacts.length > 0 ? (
           <PanelGroup direction="horizontal" className="flex-1">
@@ -592,6 +600,7 @@ ${instructions}
                 onCreateArtifact={() => setShowCreateForm(true)}
                 onDeleteArtifact={handleDeleteArtifact}
                 onArtifactHover={handleArtifactHover}
+                isViewer={isViewer}
               />
             </Panel>
             {!isArtifactListCollapsed && (
@@ -625,7 +634,7 @@ ${instructions}
               maxSize={100}
               collapsible={true}
             >
-              {selectedArtifact && (
+              {selectedArtifact && !isViewer && (
                 <UpdateArtifact
                   artifact={selectedArtifact}
                   isCollapsed={isUpdateArtifactCollapsed}
@@ -638,7 +647,8 @@ ${instructions}
           </PanelGroup>
         ) : (
           <EmptyArtifactsMessage
-            onCreateArtifact={() => setShowCreateForm(true)}
+            onCreateArtifact={() => !isViewer && setShowCreateForm(true)}
+            isViewer={isViewer}
           />
         )}
       </div>

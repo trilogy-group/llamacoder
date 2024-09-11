@@ -9,6 +9,7 @@ interface ProjectHeaderProps {
   onShareClick: (projectId: string) => void;
   onDeleteClick: () => void;
   projectId: string;
+  isViewer: boolean;
 }
 
 const ProjectHeader: React.FC<ProjectHeaderProps> = ({
@@ -17,7 +18,8 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   onMyProjectsClick,
   onShareClick,
   onDeleteClick,
-  projectId
+  projectId,
+  isViewer
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,26 +60,30 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         </button>
         {showMenu && (
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-            <button
-              onClick={() => {
-                onShareClick(projectId);
-                setShowMenu(false);
-              }}
-              className="w-full text-left px-4 py-2 hover:bg-indigo-50 flex items-center"
-            >
-              <FiShare2 className="mr-2" /> Share
-            </button>
-            <button
-              onClick={() => {
-                onDeleteClick();
-                setShowMenu(false);
-              }}
-              className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center text-red-600"
-            >
-              <FiTrash2 className="mr-2" /> Delete
-            </button>
+            {!isViewer && (
+              <>
+                <button
+                  onClick={() => {
+                    onShareClick(projectId);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-indigo-50 flex items-center"
+                >
+                  <FiShare2 className="mr-2" /> Share
+                </button>
+                <button
+                  onClick={() => {
+                    onDeleteClick();
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center text-red-600"
+                >
+                  <FiTrash2 className="mr-2" /> Delete
+                </button>
+              </>
+            )}
           </div>
-        )}
+)}
       </div>
     </div>
   );
