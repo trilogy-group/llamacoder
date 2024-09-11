@@ -33,16 +33,16 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
     }
   }, [isOpen, projectId]);
 
-  useEffect(() => {
-    if (!currentUserAccessLevel) {
-      fetchUserAccessLevel();
-    }
-  }, [projectId, userAccessLevel]);
-
   const fetchUserAccessLevel = async () => {
     const { accessLevel } = await projectApi.getProject(projectId);
     setCurrentUserAccessLevel(accessLevel);
   };
+
+  useEffect(() => {
+    if (!currentUserAccessLevel) {
+      fetchUserAccessLevel();
+    }
+  }, [projectId, userAccessLevel, currentUserAccessLevel, fetchUserAccessLevel]);
 
   const fetchProjectUsers = async () => {
     try {
@@ -174,7 +174,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Share "{projectTitle}"</h2>
+          <h2 className="text-xl font-semibold">Share <i className="text-blue-500 text-md">{projectTitle}</i></h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <FiX size={24} />
           </button>

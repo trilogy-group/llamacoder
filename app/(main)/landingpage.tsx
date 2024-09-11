@@ -24,12 +24,10 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    console.log("user", user);
-    console.log("isLoading", isLoading);
     if (user) {
       router.push("/dashboard");
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   return (
     <ThemeProvider theme={theme}>

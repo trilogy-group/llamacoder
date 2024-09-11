@@ -273,6 +273,8 @@ const MessageItem: React.FC<MessageItemProps> = memo(({
   );
 });
 
+MessageItem.displayName = 'MessageItem';
+
 const StreamingMessage: React.FC<{ message: Message } & RenderMessageContentProps> = memo(({ message, renderMessageContent }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -295,4 +297,7 @@ const StreamingMessage: React.FC<{ message: Message } & RenderMessageContentProp
   );
 });
 
+StreamingMessage.displayName = 'StreamingMessage';
+
+ChatHistory.displayName = 'ChatHistory';
 export default React.memo(ChatHistory);

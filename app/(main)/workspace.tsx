@@ -34,7 +34,7 @@ interface WorkspaceProps {
   projectId: string;
 }
 
-const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
+const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
@@ -547,7 +547,7 @@ ${instructions}
       console.error("Error updating artifact or generating code:", error);
       showAlert("error", "Failed to update artifact or generate code");
     }
-  }, [updateProjectAndArtifact, projectId, showAlert]);
+  }, [updateProjectAndArtifact, projectId, showAlert, project]);
 
   if (isLoading) {
     return (
@@ -800,6 +800,7 @@ ${instructions}
       )}
     </div>
   );
-});
+};
 
-export default Workspace;
+WorkspaceComponent.displayName = 'Workspace';
+export default memo(WorkspaceComponent);
