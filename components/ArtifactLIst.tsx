@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FiBox, FiSearch, FiPackage, FiChevronLeft, FiChevronRight, FiTrash2, FiEye, FiEdit, FiMoreHorizontal, FiLoader, FiAlertCircle } from "react-icons/fi";
+import { FiBox, FiSearch, FiPackage, FiChevronLeft, FiChevronRight, FiTrash2, FiEye, FiEdit, FiMoreHorizontal, FiLoader, FiAlertCircle, FiCheckCircle } from "react-icons/fi";
 import { Artifact } from "@/types/Artifact";
 
 interface ArtifactListProps {
@@ -156,16 +156,29 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
   }, []);
   
   const getStatusIcon = () => {
-    if (artifact.status !== "idle") {
-      return (
-        <div className="w-5 h-5 mr-3 relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    switch (artifact.status) {
+      case "creating":
+        return (
+          <div className="w-5 h-5 mr-3 relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
           </div>
-        </div>
-      );
-    } else {
-      return <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />;
+        );
+      case "updating":
+        return (
+          <div className="w-5 h-5 mr-3 relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        );
+      case "error":
+        return <FiAlertCircle className="w-5 h-5 mr-3 text-red-500" />;
+      case "success":
+        return <FiCheckCircle className="w-5 h-5 mr-3 text-green-500" />;
+      default:
+        return <FiBox className={`w-5 h-5 mr-3 ${isSelected ? "text-blue-500" : "text-blue-400"}`} />;
     }
   };
 

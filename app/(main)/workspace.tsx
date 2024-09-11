@@ -27,6 +27,7 @@ import ArtifactInfoCard from "@/components/ArtifactInfoCard";
 import Alert from "@/components/Alert";
 import { Attachment } from "@/types/Attachment";
 import { defaultDependencies } from "@/utils/config";
+import { SandpackError } from "@codesandbox/sandpack-client";
 
 interface WorkspaceProps {
   projectId: string;
@@ -107,6 +108,67 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
 
     fetchProjectAndArtifacts();
   }, [projectId, updateProjectAndArtifact]);
+
+  const onAutoFix = async (error: SandpackError, callback: () => void) => {
+    console.log("Auto fixing error:", error);
+    if(selectedArtifact?.chatSession) {
+      const fixMessage = {
+        role: "user",
+        text: "Getting this error: \n" + error.message + "\nCan you please fix the code for me and return the updated code?",
+        attachments: [] as Attachment[]
+      } as Message;
+
+      const updatedChatSession = {
+        ...selectedArtifact?.chatSession,
+        messages: [...selectedArtifact?.chatSession?.messages, fixMessage]
+      }
+      await handleUpdateArtifact(updatedChatSession, selectedArtifact);
+      callback();
+    }
+  };
+
+  const onSandpackError = (error: SandpackError) => {
+    console.log("Sandpack error:", error, selectedArtifact);
+    if(selectedArtifact?.error) {
+      return;
+    }
+    const updatedArtifact = {
+      ...selectedArtifact,
+      status: "error",
+      error: error,
+    } as Artifact;
+    updateProjectAndArtifact(
+      (prevProject) => ({
+        ...prevProject!,
+        artifacts: prevProject?.artifacts?.map((a) =>
+          a.id === updatedArtifact.id ? updatedArtifact : a
+        ) || [],
+      }),
+      updatedArtifact
+    );
+    console.log("Errro udpatedArtifact: ", updatedArtifact);
+  };
+
+  const onSuccess = () => {
+    console.log("Success");
+    if(selectedArtifact?.status !== "error") {
+      return;
+    }
+    const updatedArtifact = {
+      ...selectedArtifact,
+      status: "idle",
+      error: null,
+    } as Artifact;
+    updateProjectAndArtifact(
+      (prevProject) => ({
+        ...prevProject!,
+        artifacts: prevProject?.artifacts?.map((a) =>
+          a.id === updatedArtifact.id ? updatedArtifact : a
+        ) || [],
+      }),
+      updatedArtifact
+    );
+  };
 
   const showAlert = (
     type: "error" | "info" | "warning" | "success",
@@ -605,6 +667,9 @@ ${instructions}
                       project={project}
                       selectedArtifact={selectedArtifact}
                       initialMode={mode}
+                      onAutoFix={onAutoFix}
+                      onSandpackError={onSandpackError}
+                      onSuccess={onSuccess}
                     />
                   ) : (
                     <CodeViewer
