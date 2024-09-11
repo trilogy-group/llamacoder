@@ -11,9 +11,10 @@ import logo from './../public/logo.png';
 interface ProjectOverviewProps {
   project: Project;
   onProjectDeleted: (projectId: string) => void;
+  onShareClick: (projectId: string) => void;
 }
 
-const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted }) => {  
+const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted, onShareClick }) => {  
   const router = useRouter();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -136,8 +137,11 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
 
       <div className="flex justify-between items-center mt-4">
         <div className="flex space-x-2">
-          <Tooltip content="Share">
-            <button className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition duration-300 ease-in-out">
+          <Tooltip content="Share project">
+            <button
+              onClick={() => onShareClick(project.id)}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition duration-300 ease-in-out"
+            >
               <FiShare2 className="w-5 h-5" />
             </button>
           </Tooltip>

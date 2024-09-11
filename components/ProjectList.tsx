@@ -7,9 +7,10 @@ interface ProjectListProps {
   onCreateProject: () => void;
   onOpenProject: (projectId: string) => void;
   onProjectDeleted: (projectId: string) => void;
+  onShareClick: (projectId: string) => void;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, onCreateProject, onOpenProject, onProjectDeleted }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects, onCreateProject, onOpenProject, onProjectDeleted, onShareClick }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
@@ -17,6 +18,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onCreateProject, on
           key={project.id}
           project={project}
           onProjectDeleted={onProjectDeleted}
+          onShareClick={onShareClick}
         />
       ))}
     </div>
