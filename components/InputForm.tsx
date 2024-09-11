@@ -94,6 +94,7 @@ const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, is
             onChange={handleFileChange}
             className="hidden"
             multiple
+            accept=".json,.txt,.graphql,image/*"
           />
           <AttachmentList 
             attachments={attachments} 
