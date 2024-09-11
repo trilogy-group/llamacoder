@@ -9,6 +9,7 @@ interface ShareProjectModalProps {
   onClose: () => void;
   projectId: string;
   projectTitle: string;
+  userAccessLevel: string;
 }
 
 interface ProjectUser {
@@ -17,7 +18,7 @@ interface ProjectUser {
   accessLevel: string;
 }
 
-const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, projectId, projectTitle }) => {
+const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, projectId, projectTitle, userAccessLevel }) => {
   const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState('viewer');
   const [isSharing, setIsSharing] = useState(false);
@@ -182,7 +183,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           className="mb-4 w-full rounded border p-2"
         >
           <option value="viewer">Can view</option>
-          <option value="editor">Can edit</option>
+          {userAccessLevel !== 'viewer' && <option value="editor">Can edit</option>}
         </select>
         <button
           onClick={handleShare}
@@ -223,6 +224,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           user={editingUser}
           onClose={() => setEditingUser(null)}
           onUpdateAccess={handleAccessUpdate}
+          userAccessLevel={userAccessLevel}
         />
       )}
     </div>

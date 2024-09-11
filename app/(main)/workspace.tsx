@@ -693,6 +693,7 @@ ${instructions}
           onClose={() => setShowShareModal(false)}
           projectId={project.id}
           projectTitle={project.title}
+          userAccessLevel={accessLevel}
         />
       )}
       {showDeleteArtifactConfirmation && artifactToDelete && (
