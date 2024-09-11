@@ -101,20 +101,20 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
       });
 
       if (response.data.success) {
-        setProjectUsers(prevUsers =>
-          prevUsers.map(user =>
-            user.email === email
-              ? { ...user, accessLevel: newAccessLevel === 'revoke' ? 'revoked' : newAccessLevel }
-              : user
-          )
-        );
-        toast.success(`Access level for ${email} updated to ${newAccessLevel === 'revoke' ? 'revoked' : newAccessLevel}`);
+        toast.success(`Access for ${email} updated to ${newAccessLevel === 'revoke' ? 'revoked' : newAccessLevel}`, {
+          duration: 3000,
+          position: 'top-center',
+        });
+        await fetchProjectUsers(); // Refresh the user list
       } else {
         throw new Error(response.data.message);
       }
     } catch (error) {
       console.error('Error updating access level:', error);
-      toast.error(`Failed to update access level for ${email}`);
+      toast.error(`Failed to update access level for ${email}`, {
+        duration: 3000,
+        position: 'top-center',
+      });
     } finally {
       setEditingUser(null);
     }
@@ -132,8 +132,11 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
       console.log(response.data);
 
       if (response.data.success) {
-        toast.success(`Project shared successfully with ${email}`);
-        fetchProjectUsers();
+        toast.success(`Project shared successfully with ${email}`, {
+          duration: 3000,
+          position: 'top-center',
+        });
+        await fetchProjectUsers(); // Refresh the user list
         setEmail('');
       } else {
         throw new Error('Failed to share project');

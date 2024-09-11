@@ -48,6 +48,7 @@ export async function POST(req: Request) {
 
     // If the new accessLevel is not 'revoke' and it's different from the current access, add the new relation
     if (accessLevel !== 'revoke' && ((accessLevel === 'viewer' && !isViewer) || (accessLevel === 'editor' && !isEditor))) {
+      console.log('adding new relation: ', accessLevel);
       await fgaClient.write({
         writes: [
           {
