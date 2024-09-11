@@ -6,12 +6,35 @@ export const genAiApi = {
     messages: Message[],
     onChunk: (chunks: { index: number; type: string; text: string }[]) => void
   ): Promise<{ code: string; dependencies: Dependency[] }> => {
+    console.log("Generating response with messages:", messages);
+
+    // Process messages to include attachment contents
+    const processedMessages = await Promise.all(messages.map(async (message) => {
+      if (message.attachments && message.attachments.length > 0) {
+        let attachmentContent = "\n\nAdditional context from attachments:\n";
+        for (const attachment of message.attachments) {
+          try {
+            const response = await fetch(attachment.url);
+            const content = await response.text();
+            attachmentContent += `\nContent of ${attachment.fileName}:\n${content}\n`;
+          } catch (error) {
+            console.error(`Error reading attachment ${attachment.fileName}:`, error);
+            attachmentContent += `\nError reading content of ${attachment.fileName}\n`;
+          }
+        }
+        return { ...message, text: message.text + attachmentContent };
+      }
+      return message;
+    }));
+
+    console.log("Processed messages:", processedMessages);
+
     const response = await fetch('/api/genai', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages: processedMessages }),
     });
 
     if (!response.ok) {

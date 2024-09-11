@@ -220,27 +220,11 @@ ${instructions}
         newArtifact
       );
 
-      let userMessageWithAttachments = userMessage;
-      // Add attachment contents to the user message
-      if (attachments.length > 0) {
-        userMessageWithAttachments += "\n\nAdditional context from attachments:\n";
-        for (const attachment of attachments) {          
-          try {
-            const response = await fetch(attachment.url);
-            const content = await response.text();
-            console.log("Content of attachment:", content);
-            userMessageWithAttachments += `\nContent of ${attachment.fileName}:\n${content}\n`;
-          } catch (error) {
-            console.error(`Error reading attachment ${attachment.fileName}:`, error);
-            userMessageWithAttachments += `\nError reading content of ${attachment.fileName}\n`;
-          }
-        }
-      }
-
       const messages: Message[] = [
         {
           role: "user",
-          text: userMessageWithAttachments,
+          text: userMessage,
+          attachments: attachments,
         },
       ];
 
