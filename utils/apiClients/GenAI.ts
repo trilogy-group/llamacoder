@@ -37,27 +37,27 @@ export const genAiApi = {
 
     console.log("Processed messages:", processedMessages);
 
-    const availableComponents = project?.artifacts?.filter(artifact => artifact.id !== selectedArtifact.id)
-      .map(artifact => `- ${artifact.name}: ${artifact.description}`)
-      .join('\n');
+//     const availableComponents = project?.artifacts?.filter(artifact => artifact.id !== selectedArtifact.id)
+//       .map(artifact => `- ${artifact.name}: ${artifact.description}`)
+//       .join('\n');
 
-    console.log("Available components:", availableComponents);
+//     console.log("Available components:", availableComponents);
 
-    if (availableComponents && availableComponents.length > 0) {
-      processedMessages[0].text += `
-These are custom components available for use:
-${availableComponents}
+//     if (availableComponents && availableComponents.length > 0) {
+//       processedMessages[0].text += `
+// These are custom components available for use:
+// ${availableComponents}
   
-You can import them like this:
-import CustomComponent from './CustomComponent';
+// You can import them like this:
+// import CustomComponent from './CustomComponent';
 
-For example, to use the Login component, you can import it like this:
-import Login from './Login';
+// For example, to use the Login component, you can import it like this:
+// import Login from './Login';
 
-Please use these components as needed in your response, assuming they don't require any props for now.
-  `;
-    }
-    
+// Please use these components as needed in your response, assuming they don't require any props for now.
+//   `;
+//     }
+
     const response = await fetch('/api/genai', {
       method: 'POST',
       headers: {
