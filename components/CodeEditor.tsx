@@ -44,7 +44,7 @@ function SandpackContent({
   const [isFixButtonDisabled, setIsFixButtonDisabled] = useState(false);
 
   const { sandpack, listen } = useSandpack();
-  const { files, activeFile, updateFile } = sandpack;
+  const { activeFile, updateFile } = sandpack;
   const { code } = useActiveCode();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
@@ -90,10 +90,6 @@ function SandpackContent({
   useEffect(() => {
     updateFile("/App.tsx", code);
   }, [code, activeFile]);
-
-  useEffect(() => {
-    console.log("files: ", files);
-  }, [files]);
 
   useEffect(() => {
     const stopListening = listen((msg) => {

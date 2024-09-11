@@ -25,6 +25,8 @@ import { v4 as uuidv4 } from "uuid";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import ArtifactInfoCard from "@/components/ArtifactInfoCard";
 import Alert from "@/components/Alert";
+import { Attachment } from "@/types/Attachment";
+import { defaultDependencies } from "@/utils/config";
 
 interface WorkspaceProps {
   projectId: string;
@@ -136,57 +138,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     setShowDeleteConfirmation(false);
   };
 
-  const handleCreateArtifact = async (description: string, callback: () => void) => {
-    const defaultDependencies = [
-      {
-        name: "lucide-react",
-        version: "latest",
-      },
-      {
-        name: "recharts",
-        version: "latest",
-      },
-      {
-        name: "axios",
-        version: "latest",
-      },
-      {
-        name: "react-dom",
-        version: "latest",
-      },
-      {
-        name: "react-router-dom",
-        version: "latest",
-      },
-      {
-        name: "react-ui",
-        version: "latest",
-      },
-      {
-        name: "@mui/material",
-        version: "latest",
-      },
-      {
-        name: "@mui/styles",
-        version: "latest",
-      },
-      {
-        name: "@emotion/react",
-        version: "latest",
-      },
-      {
-        name: "@emotion/styled",
-        version: "latest",
-      },
-      {
-        name: "@mui/icons-material",
-        version: "latest",
-      },
-      {
-        name: "react-player",
-        version: "latest",
-      },
-    ];
+  const handleCreateArtifact = async (description: string, instructions: string, attachments: Attachment[], callback: () => void) => {
+    console.log("Creating artifact with description:", description);
+    console.log("Creating artifact with instructions:", instructions);
+    console.log("Creating artifact with attachments:", attachments);
 
     let newArtifact = {
       id: uuidv4(),
@@ -221,11 +176,54 @@ export default App;`,
         newArtifact
       );
 
-      // Generate code for the artifact
+      // Generate user message for the artifact
+      let userMessage = `Build me an artifact based on the following information:
+
+**Brief description of the artifact:** ${description}
+`;
+
+      if(instructions.trim() !== "") {
+        userMessage += `
+**Additional instructions:** 
+${instructions}
+`;
+      }
+
+      let userMessageWithAttachments = userMessage;
+      // Add attachment contents to the user message
+      if (attachments.length > 0) {
+        userMessageWithAttachments += "\n\nAdditional context from attachments:\n";
+        for (const attachment of attachments) {          
+          try {
+            const response = await fetch(attachment.url);
+            const content = await response.text();
+            console.log("Content of attachment:", content);
+            userMessageWithAttachments += `\nContent of ${attachment.fileName}:\n${content}\n`;
+          } catch (error) {
+            console.error(`Error reading attachment ${attachment.fileName}:`, error);
+            userMessageWithAttachments += `\nError reading content of ${attachment.fileName}\n`;
+          }
+        }
+      }
+
+      // Create a new chat session
+      let chatSession: ChatSession = {
+        id: Date.now().toString(), // Generate a unique ID
+        artifactId: newArtifact.id,
+        messages: [
+          { role: "user", text: userMessage, attachments: attachments },
+        ],
+        attachments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        user: "user", // Replace with actual user ID if available
+        model: "gpt-4", // Replace with the actual model used
+      };
+
       const messages: Message[] = [
         {
           role: "user",
-          text: `Generate code for the following artifact: ${description}`,
+          text: userMessageWithAttachments,
         },
       ];
 
@@ -265,27 +263,23 @@ export default App;`,
         }
       };
 
+      console.log("Generating response with messages:", messages);
       const { code, dependencies } = await genAiApi.generateResponse(
         messages,
         onChunk,
       );
 
-      // Create a new chat session
-      const newChatSession: ChatSession = {
-        id: Date.now().toString(), // Generate a unique ID
-        artifactId: newArtifact.id,
-        messages: [
-          { role: "user", text: messages[0].text },
-          { role: "assistant", text: response },
-        ],
-        attachments: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        user: "user", // Replace with actual user ID if available
-        model: "gpt-4", // Replace with the actual model used
-      };
+      console.log("Generated code:", code);
+      console.log("Dependencies:", dependencies);
+      console.log("Response:", response);
+
+      chatSession =  {
+        ...chatSession,
+        messages: [...chatSession.messages, { role: "assistant", text: response }],
+      }
 
       const componentName = extractComponentName(code);
+
 
       newArtifact = {
         ...newArtifact,
@@ -293,7 +287,7 @@ export default App;`,
         code: code,
         dependencies: [...defaultDependencies, ...dependencies],
         status: "idle",
-        chatSession: newChatSession,
+        chatSession: chatSession,
       };
 
       updateProjectAndArtifact(
@@ -313,7 +307,7 @@ export default App;`,
         code: code,
         dependencies: [...defaultDependencies, ...dependencies],
         status: "idle",
-        chatSession: newChatSession,
+        chatSession: chatSession,
       });
 
       showAlert("success", "Artifact created successfully");

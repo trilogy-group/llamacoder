@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import ChatHistory from "./ChatHistory";
 import InputForm from "./InputForm";
-import ChatContext from "./ChatContext";
+import ArtifactInfo from "./ArtifactInfo"; // Add this import
 import { Artifact } from "../types/Artifact";
 import { Message } from "../types/Message";
 import { ChatSession } from "../types/ChatSession";
-import { Attachment } from "../types/Attachment";
 import { FiLoader } from "react-icons/fi"; // Add this import
 
 interface UpdateArtifactProps {
@@ -47,12 +46,11 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
     });
   }, [artifact.chatSession]); // Dependency array now includes artifact
 
-  const handleSubmit = (text: string, attachments: Attachment[]) => {
+  const handleSubmit = (text: string) => {
     if (text.trim()) {
       const newMessage: Message = {
         text: text,
         role: "user",
-        attachments: attachments,
       };
       setChatSession((prev) => ({
         ...prev,
@@ -74,35 +72,6 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
       }, 1000);
     }
   };
-
-  const handleContextAttachmentAdd = (files: File[]) => {
-    const newAttachments = files.map(fileToAttachment);
-    setChatSession((prev) => ({
-      ...prev,
-      attachments: [...prev.attachments, ...newAttachments],
-      updatedAt: new Date().toISOString(),
-    }));
-  };
-
-  const handleContextAttachmentRemove = (id: string) => {
-    setChatSession((prev) => ({
-      ...prev,
-      attachments: prev.attachments.filter((attachment) => attachment.id !== id),
-      updatedAt: new Date().toISOString(),
-    }));
-  };
-
-  const fileToAttachment = (file: File): Attachment => ({
-    id: Date.now().toString(),
-    fileName: file.name,
-    fileType: file.type,
-    fileSize: file.size,
-    url: URL.createObjectURL(file),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: "current_user", // Replace with actual user info
-    updatedBy: "current_user", // Replace with actual user info
-  });
 
   const renderContent = () => {
     if (!streamingMessage && (artifact.status === "creating" || artifact.status === "updating")) {
@@ -133,12 +102,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
       {!isCollapsed && (
         <>
           <div className="flex-shrink-0">
-            <ChatContext
-              artifact={artifact}
-              attachments={chatSession.attachments}
-              onAdd={handleContextAttachmentAdd}
-              onRemove={handleContextAttachmentRemove}
-            />
+            <ArtifactInfo artifact={artifact} />
           </div>
           {renderContent()}
         </>
