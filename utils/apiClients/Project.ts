@@ -9,7 +9,7 @@ export const projectApi = {
         return response.json();
     },
 
-    getProject: async (id: string): Promise<Project> => {
+    getProject: async (id: string): Promise<{ project: Project; accessLevel: string }> => {
         const response = await fetch(`/api/projects?id=${id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch project');

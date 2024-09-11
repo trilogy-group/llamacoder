@@ -73,8 +73,8 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
           throw new Error("Project ID is undefined");
         }
         console.log("Fetching project with ID:", projectId);
-        const fetchedProject = await projectApi.getProject(projectId);
-        console.log("Fetched project:", fetchedProject);
+        const { project, accessLevel } = await projectApi.getProject(projectId);
+        console.log("Fetched project:", project);
         const artifacts = await artifactApi.getArtifacts(projectId);
         console.log("Fetched artifacts:", artifacts);
 
@@ -92,7 +92,7 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
 
         updateProjectAndArtifact(
           (prevProject) => ({
-            ...fetchedProject,
+            ...project,
             artifacts: updatedArtifacts,
           }),
           updatedArtifacts.length > 0 ? updatedArtifacts[0] : null

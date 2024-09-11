@@ -1,21 +1,12 @@
 import { NextResponse } from 'next/server';
 import { ddbClient } from '@/utils/ddbClient';
+import { checkAccess } from '@/utils/access';
 import { Artifact } from '@/types/Artifact';
 // @ts-ignore
 import { getSession } from '@auth0/nextjs-auth0';
 import fgaClient from "@/lib/oktaFGA";
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
-
-// Helper function to check user access
-async function checkAccess(userId: string, projectId: string, requiredRelation: string) {
-  const response = await fgaClient.check({
-    user: `user:${userId}`,
-    relation: requiredRelation,
-    object: `project:${projectId}`,
-  });
-  return response.allowed;
-}
 
 // Read an artifact by ID
 export async function GET(
@@ -31,8 +22,8 @@ export async function GET(
     const { projectId, artifactId } = params;
 
     // Check if user has access to view this project
-    const hasAccess = await checkAccess(session.user.sub, projectId, 'can_view');
-    if (!hasAccess) {
+    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, projectId);
+    if (!allowed) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -66,8 +57,8 @@ export async function PUT(
     const now = new Date().toISOString();
 
     // Check if user has access to modify artifacts in this project
-    const hasAccess = await checkAccess(session.user.sub, projectId, 'can_modify');
-    if (!hasAccess) {
+    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, projectId);
+    if (!allowed || accessLevel !== 'owner' && accessLevel !== 'editor') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -121,8 +112,8 @@ export async function DELETE(
     const { projectId, artifactId } = params;
 
     // Check if user has access to delete artifacts in this project
-    const hasAccess = await checkAccess(session.user.sub, projectId, 'can_modify');
-    if (!hasAccess) {
+    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, projectId);
+    if (!allowed || accessLevel !== 'owner') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

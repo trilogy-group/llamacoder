@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ddbClient } from '@/utils/ddbClient';
+import { checkAccess } from '@/utils/access';
 import { v4 as uuidv4 } from 'uuid';
 import { Project } from '@/types/Project';
 import { FileContext } from '@/types/FileContext';
@@ -8,16 +9,6 @@ import { getSession } from '@auth0/nextjs-auth0';
 import fgaClient from "@/lib/oktaFGA";
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
-
-// Helper function to check user access
-async function checkAccess(userId: string, projectId: string, requiredRelation: string) {
-  const response = await fgaClient.check({
-    user: `user:${userId}`,
-    relation: requiredRelation,
-    object: `project:${projectId}`,
-  });
-  return response.allowed;
-}
 
 // Create a new project
 export async function POST(request: Request) {
@@ -82,8 +73,8 @@ export async function GET(request: Request) {
 
     if (id) {
       // Check if user has access to this project
-      const hasAccess = await checkAccess(session.user.sub, id, 'can_view');
-      if (!hasAccess) {
+      const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, id);
+      if (!allowed) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
 
@@ -109,7 +100,7 @@ export async function GET(request: Request) {
         publishedUrl: result.Item.publishedUrl,
       };
 
-      return NextResponse.json(project);
+      return NextResponse.json({project, accessLevel});
     } else {
 
       // Fetch all projects the user has access to
@@ -183,8 +174,8 @@ export async function PUT(request: Request) {
     }
 
     // Check if user has access to modify this project
-    const hasAccess = await checkAccess(session.user.sub, id, 'can_modify');
-    if (!hasAccess) {
+    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, id);
+    if (!allowed || accessLevel !== 'owner' && accessLevel !== 'editor') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -250,8 +241,8 @@ export async function DELETE(request: Request) {
     }
 
     // Check if user has access to delete this project
-    const hasAccess = await checkAccess(session.user.sub, id, 'can_delete');
-    if (!hasAccess) {
+    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, id);
+    if (!allowed || accessLevel !== 'owner') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
