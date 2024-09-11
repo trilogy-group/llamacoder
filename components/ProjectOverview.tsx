@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import logo from './../public/logo.png';
 
+
 interface ProjectOverviewProps {
   project: Project;
   onProjectDeleted: (projectId: string) => void;
