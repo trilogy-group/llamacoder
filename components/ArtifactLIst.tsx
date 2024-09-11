@@ -11,6 +11,7 @@ interface ArtifactListProps {
   onCreateArtifact: () => void;
   onDeleteArtifact: (artifact: Artifact) => void;
   onArtifactHover: (artifact: Artifact | null, event: React.MouseEvent) => void;
+  isViewer: boolean;
 }
 
 const ArtifactList: React.FC<ArtifactListProps> = ({
@@ -22,6 +23,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
   onCreateArtifact,
   onDeleteArtifact,
   onArtifactHover,
+  isViewer
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -95,29 +97,32 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
                 onPreview={(artifact) => {/* Add preview logic */}}
                 onEdit={(artifact) => {/* Add edit logic */}}
                 onHover={onArtifactHover}
+                isViewer={isViewer}
               />
             ))}
           </ul>
         </div>
       </div>
-      <button
-        className="mt-4 flex items-center justify-center space-x-2 rounded-full bg-blue-600 px-6 py-3 font-semibold text-white shadow-md transition duration-300 ease-in-out hover:bg-blue-700"
-        onClick={() => {onCreateArtifact()}}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+      {!isViewer && (
+        <button
+          className="mt-4 flex items-center justify-center space-x-2 rounded-full bg-blue-600 px-6 py-3 font-semibold text-white shadow-md transition duration-300 ease-in-out hover:bg-blue-700"
+          onClick={() => {onCreateArtifact()}}
         >
-          <path
-            fillRule="evenodd"
-            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-            clipRule="evenodd"
-          />
-        </svg>
-        <span>Create New Artifact</span>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>Create New Artifact</span>
+        </button>
+      )}
     </div>
   );
 };
@@ -130,6 +135,7 @@ interface ArtifactItemProps {
   onPreview: (artifact: Artifact) => void;
   onEdit: (artifact: Artifact) => void;
   onHover: (artifact: Artifact | null, event: React.MouseEvent) => void;
+  isViewer: boolean;
 }
 
 const ArtifactItem: React.FC<ArtifactItemProps> = ({
@@ -138,6 +144,7 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
   onClick,
   onDelete,
   onHover,
+  isViewer
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -200,39 +207,41 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
         </div>
         <span className="font-medium truncate max-w-[70%]">{artifact.name}</span>
       </div>
-      <div className="relative" ref={menuRef}>
-        <button
-          className="p-1 rounded-full hover:bg-gray-200 transition-colors duration-200"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsMenuOpen(!isMenuOpen);
-          }}
-        >
-          <FiMoreHorizontal className="w-4 h-4 text-gray-600" />
-        </button>
-        {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-hidden">
-            <button
-              className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out flex items-center"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(artifact);
-                setIsMenuOpen(false);
-              }}
-            >
-              <FiTrash2 className="mr-2 h-4 w-4 text-red-500" />
-              Delete
-            </button>
-            <button
-              className="w-full px-4 py-2 text-sm text-left text-gray-400 flex items-center cursor-not-allowed"
-              disabled
-            >
-              <FiAlertCircle className="mr-2 h-4 w-4 text-gray-400" />
-              Deprecate
-            </button>
-          </div>
-        )}
-      </div>
+      {!isViewer && (
+        <div className="relative" ref={menuRef}>
+          <button
+            className="p-1 rounded-full hover:bg-gray-200 transition-colors duration-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMenuOpen(!isMenuOpen);
+            }}
+          >
+            <FiMoreHorizontal className="w-4 h-4 text-gray-600" />
+          </button>
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-hidden">
+              <button
+                className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(artifact);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <FiTrash2 className="mr-2 h-4 w-4 text-red-500" />
+                Delete
+              </button>
+              <button
+                className="w-full px-4 py-2 text-sm text-left text-gray-400 flex items-center cursor-not-allowed"
+                disabled
+              >
+                <FiAlertCircle className="mr-2 h-4 w-4 text-gray-400" />
+                Deprecate
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </li>
   );
 };

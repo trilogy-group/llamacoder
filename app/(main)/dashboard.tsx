@@ -5,6 +5,7 @@ import EmptyProjectMessage from "@/components/EmptyProjectMessage";
 import HeaderV2 from "@/components/HeaderV2";
 import ProjectList from "@/components/ProjectList";
 import ProjectOverviewInputForm from "@/components/ProjectOverviewInputForm";
+import ProjectShareModal from "@/components/ProjectShareModal";
 import { useAppContext } from "@/contexts/AppContext";
 import { Project } from "@/types/Project";
 import { useUser } from "@auth0/nextjs-auth0/client";
@@ -20,6 +21,8 @@ const Dashboard: React.FC = () => {
   const { projects, dispatchProjectsUpdate, projectsLoading } = useAppContext();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const router = useRouter();
 
   const handleCreateProject = async (description: string) => {
@@ -51,6 +54,11 @@ const Dashboard: React.FC = () => {
 
   const handleOpenProject = (projectId: string) => {
     router.push(`/workspaces/${projectId}`);
+  };
+
+  const handleShareClick = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setShowShareModal(true);
   };
 
   const handleProjectDeleted = async (deletedProjectId: string) => {
@@ -94,6 +102,7 @@ const Dashboard: React.FC = () => {
                 onCreateProject={() => setShowCreateForm(true)}
                 onOpenProject={handleOpenProject}
                 onProjectDeleted={handleProjectDeleted}
+                onShareClick={handleShareClick}
               />
             </>
           ) : (
@@ -120,6 +129,15 @@ const Dashboard: React.FC = () => {
         </div>
       )}
       <Toaster position="bottom-right" />
+      {showShareModal && selectedProjectId && (
+      <ProjectShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        projectId={selectedProjectId}
+        projectTitle={projects.find(p => p.id === selectedProjectId)?.title || ''}
+        userAccessLevel="owner" // Assuming the user is the owner on the dashboard
+      />
+)}
     </div>
   );
 };
