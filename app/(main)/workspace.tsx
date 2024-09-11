@@ -164,18 +164,6 @@ export default App;`,
         throw new Error("Project is not loaded");
       }
 
-      newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
-      callback();
-      setShowCreateForm(false);
-      setMode("editor");  
-      updateProjectAndArtifact(
-        (prevProject) => ({
-          ...prevProject!,
-          artifacts: [...(prevProject?.artifacts || []), newArtifact],
-        }),
-        newArtifact
-      );
-
       // Generate user message for the artifact
       let userMessage = `Build me an artifact based on the following information:
 
@@ -188,6 +176,37 @@ export default App;`,
 ${instructions}
 `;
       }
+
+      // Create a new chat session
+      let chatSession: ChatSession = {
+        id: Date.now().toString(), // Generate a unique ID
+        artifactId: newArtifact.id,
+        messages: [
+          { role: "user", text: userMessage, attachments: attachments },
+        ],
+        attachments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        user: "user", // Replace with actual user ID if available
+        model: "gpt-4", // Replace with the actual model used
+      };
+
+      newArtifact = {
+        ...newArtifact,
+        chatSession: chatSession,
+      };
+      
+      newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
+      callback();
+      setShowCreateForm(false);
+      setMode("editor");  
+      updateProjectAndArtifact(
+        (prevProject) => ({
+          ...prevProject!,
+          artifacts: [...(prevProject?.artifacts || []), newArtifact],
+        }),
+        newArtifact
+      );
 
       let userMessageWithAttachments = userMessage;
       // Add attachment contents to the user message
@@ -205,20 +224,6 @@ ${instructions}
           }
         }
       }
-
-      // Create a new chat session
-      let chatSession: ChatSession = {
-        id: Date.now().toString(), // Generate a unique ID
-        artifactId: newArtifact.id,
-        messages: [
-          { role: "user", text: userMessage, attachments: attachments },
-        ],
-        attachments: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        user: "user", // Replace with actual user ID if available
-        model: "gpt-4", // Replace with the actual model used
-      };
 
       const messages: Message[] = [
         {

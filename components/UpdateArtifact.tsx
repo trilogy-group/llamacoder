@@ -33,18 +33,10 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
   });
 
   useEffect(() => {
-    // Reinitialize chat session when artifact changes
-    setChatSession({
-      id: Date.now().toString(),
-      artifactId: artifact.id,
-      messages: artifact.chatSession?.messages || [],
-      attachments: artifact.chatSession?.attachments || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      user: "current_user", // Replace with actual user info
-      model: "default_model", // Replace with actual model info
-    });
-  }, [artifact.chatSession]); // Dependency array now includes artifact
+    if (artifact.chatSession) {
+      setChatSession(artifact.chatSession);
+    }
+  }, [artifact.chatSession]);
 
   const handleSubmit = (text: string) => {
     if (text.trim()) {
