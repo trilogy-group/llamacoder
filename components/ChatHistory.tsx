@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Artifact } from "../types/Artifact";
 import { ChatSession } from "../types/ChatSession";
-import { FiPaperclip, FiCopy, FiLoader } from "react-icons/fi";
+import { FiCopy, FiLoader } from "react-icons/fi";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message } from "../types/Message";
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AttachmentList from "./AttachmentList";
+import { Attachment } from "../types/Attachment";
 
 interface ChatHistoryProps {
   artifact: Artifact;
@@ -160,6 +162,20 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession, stream
     }).filter(Boolean);
   }, [renderCodeBlock, renderSpecialBlock, renderStreamingIndicator]);
 
+  const renderAttachments = useCallback((attachments: Attachment[], isUserMessage: boolean) => {
+    if (!attachments || attachments.length === 0) return null;
+    return (
+      <div className="mb-2">
+        <AttachmentList 
+          attachments={attachments} 
+          showRemoveButton={false}
+          backgroundColor={"bg-blue-100"}
+          badgeClassName="text-gray-800"
+        />
+      </div>
+    );
+  }, []);
+
   return (
     <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
       {chatSession.messages.map((message, index) => (
@@ -175,21 +191,9 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ artifact, chatSession, stream
           onMouseEnter={() => setHoveredMessage(index)}
           onMouseLeave={() => setHoveredMessage(null)}
         >
-          <div className="flex flex-col">
-            {message.role === "user" && message.attachments && message.attachments.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 p-3 pb-0">
-                {message.attachments.map((attachment, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center bg-white rounded-full px-2 py-0.5 text-[10px] text-gray-600 border border-gray-200"
-                  >
-                    <FiPaperclip className="mr-1" size={8} />
-                    {attachment.fileName}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="p-3 overflow-y-auto">
+          <div className="flex flex-col p-3">
+            {message.attachments && message.attachments.length > 0 && renderAttachments(message.attachments, message.role === "user")}
+            <div className="overflow-y-auto">
               <div className="text-xs text-gray-800 break-words">
                 {renderMessageContent(message.text, index.toString())}
               </div>

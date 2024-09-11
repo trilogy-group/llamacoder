@@ -72,21 +72,33 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         if (!projectId) {
           throw new Error("Project ID is undefined");
         }
-        console.log("Fetching project with ID:", projectId); // Add this log
+        console.log("Fetching project with ID:", projectId);
         const fetchedProject = await projectApi.getProject(projectId);
-        console.log("Fetched project:", fetchedProject); // Add this log
+        console.log("Fetched project:", fetchedProject);
         const artifacts = await artifactApi.getArtifacts(projectId);
-        console.log("Fetched artifacts:", artifacts); // Add this log
+        console.log("Fetched artifacts:", artifacts);
+
+        // Update artifacts to ensure each message in the chat session has attachments set to an empty array
+        const updatedArtifacts = artifacts.map(artifact => ({
+          ...artifact,
+          chatSession: artifact.chatSession ? {
+            ...artifact.chatSession,
+            messages: artifact.chatSession.messages.map(message => ({
+              ...message,
+              attachments: [] as Attachment[]
+            }))
+          } : null
+        }));
 
         updateProjectAndArtifact(
           (prevProject) => ({
             ...fetchedProject,
-            artifacts: artifacts,
+            artifacts: updatedArtifacts,
           }),
-          artifacts.length > 0 ? artifacts[0] : null
+          updatedArtifacts.length > 0 ? updatedArtifacts[0] : null
         );
       } catch (err) {
-        console.error("Error fetching project and artifacts:", err); // Improve error logging
+        console.error("Error fetching project and artifacts:", err);
         setError("Failed to fetch project and artifacts");
       } finally {
         setIsLoading(false);

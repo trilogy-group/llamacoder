@@ -13,7 +13,7 @@ export type Artifact = {
     name?: string;
     code?: string;
     dependencies?: Dependency[];
-    chatSession?: ChatSession;
+    chatSession?: ChatSession | null;
     createdAt?: string;
     updatedAt?: string;
 };
