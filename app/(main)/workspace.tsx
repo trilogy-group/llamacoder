@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { projectApi } from "@/utils/apiClients/Project";
 import { artifactApi } from "@/utils/apiClients/Artifact";
-import { genAiApi, extractContent } from "@/utils/apiClients/GenAI";
+import { genAiApi, parseResponse, parseExtraLibraries } from "@/utils/apiClients/GenAI";
 import { Message } from "@/types/Message";
 import { CircularProgress } from "@mui/material";
 import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
@@ -242,9 +242,15 @@ ${instructions}
           response += chunk.text;
           if (response.includes("</CODE>")) {
             if (generatedCode === "") {
-              generatedCode = extractContent(response, "CODE") || "";
-              newArtifact.code = generatedCode;
-              newArtifact.name = extractComponentName(response);
+              const parsedResponse = parseResponse(response);
+              generatedCode = parsedResponse.CODE || "";
+              const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || "");
+              newArtifact = {
+                ...newArtifact,
+                name: extractComponentName(generatedCode),
+                code: generatedCode,
+                dependencies: [...defaultDependencies, ...dependencies],
+              };
               updateProjectAndArtifact(
                 (prevProject) => ({
                   ...prevProject!,
@@ -342,7 +348,6 @@ ${instructions}
       try {
         await artifactApi.deleteArtifact(projectId, artifactToDelete.id);
 
-
         updateProjectAndArtifact(
           (prevProject) => {
             const updatedArtifacts = prevProject?.artifacts?.filter(
@@ -392,9 +397,9 @@ ${instructions}
           response += chunk.text;
           if (response.includes("</CODE>")) {
             if (generatedCode === "") {
-              generatedCode = extractContent(response, "CODE") || "";
-              artifact.code = generatedCode;
-              artifact.name = extractComponentName(generatedCode);
+              const parsedResponse = parseResponse(response);
+              generatedCode = parsedResponse.CODE || "";
+              const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || "");
               updateProjectAndArtifact(
                 (prevProject) => ({
                   ...prevProject!,
@@ -402,7 +407,12 @@ ${instructions}
                     a.id === artifact.id ? artifact : a
                   ) || [],
                 }),
-                artifact
+                {
+                  ...artifact,
+                  name: extractComponentName(generatedCode),
+                  code: generatedCode,
+                  dependencies: [...defaultDependencies, ...dependencies, ...(artifact?.dependencies || [])],
+                }
               );
             }
             setMode("preview");
@@ -596,8 +606,7 @@ ${instructions}
                     <CodeViewer
                       status={selectedArtifact.status}
                       code={
-                        extractContent(streamingMessage?.text || "", "CODE") ||
-                        ""
+                        parseResponse(streamingMessage?.text || "")?.CODE || ""
                       }
                     />
                   ))}

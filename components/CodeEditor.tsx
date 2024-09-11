@@ -247,7 +247,7 @@ export default function CodeEditor({
     };
 
     return files;
-  }, [project.artifacts, selectedArtifact]);
+  }, [selectedArtifact.code, selectedArtifact.name, selectedArtifact.dependencies]);
 
   const handleFixIt = (errorMessage: string) => {
     console.log("errorMessage: ", errorMessage);

@@ -74,7 +74,7 @@ export const genAiApi = {
   },
 };
 
-function parseResponse(response: string): Record<string, string> {
+export function parseResponse(response: string): Record<string, string> {
   const result: Record<string, string> = {};
   const sections = ['ANALYSIS', 'EXTRA_LIBRARIES', 'CODE', 'VERIFICATION'];
 
@@ -106,7 +106,7 @@ export function extractContent(text: string, tag: string): string | null {
   }
 }
 
-function parseExtraLibraries(extraLibrariesString: string): Dependency[] {
+export function parseExtraLibraries(extraLibrariesString: string): Dependency[] {
   const libraries: Dependency[] = [];
   const libraryRegex = /<LIBRARY>\s*<NAME>(.*?)<\/NAME>\s*<VERSION>(.*?)<\/VERSION>\s*<\/LIBRARY>/g;
   let match;
