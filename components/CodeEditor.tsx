@@ -1,3 +1,4 @@
+import { parseResponse } from '@/utils/apiClients/GenAI'
 import {
 	SandpackCodeEditor,
 	SandpackLayout,
@@ -127,9 +128,9 @@ function SandpackContent({
 		setCurrentVersion(totalVersions)
 
 		const messageIndex = 2 * totalVersions - 1
-		const versionCode = selectedArtifact.chatSession?.messages[messageIndex]?.text || ''
-		// TODO: Update code based on message
-		// updateFile('/App.tsx', versionCode)
+		const result = parseResponse(selectedArtifact.chatSession?.messages[messageIndex]?.text || '')
+		// TODO: Update this
+		// updateFile('/App.tsx', result['CODE'])
 	}, [selectedArtifact.chatSession?.messages, updateFile])
 
 	useEffect(() => {
