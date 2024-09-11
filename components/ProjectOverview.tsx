@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { Project } from '../types/Project';
 import { FiExternalLink, FiShare2, FiTrash2, FiImage, FiEdit3 } from 'react-icons/fi';
 import Tooltip from './Tooltip';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import logo from './../public/logo.png';
@@ -23,7 +24,8 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
   const projectTags = mockTags.slice(0, Math.floor(Math.random() * 3) + 1);
-  const contributors = [1, 2, 3];
+  const [contributors, setContributors] = useState<string[]>([]);
+  const [showContributorsModal, setShowContributorsModal] = useState(false);
 
   // Function to generate a color based on the createdBy string
   const getColorFromString = (str: string | null | undefined) => {
@@ -34,6 +36,31 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   };
 
   const projectColor = getColorFromString(project.createdBy);
+
+  const fetchContributors = async () => {
+    try {
+      const editorResponse = await axios.post('/api/fga', {
+        action: 'listUsers',
+        data: {
+          object: { type: 'project', id: project.id },
+          relation: 'editor'
+        }
+      });
+      const editors = editorResponse.data.users.map((user: any) => user.object.id);
+      const allContributors = Array.from(new Set([project.createdBy, ...editors]));
+      setContributors(allContributors);
+    } catch (error) {
+      console.error('Error fetching contributors:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchContributors();
+  }, [project.id]);
+
+  const handleContributorsClick = () => {
+    setShowContributorsModal(true);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -112,7 +139,12 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
             <h3 className="text-lg font-semibold text-gray-800">{project.title}</h3>
             <p className="text-xs text-gray-500">
               {project.updatedBy} · {formatDate(project.updatedAt)} · 
-              <span className="ml-1 font-medium">{contributors.length} contributor{contributors.length !== 1 ? 's' : ''}</span>
+              <span 
+                className="ml-1 font-medium cursor-pointer hover:underline"
+                onClick={handleContributorsClick}
+              >
+                {contributors.length} contributor{contributors.length !== 1 ? 's' : ''}
+              </span>
             </p>
           </div>
         </div>
@@ -201,6 +233,24 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {showContributorsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Contributors</h3>
+            <ul className="max-h-60 overflow-y-auto">
+              {contributors.map((email, index) => (
+                <li key={index} className="mb-2 text-gray-700">{email}</li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowContributorsModal(false)}
+              className="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
