@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import HeaderV2 from "@/components/HeaderV2";
 import ProjectHeader from "@/components/ProjectHeader";
 import ArtifactList from "@/components/ArtifactLIst";
@@ -32,27 +32,19 @@ interface WorkspaceProps {
 
 const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
-  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(
-    null,
-  );
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
-  const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] =
-    useState(false);
+  const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<Message | null>(
-    null,
-  );
+  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
   const [mode, setMode] = useState<"preview" | "editor">("preview");
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] =
-    useState(false);
-  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(
-    null,
-  );
+  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] = useState(false);
+  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
   const [hoveredArtifact, setHoveredArtifact] = useState<Artifact | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [alert, setAlert] = useState<{
@@ -61,6 +53,15 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
   } | null>(null);
 
   const router = useRouter();
+
+  // Create a new function to update both project and selectedArtifact
+  const updateProjectAndArtifact = useCallback((
+    projectUpdater: (prev: Project | null) => Project | null,
+    newSelectedArtifact: Artifact | null
+  ) => {
+    setProject(projectUpdater);
+    setSelectedArtifact(newSelectedArtifact);
+  }, []);
 
   useEffect(() => {
     const fetchProjectAndArtifacts = async () => {
@@ -75,14 +76,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
         const artifacts = await artifactApi.getArtifacts(projectId);
         console.log("Fetched artifacts:", artifacts); // Add this log
 
-        setProject({
-          ...fetchedProject,
-          artifacts: artifacts,
-        });
-
-        if (artifacts.length > 0) {
-          setSelectedArtifact(artifacts[0]);
-        }
+        updateProjectAndArtifact(
+          (prevProject) => ({
+            ...fetchedProject,
+            artifacts: artifacts,
+          }),
+          artifacts.length > 0 ? artifacts[0] : null
+        );
       } catch (err) {
         console.error("Error fetching project and artifacts:", err); // Improve error logging
         setError("Failed to fetch project and artifacts");
@@ -92,11 +92,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId }) => {
     };
 
     fetchProjectAndArtifacts();
-  }, [projectId]);
+  }, [projectId, updateProjectAndArtifact]);
 
   const showAlert = (
     type: "error" | "info" | "warning" | "success",
-    message: string,
+    message: string
   ) => {
     setAlert({ type, message });
   };
@@ -213,11 +213,13 @@ export default App;`,
       callback();
       setShowCreateForm(false);
       setMode("editor");  
-      setSelectedArtifact(newArtifact);
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: [...(prevProject?.artifacts || []), newArtifact],
-      }));
+      updateProjectAndArtifact(
+        (prevProject) => ({
+          ...prevProject!,
+          artifacts: [...(prevProject?.artifacts || []), newArtifact],
+        }),
+        newArtifact
+      );
 
       // Generate code for the artifact
       const messages: Message[] = [
@@ -244,13 +246,15 @@ export default App;`,
               generatedCode = extractContent(response, "CODE") || "";
               newArtifact.code = generatedCode;
               newArtifact.name = extractComponentName(response);
-              setSelectedArtifact(newArtifact);
-              setProject((prevProject) => ({
-                ...prevProject!,
-                artifacts: prevProject?.artifacts?.map((a) =>
-                  a.id === newArtifact.id ? newArtifact : a,
-                ),
-              }));
+              updateProjectAndArtifact(
+                (prevProject) => ({
+                  ...prevProject!,
+                  artifacts: prevProject?.artifacts?.map((a) =>
+                    a.id === newArtifact.id ? newArtifact : a
+                  ) || [],
+                }),
+                newArtifact
+              );
             }
             setMode("preview");
           }
@@ -292,13 +296,15 @@ export default App;`,
         chatSession: newChatSession,
       };
 
-      setSelectedArtifact(newArtifact);
-      setProject((prevProject) => ({
-        ...prevProject!,
-        artifacts: prevProject?.artifacts?.map((a) =>
-          a.id === newArtifact.id ? newArtifact : a,
-        ),
-      }));
+      updateProjectAndArtifact(
+        (prevProject) => ({
+          ...prevProject!,
+          artifacts: prevProject?.artifacts?.map((a) =>
+            a.id === newArtifact.id ? newArtifact : a
+          ) || [],
+        }),
+        newArtifact
+      );
       setStreamingMessage(null);
       setMode("preview");
 
@@ -341,29 +347,20 @@ export default App;`,
       try {
         await artifactApi.deleteArtifact(projectId, artifactToDelete.id);
 
-        setProject((prevProject) => {
-          const updatedArtifacts =
-            prevProject?.artifacts?.filter(
-              (a) => a.id !== artifactToDelete.id,
-            ) || [];
-          return {
-            ...prevProject!,
-            artifacts: updatedArtifacts,
-          };
-        });
 
-        if (selectedArtifact?.id === artifactToDelete.id) {
-          setProject((prevProject) => {
-            const remainingArtifacts =
-              prevProject?.artifacts?.filter(
-                (a) => a.id !== artifactToDelete.id,
-              ) || [];
-            const newSelectedArtifact =
-              remainingArtifacts.length > 0 ? remainingArtifacts[0] : null;
-            setSelectedArtifact(newSelectedArtifact);
-            return prevProject;
-          });
-        }
+        updateProjectAndArtifact(
+          (prevProject) => {
+            const updatedArtifacts = prevProject?.artifacts?.filter(
+              (a) => a.id !== artifactToDelete.id
+            ) || [];
+            return {
+              ...prevProject!,
+              artifacts: updatedArtifacts,
+            };
+          },
+          project?.artifacts?.find(a => a.id !== artifactToDelete.id) || null
+        );
+
         showAlert("success", "Artifact deleted successfully");
         return "Artifact deleted successfully"; // Return a success message
       } catch (error) {
