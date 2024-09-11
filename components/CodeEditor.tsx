@@ -184,7 +184,6 @@ function SandpackContent({
             title="Reset Sandbox"
           >
             <RefreshIcon style={{ width: "16px", height: "16px" }} />
-            <span>Reset</span>
           </button>
         </div>
       )}
