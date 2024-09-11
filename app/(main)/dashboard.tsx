@@ -72,10 +72,21 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (userLoading || projectsLoading) {
+  if (userLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <CircularProgress size={60} />
+      </div>
+    );
+  }
+
+  if (projectsLoading) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-gray-50">
+        <CircularProgress size={64} />
+        <h2 className="mb-2 mt-4 text-2xl font-semibold text-gray-700">
+          Loading your projects...
+        </h2>
       </div>
     );
   }
