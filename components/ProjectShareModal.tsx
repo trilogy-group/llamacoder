@@ -3,13 +3,14 @@ import { FiX, FiCopy } from 'react-icons/fi';
 import { toast } from 'sonner';
 import axios from 'axios';
 import EditAccessModal from './EditAccessModal';
+import { projectApi } from '@/utils/apiClients/Project';
 
 interface ShareProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
   projectTitle: string;
-  userAccessLevel: string;
+  userAccessLevel?: string;
 }
 
 interface ProjectUser {
@@ -21,6 +22,7 @@ interface ProjectUser {
 const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, projectId, projectTitle, userAccessLevel }) => {
   const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState('viewer');
+  const [currentUserAccessLevel, setCurrentUserAccessLevel] = useState<string | undefined>(userAccessLevel);
   const [isSharing, setIsSharing] = useState(false);
   const [projectUsers, setProjectUsers] = useState<ProjectUser[]>([]);
   const [editingUser, setEditingUser] = useState<ProjectUser | null>(null);
@@ -30,6 +32,17 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
       fetchProjectUsers();
     }
   }, [isOpen, projectId]);
+
+  useEffect(() => {
+    if (!currentUserAccessLevel) {
+      fetchUserAccessLevel();
+    }
+  }, [projectId, userAccessLevel]);
+
+  const fetchUserAccessLevel = async () => {
+    const { accessLevel } = await projectApi.getProject(projectId);
+    setCurrentUserAccessLevel(accessLevel);
+  };
 
   const fetchProjectUsers = async () => {
     try {
@@ -183,7 +196,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           className="mb-4 w-full rounded border p-2"
         >
           <option value="viewer">Can view</option>
-          {userAccessLevel !== 'viewer' && <option value="editor">Can edit</option>}
+          {currentUserAccessLevel !== 'viewer' && <option value="editor">Can edit</option>}
         </select>
         <button
           onClick={handleShare}
@@ -224,7 +237,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           user={editingUser}
           onClose={() => setEditingUser(null)}
           onUpdateAccess={handleAccessUpdate}
-          userAccessLevel={userAccessLevel}
+          userAccessLevel={currentUserAccessLevel}
         />
       )}
     </div>

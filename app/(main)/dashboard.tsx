@@ -22,7 +22,8 @@ const Dashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
   const router = useRouter();
 
   const handleCreateProject = async (description: string) => {
@@ -135,7 +136,6 @@ const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
         onClose={() => setShowShareModal(false)}
         projectId={selectedProjectId}
         projectTitle={projects.find(p => p.id === selectedProjectId)?.title || ''}
-        userAccessLevel="owner" // Assuming the user is the owner on the dashboard
       />
 )}
     </div>

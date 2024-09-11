@@ -8,7 +8,7 @@ interface EditAccessModalProps {
   };
   onClose: () => void;
   onUpdateAccess: (email: string, newAccessLevel: string) => void;
-  userAccessLevel: string;
+  userAccessLevel?: string;
 }
 
 const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess, userAccessLevel }) => {
