@@ -273,6 +273,8 @@ ${instructions}
       console.log("Generating response with messages:", messages);
       const { code, dependencies } = await genAiApi.generateResponse(
         messages,
+        project,
+        selectedArtifact,
         onChunk,
       );
 
@@ -427,6 +429,8 @@ ${instructions}
       console.log("Generating response with messages:", chatSession.messages);
       const { code, dependencies: extractedDependencies } = await genAiApi.generateResponse(
         chatSession.messages,
+        project,
+        artifact,
         onChunk
       );
 

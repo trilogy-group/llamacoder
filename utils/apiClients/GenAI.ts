@@ -1,11 +1,19 @@
 import { Message } from '@/types/Message';
-import { Dependency } from '@/types/Artifact';
+import { Artifact, Dependency } from '@/types/Artifact';
+import { Project } from '@/types/Project';
 
 export const genAiApi = {
   generateResponse: async (
     messages: Message[],
+    project: Project | null,
+    selectedArtifact: Artifact | null,
     onChunk: (chunks: { index: number; type: string; text: string }[]) => void
   ): Promise<{ code: string; dependencies: Dependency[] }> => {
+
+    if (!project || !selectedArtifact) {
+      throw new Error('Project and selected artifact are required');
+    }
+
     console.log("Generating response with messages:", messages);
 
     // Process messages to include attachment contents
@@ -28,6 +36,27 @@ export const genAiApi = {
     }));
 
     console.log("Processed messages:", processedMessages);
+    
+    const availableComponents = project?.artifacts?.filter(artifact => artifact.id !== selectedArtifact.id)
+      .map(artifact => `- ${artifact.name}: ${artifact.description}`)
+      .join('\n');
+
+    console.log("Available components:", availableComponents);
+
+    processedMessages[0].text += `
+These are custom components available for use:
+${availableComponents}
+
+You can import them like this:
+import CustomComponent from './CustomComponent';
+
+For example, to use the Login component, you can import it like this:
+import Login from './Login';
+
+Please use these components as needed in your response, assuming they don't require any props for now.
+`;
+
+    console.log("Available components:", availableComponents);
 
     const response = await fetch('/api/genai', {
       method: 'POST',
@@ -52,7 +81,7 @@ export const genAiApi = {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value);      
+      const chunk = decoder.decode(value);
       const lines = chunk.split('\n');
       for (const line of lines) {
         if (line.startsWith('data: ')) {
