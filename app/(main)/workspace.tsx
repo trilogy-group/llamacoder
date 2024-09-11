@@ -134,45 +134,51 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 
   const onSandpackError = (error: SandpackError) => {
     console.log("Sandpack error:", error, selectedArtifact);
-    if(selectedArtifact?.error) {
-      return;
-    }
-    const updatedArtifact = {
-      ...selectedArtifact,
-      status: "error",
-      error: error,
-    } as Artifact;
-    updateProjectAndArtifact(
-      (prevProject) => ({
-        ...prevProject!,
-        artifacts: prevProject?.artifacts?.map((a) =>
-          a.id === updatedArtifact.id ? updatedArtifact : a
-        ) || [],
-      }),
-      updatedArtifact
-    );
-    console.log("Errro udpatedArtifact: ", updatedArtifact);
+    // if(selectedArtifact?.error) {
+    //   return;
+    // }
+    // const updatedArtifact = {
+    //   ...selectedArtifact,
+    //   status: "error",
+    //   error: error,
+    // } as Artifact;
+
+    // updateProjectAndArtifact(
+    //   (prevProject) => ({
+    //     ...prevProject!,
+    //     artifacts: prevProject?.artifacts?.map((a) =>
+    //       a.id === updatedArtifact.id ? updatedArtifact : a
+    //     ) || [],
+    //   }),
+    //   updatedArtifact
+    // );
+
+    // console.log("Error udpatedArtifact: ", updatedArtifact);
   };
+
+  useEffect(() => {
+    console.log("Selected artifact: ", selectedArtifact);
+  }, [selectedArtifact]);
 
   const onSuccess = () => {
     console.log("Success");
-    if(selectedArtifact?.status !== "error") {
-      return;
-    }
-    const updatedArtifact = {
-      ...selectedArtifact,
-      status: "idle",
-      error: null,
-    } as Artifact;
-    updateProjectAndArtifact(
-      (prevProject) => ({
-        ...prevProject!,
-        artifacts: prevProject?.artifacts?.map((a) =>
-          a.id === updatedArtifact.id ? updatedArtifact : a
-        ) || [],
-      }),
-      updatedArtifact
-    );
+    // if(selectedArtifact?.status !== "error") {
+    //   return;
+    // }
+    // const updatedArtifact = {
+    //   ...selectedArtifact,
+    //   status: "idle",
+    //   error: null,
+    // } as Artifact;
+    // updateProjectAndArtifact(
+    //   (prevProject) => ({
+    //     ...prevProject!,
+    //     artifacts: prevProject?.artifacts?.map((a) =>
+    //       a.id === updatedArtifact.id ? updatedArtifact : a
+    //     ) || [],
+    //   }),
+    //   updatedArtifact
+    // );
   };
   const isViewer = accessLevel === 'viewer';
 
@@ -342,13 +348,9 @@ ${instructions}
       const { code, dependencies } = await genAiApi.generateResponse(
         messages,
         project,
-        selectedArtifact,
+        newArtifact,
         onChunk,
       );
-
-      console.log("Generated code:", code);
-      console.log("Dependencies:", dependencies);
-      console.log("Response:", response);
 
       chatSession =  {
         ...chatSession,
