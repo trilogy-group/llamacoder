@@ -1,32 +1,36 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, memo } from "react";
-import HeaderV2 from "@/components/HeaderV2";
-import ProjectHeader from "@/components/ProjectHeader";
-import ArtifactList from "@/components/ArtifactLIst";
-import Preview from "@/components/Preview";
-import UpdateArtifact from "@/components/UpdateArtifact";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Artifact } from "@/types/Artifact";
-import { Project } from "@/types/Project";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { projectApi } from "@/utils/apiClients/Project";
-import { artifactApi } from "@/utils/apiClients/Artifact";
-import { genAiApi, parseResponse, parseExtraLibraries } from "@/utils/apiClients/GenAI";
-import { Message } from "@/types/Message";
-import { CircularProgress } from "@mui/material";
-import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
-import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
-import { ChatSession } from "@/types/ChatSession";
-import CodeViewer from "@/components/CodeViewer";
-import ProjectShareModal from "@/components/ProjectShareModal";
-import { v4 as uuidv4 } from "uuid";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
-import ArtifactInfoCard from "@/components/ArtifactInfoCard";
 import Alert from "@/components/Alert";
+import ArtifactInfoCard from "@/components/ArtifactInfoCard";
+import ArtifactList from "@/components/ArtifactLIst";
+import ArtifactOverviewInputForm from "@/components/ArtifactOverviewInputForm";
+import CodeViewer from "@/components/CodeViewer";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
+import EmptyArtifactsMessage from "@/components/EmptyArtifactsMessage";
+import HeaderV2 from "@/components/HeaderV2";
+import Preview from "@/components/Preview";
+import ProjectHeader from "@/components/ProjectHeader";
+import ProjectShareModal from "@/components/ProjectShareModal";
+import UpdateArtifact from "@/components/UpdateArtifact";
+import { Artifact } from "@/types/Artifact";
 import { Attachment } from "@/types/Attachment";
+import { ChatSession } from "@/types/ChatSession";
+import { Message } from "@/types/Message";
+import { Project } from "@/types/Project";
+import { artifactApi } from "@/utils/apiClients/Artifact";
+import {
+  genAiApi,
+  parseExtraLibraries,
+  parseResponse,
+} from "@/utils/apiClients/GenAI";
+import { projectApi } from "@/utils/apiClients/Project";
 import { defaultDependencies } from "@/utils/config";
+import { CircularProgress } from "@mui/material";
+import { useRouter } from "next/navigation";
+import React, { memo, useCallback, useEffect, useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
 interface WorkspaceProps {
   projectId: string;
@@ -34,36 +38,52 @@ interface WorkspaceProps {
 
 const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
-  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(
+    null,
+  );
   const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false);
-  const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] = useState(false);
+  const [isUpdateArtifactCollapsed, setIsUpdateArtifactCollapsed] =
+    useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState<Message | null>(
+    null,
+  );
   const [mode, setMode] = useState<"preview" | "editor">("preview");
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] = useState(false);
-  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
+  const [showDeleteArtifactConfirmation, setShowDeleteArtifactConfirmation] =
+    useState(false);
+  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(
+    null,
+  );
   const [hoveredArtifact, setHoveredArtifact] = useState<Artifact | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [alert, setAlert] = useState<{
     type: "error" | "info" | "warning" | "success";
     message: string;
   } | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [artifactToRename, setArtifactToRename] = useState<Artifact | null>(
+    null,
+  );
+  const [newArtifactName, setNewArtifactName] = useState("");
 
   const router = useRouter();
 
   // Create a new function to update both project and selectedArtifact
-  const updateProjectAndArtifact = useCallback((
-    projectUpdater: (prev: Project | null) => Project | null,
-    newSelectedArtifact: Artifact | null
-  ) => {
-    setProject(projectUpdater);
-    setSelectedArtifact(newSelectedArtifact);
-  }, []);
+  const updateProjectAndArtifact = useCallback(
+    (
+      projectUpdater: (prev: Project | null) => Project | null,
+      newSelectedArtifact: Artifact | null,
+    ) => {
+      setProject(projectUpdater);
+      setSelectedArtifact(newSelectedArtifact);
+    },
+    [],
+  );
 
   useEffect(() => {
     const fetchProjectAndArtifacts = async () => {
@@ -79,15 +99,17 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
         console.log("Fetched artifacts:", artifacts);
 
         // Update artifacts to ensure each message in the chat session has attachments set to an empty array
-        const updatedArtifacts = artifacts.map(artifact => ({
+        const updatedArtifacts = artifacts.map((artifact) => ({
           ...artifact,
-          chatSession: artifact.chatSession ? {
-            ...artifact.chatSession,
-            messages: artifact.chatSession.messages.map(message => ({
-              ...message,
-              attachments: [] as Attachment[]
-            }))
-          } : null
+          chatSession: artifact.chatSession
+            ? {
+                ...artifact.chatSession,
+                messages: artifact.chatSession.messages.map((message) => ({
+                  ...message,
+                  attachments: [] as Attachment[],
+                })),
+              }
+            : null,
         }));
 
         updateProjectAndArtifact(
@@ -95,7 +117,7 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
             ...fetchedProject,
             artifacts: updatedArtifacts,
           }),
-          updatedArtifacts.length > 0 ? updatedArtifacts[0] : null
+          updatedArtifacts.length > 0 ? updatedArtifacts[0] : null,
         );
       } catch (err) {
         console.error("Error fetching project and artifacts:", err);
@@ -110,7 +132,7 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
 
   const showAlert = (
     type: "error" | "info" | "warning" | "success",
-    message: string
+    message: string,
   ) => {
     setAlert({ type, message });
   };
@@ -155,7 +177,12 @@ const Workspace: React.FC<WorkspaceProps> = memo(({ projectId }) => {
     return match ? match[1] : "MyApp";
   };
 
-  const handleCreateArtifact = async (description: string, instructions: string, attachments: Attachment[], callback: () => void) => {
+  const handleCreateArtifact = async (
+    description: string,
+    instructions: string,
+    attachments: Attachment[],
+    callback: () => void,
+  ) => {
     console.log("Creating artifact with description:", description);
     console.log("Creating artifact with instructions:", instructions);
     console.log("Creating artifact with attachments:", attachments);
@@ -187,9 +214,9 @@ export default App;`,
 **Brief description of the artifact:** ${description}
 `;
 
-      if(instructions.trim() !== "") {
+      if (instructions.trim() !== "") {
         userMessage += `
-**Additional instructions:** 
+**Additional instructions:**
 ${instructions}
 `;
       }
@@ -212,17 +239,17 @@ ${instructions}
         ...newArtifact,
         chatSession: chatSession,
       };
-      
+
       newArtifact = await artifactApi.createArtifact(project.id, newArtifact);
       callback();
       setShowCreateForm(false);
-      setMode("editor");  
+      setMode("editor");
       updateProjectAndArtifact(
         (prevProject) => ({
           ...prevProject!,
           artifacts: [...(prevProject?.artifacts || []), newArtifact],
         }),
-        newArtifact
+        newArtifact,
       );
 
       const messages: Message[] = [
@@ -244,7 +271,9 @@ ${instructions}
             if (generatedCode === "") {
               const parsedResponse = parseResponse(response);
               generatedCode = parsedResponse.CODE || "";
-              const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || "");
+              const dependencies = parseExtraLibraries(
+                parsedResponse.EXTRA_LIBRARIES || "",
+              );
               newArtifact = {
                 ...newArtifact,
                 name: extractComponentName(generatedCode),
@@ -254,11 +283,12 @@ ${instructions}
               updateProjectAndArtifact(
                 (prevProject) => ({
                   ...prevProject!,
-                  artifacts: prevProject?.artifacts?.map((a) =>
-                    a.id === newArtifact.id ? newArtifact : a
-                  ) || [],
+                  artifacts:
+                    prevProject?.artifacts?.map((a) =>
+                      a.id === newArtifact.id ? newArtifact : a,
+                    ) || [],
                 }),
-                newArtifact
+                newArtifact,
               );
             }
             setMode("preview");
@@ -282,13 +312,15 @@ ${instructions}
       console.log("Dependencies:", dependencies);
       console.log("Response:", response);
 
-      chatSession =  {
+      chatSession = {
         ...chatSession,
-        messages: [...chatSession.messages, { role: "assistant", text: response }],
-      }
+        messages: [
+          ...chatSession.messages,
+          { role: "assistant", text: response },
+        ],
+      };
 
       const componentName = extractComponentName(code);
-
 
       newArtifact = {
         ...newArtifact,
@@ -302,11 +334,12 @@ ${instructions}
       updateProjectAndArtifact(
         (prevProject) => ({
           ...prevProject!,
-          artifacts: prevProject?.artifacts?.map((a) =>
-            a.id === newArtifact.id ? newArtifact : a
-          ) || [],
+          artifacts:
+            prevProject?.artifacts?.map((a) =>
+              a.id === newArtifact.id ? newArtifact : a,
+            ) || [],
         }),
-        newArtifact
+        newArtifact,
       );
       setStreamingMessage(null);
       setMode("preview");
@@ -337,6 +370,53 @@ ${instructions}
     setShowDeleteArtifactConfirmation(true);
   };
 
+  const handleRenameArtifact = (artifact: Artifact) => {
+    setArtifactToRename(artifact);
+    setNewArtifactName(artifact.name || "");
+    setShowRenameModal(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (artifactToRename) {
+      await artifactApi.updateArtifact(projectId, artifactToRename.id, {
+        name: newArtifactName,
+      });
+      updateProjectAndArtifact(
+        (prevProject) => ({
+          ...prevProject!,
+          artifacts:
+            prevProject?.artifacts?.map((a) =>
+              a.id === artifactToRename.id
+                ? { ...a, name: newArtifactName }
+                : a,
+            ) || [],
+        }),
+        selectedArtifact,
+      );
+      setShowRenameModal(false);
+      setArtifactToRename(null);
+    }
+  };
+
+  const handleDuplicateArtifact = async (artifact: Artifact) => {
+    const newArtifactData = {
+      ...artifact,
+      id: uuidv4(),
+      name: `${artifact.name} (COPY)`,
+    };
+    const newArtifact = await artifactApi.createArtifact(
+      projectId,
+      newArtifactData,
+    );
+    updateProjectAndArtifact(
+      (prevProject) => ({
+        ...prevProject!,
+        artifacts: [...(prevProject?.artifacts || []), newArtifact],
+      }),
+      newArtifact,
+    );
+  };
+
   const handleArtifactHover = (
     artifact: Artifact | null,
     event: React.MouseEvent,
@@ -352,15 +432,16 @@ ${instructions}
 
         updateProjectAndArtifact(
           (prevProject) => {
-            const updatedArtifacts = prevProject?.artifacts?.filter(
-              (a) => a.id !== artifactToDelete.id
-            ) || [];
+            const updatedArtifacts =
+              prevProject?.artifacts?.filter(
+                (a) => a.id !== artifactToDelete.id,
+              ) || [];
             return {
               ...prevProject!,
               artifacts: updatedArtifacts,
             };
           },
-          project?.artifacts?.find(a => a.id !== artifactToDelete.id) || null
+          project?.artifacts?.find((a) => a.id !== artifactToDelete.id) || null,
         );
 
         showAlert("success", "Artifact deleted successfully");
@@ -377,109 +458,131 @@ ${instructions}
     return "No artifact to delete"; // Return a message if there's no artifact to delete
   };
 
-  const handleUpdateArtifact = useCallback(async (chatSession: ChatSession, artifact: Artifact) => {
-    try {
-      // Update the project state with the new chat session
-      updateProjectAndArtifact(
-        (prevProject) => ({
-          ...prevProject!,
-          artifacts: prevProject?.artifacts?.map((a) =>
-            a.id === artifact.id ? { ...a, status: "updating", chatSession } : a
-          ) || [],
-        }),
-        { ...artifact, status: "updating", chatSession } as Artifact
-      );
-      setMode("editor");
-      let response = "";
-      let generatedCode = "";
-      const onChunk = (
-        chunks: { index: number; type: string; text: string }[]
-      ) => {
-        for (const chunk of chunks) {
-          response += chunk.text;
-          if (response.includes("</CODE>")) {
-            if (generatedCode === "") {
-              const parsedResponse = parseResponse(response);
-              generatedCode = parsedResponse.CODE || "";
-              const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || "");
-              updateProjectAndArtifact(
-                (prevProject) => ({
-                  ...prevProject!,
-                  artifacts: prevProject?.artifacts?.map((a) =>
-                    a.id === artifact.id ? artifact : a
-                  ) || [],
-                }),
-                {
-                  ...artifact,
-                  name: extractComponentName(generatedCode),
-                  code: generatedCode,
-                  dependencies: [...defaultDependencies, ...dependencies, ...(artifact?.dependencies || [])],
-                }
-              );
+  const handleUpdateArtifact = useCallback(
+    async (chatSession: ChatSession, artifact: Artifact) => {
+      try {
+        // Update the project state with the new chat session
+        updateProjectAndArtifact(
+          (prevProject) => ({
+            ...prevProject!,
+            artifacts:
+              prevProject?.artifacts?.map((a) =>
+                a.id === artifact.id
+                  ? { ...a, status: "updating", chatSession }
+                  : a,
+              ) || [],
+          }),
+          { ...artifact, status: "updating", chatSession } as Artifact,
+        );
+        setMode("editor");
+        let response = "";
+        let generatedCode = "";
+        const onChunk = (
+          chunks: { index: number; type: string; text: string }[],
+        ) => {
+          for (const chunk of chunks) {
+            response += chunk.text;
+            if (response.includes("</CODE>")) {
+              if (generatedCode === "") {
+                const parsedResponse = parseResponse(response);
+                generatedCode = parsedResponse.CODE || "";
+                const dependencies = parseExtraLibraries(
+                  parsedResponse.EXTRA_LIBRARIES || "",
+                );
+                updateProjectAndArtifact(
+                  (prevProject) => ({
+                    ...prevProject!,
+                    artifacts:
+                      prevProject?.artifacts?.map((a) =>
+                        a.id === artifact.id ? artifact : a,
+                      ) || [],
+                  }),
+                  {
+                    ...artifact,
+                    name: extractComponentName(generatedCode),
+                    code: generatedCode,
+                    dependencies: [
+                      ...defaultDependencies,
+                      ...dependencies,
+                      ...(artifact?.dependencies || []),
+                    ],
+                  },
+                );
+              }
+              setMode("preview");
             }
-            setMode("preview");
+            setStreamingMessage({
+              role: "assistant",
+              text: response,
+            });
           }
-          setStreamingMessage({
-            role: "assistant",
-            text: response,
-          });
-        }
-      };
+        };
 
-      console.log("Generating response with messages:", chatSession.messages);
-      const { code, dependencies: extractedDependencies } = await genAiApi.generateResponse(
-        chatSession.messages,
-        project,
-        artifact,
-        onChunk
-      );
+        console.log("Generating response with messages:", chatSession.messages);
+        const { code, dependencies: extractedDependencies } =
+          await genAiApi.generateResponse(
+            chatSession.messages,
+            project,
+            artifact,
+            onChunk,
+          );
 
-      console.log("Generated code:", code);
-      console.log("Dependencies:", extractedDependencies);
-      console.log("Response:", response);
+        console.log("Generated code:", code);
+        console.log("Dependencies:", extractedDependencies);
+        console.log("Response:", response);
 
-      const updatedChatSession = {
-        ...chatSession,
-        messages: [...chatSession.messages, { role: "assistant", text: response }],
-      } as ChatSession;
+        const updatedChatSession = {
+          ...chatSession,
+          messages: [
+            ...chatSession.messages,
+            { role: "assistant", text: response },
+          ],
+        } as ChatSession;
 
-      const componentName = extractComponentName(code);
+        const componentName = extractComponentName(code);
 
-      const updatedArtifact = {
-        ...artifact,
-        name: componentName,
-        code: code,
-        dependencies: [...defaultDependencies, ...extractedDependencies, artifact.dependencies],
-        status: "idle",
-        chatSession: updatedChatSession,
-      } as Artifact;
+        const updatedArtifact = {
+          ...artifact,
+          name: componentName,
+          code: code,
+          dependencies: [
+            ...defaultDependencies,
+            ...extractedDependencies,
+            artifact.dependencies,
+          ],
+          status: "idle",
+          chatSession: updatedChatSession,
+        } as Artifact;
 
-      updateProjectAndArtifact(
-        (prevProject) => ({
-          ...prevProject!,
-          artifacts: prevProject?.artifacts?.map((a) =>
-            a.id === updatedArtifact.id ? updatedArtifact : a
-          ) || [],
-        }),
-        updatedArtifact
-      );
-      setStreamingMessage(null);
-      setMode("preview");
+        updateProjectAndArtifact(
+          (prevProject) => ({
+            ...prevProject!,
+            artifacts:
+              prevProject?.artifacts?.map((a) =>
+                a.id === updatedArtifact.id ? updatedArtifact : a,
+              ) || [],
+          }),
+          updatedArtifact,
+        );
+        setStreamingMessage(null);
+        setMode("preview");
 
-      await artifactApi.updateArtifact(projectId, updatedArtifact.id, {
-        name: componentName,
-        code: code,
-        dependencies: [...defaultDependencies, ...extractedDependencies],
-        status: "idle",
-        chatSession: updatedChatSession,
-      });
+        await artifactApi.updateArtifact(projectId, updatedArtifact.id, {
+          name: componentName,
+          code: code,
+          dependencies: [...defaultDependencies, ...extractedDependencies],
+          status: "idle",
+          chatSession: updatedChatSession,
+        });
 
-      showAlert("success", "Artifact updated successfully");
-    } catch (error) {
-      console.error("Error updating artifact or generating code:", error);
-      showAlert("error", "Failed to update artifact or generate code");
-    }
-  }, [updateProjectAndArtifact, projectId, showAlert]);
+        showAlert("success", "Artifact updated successfully");
+      } catch (error) {
+        console.error("Error updating artifact or generating code:", error);
+        showAlert("error", "Failed to update artifact or generate code");
+      }
+    },
+    [updateProjectAndArtifact, projectId, showAlert],
+  );
 
   if (isLoading) {
     return (
@@ -592,6 +695,8 @@ ${instructions}
                 onCreateArtifact={() => setShowCreateForm(true)}
                 onDeleteArtifact={handleDeleteArtifact}
                 onArtifactHover={handleArtifactHover}
+                onDuplicateArtifact={handleDuplicateArtifact}
+                onRenameArtifact={handleRenameArtifact}
               />
             </Panel>
             {!isArtifactListCollapsed && (
@@ -664,6 +769,34 @@ ${instructions}
                 disabled={isDeleting}
               >
                 {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRenameModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
+            <h3 className="mb-4 text-xl font-semibold">Rename Artifact</h3>
+            <input
+              type="text"
+              value={newArtifactName}
+              onChange={(e) => setNewArtifactName(e.target.value)}
+              className="mb-4 w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowRenameModal(false)}
+                className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 transition-colors hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenameConfirm}
+                className="rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+              >
+                Rename
               </button>
             </div>
           </div>
