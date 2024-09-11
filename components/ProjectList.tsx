@@ -4,11 +4,12 @@ import { Project } from "@/types/Project";
 
 interface ProjectListProps {
   projects: Project[];
-  onProjectDeleted: (projectId: string) => void;
+  onProjectDeleted: (deletedProjectId: string) => Promise<void>;
   onShareClick: (projectId: string) => void;
+  onDeleteClick: (projectId: string) => void;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectDeleted, onShareClick }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectDeleted, onShareClick, onDeleteClick }) => {
   return (
     <div className="h-[calc(100vh-200px)] overflow-y-auto">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
@@ -18,6 +19,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectDeleted, o
             project={project}
             onProjectDeleted={onProjectDeleted}
             onShareClick={onShareClick}
+            onDeleteClick={onDeleteClick}
           />
         ))}
       </div>

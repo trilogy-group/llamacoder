@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
 import { Project } from '../types/Project';
-import { FiExternalLink, FiShare2, FiTrash2, FiImage, FiEdit3 } from 'react-icons/fi';
+import { FiExternalLink, FiShare2, FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Tooltip from './Tooltip';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
-import { toast } from 'sonner';
 import Image from 'next/image';
 import logo from './../public/logo.png';
 import CircularProgress from '@mui/material/CircularProgress';
+import Alert from './Alert';
 
 interface ProjectOverviewProps {
   project: Project;
-  onProjectDeleted: (projectId: string) => void;
+  onProjectDeleted: (deletedProjectId: string) => Promise<void>;
   onShareClick: (projectId: string) => void;
+  onDeleteClick: (projectId: string) => void;
 }
 
-const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted, onShareClick }) => {  
+const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted, onShareClick, onDeleteClick }) => {  
   const router = useRouter();
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   // Mock tags - replace with actual project tags when available
   const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
@@ -46,46 +46,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   };
 
   const handleDeleteClick = () => {
-    setShowDeleteConfirmation(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    setIsDeleting(true);
-    try {
-      await axios.delete(`/api/projects?id=${project.id}`);
-      toast.success('Project deleted successfully', {
-        duration: 3000,
-      });
-      onProjectDeleted(project.id);
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      if (axios.isAxiosError(error) && error.response) {
-        if (error.response.status === 401) {
-          toast.error('You are not authorized to delete projects. Please log in.', {
-            duration: 3000,
-          });
-        } else if (error.response.status === 403) {
-          toast.error('You don\'t have permission to delete this project.', {
-            duration: 3000,
-          });
-        } else {
-          toast.error('Failed to delete project. Please try again.', {
-            duration: 3000,
-          });
-        }
-      } else {
-        toast.error('An unexpected error occurred. Please try again.', {
-          duration: 3000,
-        });
-      }
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteConfirmation(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteConfirmation(false);
+    onDeleteClick(project.id);
   };
 
   return (
@@ -192,29 +153,12 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
         </Tooltip>
       </div>
 
-      {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
-            <h3 className="text-xl font-semibold mb-4">Confirm Deletion</h3>
-            <p className="mb-6 text-gray-600">Are you sure you want to delete this project? This action cannot be undone.</p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={handleDeleteCancel}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
       )}
     </div>
   );

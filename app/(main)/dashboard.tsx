@@ -15,6 +15,7 @@ import React, { useState } from "react";
 import Alert from "@/components/Alert";
 import { CircularProgress } from "@mui/material";
 import { projectApi } from "@/utils/apiClients/Project";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
 const Dashboard: React.FC = () => {
   const { user, error: userError, isLoading: userLoading } = useUser();
@@ -22,8 +23,15 @@ const Dashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [alert, setAlert] = useState<{ type: 'error' | 'info' | 'warning' | 'success'; message: string } | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
+  const [alert, setAlert] = useState<{
+    type: "error" | "info" | "warning" | "success";
+    message: string;
+  } | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -40,7 +48,7 @@ const Dashboard: React.FC = () => {
         description: description,
         thumbnail: "",
         context: [],
-        status: "Inactive"
+        status: "Inactive",
       };
 
       const createdProject = await projectApi.createProject(newProject);
@@ -49,26 +57,54 @@ const Dashboard: React.FC = () => {
       router.push(`/workspaces/${createdProject.id}`);
     } catch (error) {
       console.error("Error creating project:", error);
-      setAlert({ type: 'error', message: "Failed to create project. Please try again." });
+      setAlert({
+        type: "error",
+        message: "Failed to create project. Please try again.",
+      });
     } finally {
       setIsCreatingProject(false);
     }
   };
 
-  const handleShareClick = (projectId: string) => {
+  const handleShareClick = (projectId: string): void => {
     setSelectedProjectId(projectId);
     setShowShareModal(true);
   };
 
-  const handleProjectDeleted = async (deletedProjectId: string) => {
+  const handleProjectDeleted = async (
+    deletedProjectId: string,
+  ): Promise<void> => {
     try {
       await projectApi.deleteProject(deletedProjectId);
-      setAlert({ type: 'success', message: "Project deleted successfully." });
-      dispatchProjectsUpdate(projects.filter(project => project.id !== deletedProjectId));
+      setAlert({ type: "success", message: "Project deleted successfully." });
+      dispatchProjectsUpdate(
+        projects.filter((project) => project.id !== deletedProjectId),
+      );
     } catch (error) {
       console.error("Error deleting project:", error);
-      setAlert({ type: 'error', message: "Failed to delete project. Please try again." });
+      setAlert({
+        type: "error",
+        message: "Failed to delete project. Please try again.",
+      });
     }
+  };
+
+  const handleDeleteClick = (projectId: string): void => {
+    setProjectToDelete(projectId);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (projectToDelete) {
+      await handleProjectDeleted(projectToDelete);
+      setShowDeleteConfirmation(false);
+      setProjectToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
+    setProjectToDelete(null);
   };
 
   if (userLoading) {
@@ -89,7 +125,7 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
-  
+
   if (userError) {
     router.push("/api/auth/login");
   }
@@ -114,6 +150,7 @@ const Dashboard: React.FC = () => {
                 projects={projects}
                 onProjectDeleted={handleProjectDeleted}
                 onShareClick={handleShareClick}
+                onDeleteClick={handleDeleteClick}
               />
             </>
           ) : (
@@ -127,9 +164,11 @@ const Dashboard: React.FC = () => {
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
           {isCreatingProject ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-white p-20 shadow-lg">
-              <CircularProgress size={80} thickness={4} className="mb-6" />
-              <p className="text-xl text-gray-800 font-medium">Creating your project...</p>
+            <div className="flex flex-col items-center justify-center bg-gray-50 p-10">
+              <CircularProgress size={64} />
+              <h2 className="mb-4 mt-6 ml-10 mr-10 text-2xl font-semibold text-gray-700">
+                Creating your project...
+              </h2>
             </div>
           ) : (
             <ProjectOverviewInputForm
@@ -147,13 +186,29 @@ const Dashboard: React.FC = () => {
         />
       )}
       {showShareModal && selectedProjectId && (
-      <ProjectShareModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        projectId={selectedProjectId}
-        projectTitle={projects.find(p => p.id === selectedProjectId)?.title || ''}
-      />
-)}
+        <ProjectShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          projectId={selectedProjectId}
+          projectTitle={
+            projects.find((p) => p.id === selectedProjectId)?.title || ""
+          }
+        />
+      )}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <ConfirmationDialog
+            message={
+              <p>
+                Are you sure you want to delete this project? This action cannot
+                be undone.
+              </p>
+            }
+            onConfirm={handleDeleteConfirm}
+            onCancel={handleDeleteCancel}
+          />
+        </div>
+      )}
     </div>
   );
 };
