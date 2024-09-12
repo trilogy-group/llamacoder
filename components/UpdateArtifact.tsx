@@ -32,7 +32,7 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       user: "current_user",
-      model: "default_model",
+      model: "bedrock-claude-3.5-sonnet",
     };
   });
 
@@ -59,6 +59,15 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({
     }
   }, [chatSession, artifact, onUpdateArtifact]);
 
+  const handleModelChange = useCallback((model: string) => {
+    const updatedSession = {
+      ...chatSession,
+      model: model,
+      updatedAt: new Date().toISOString(),
+    };
+    setChatSession(updatedSession);
+  }, [chatSession]);
+
   const renderContent = () => {
     if (!streamingMessage && (artifact.status === "creating" || artifact.status === "updating")) {
       return (
@@ -77,7 +86,9 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({
         <InputForm 
           artifact={artifact} 
           onSubmit={handleSubmit} 
-          isEmpty={chatSession.messages.length === 0} 
+          isEmpty={chatSession.messages.length === 0}
+          selectedModel={chatSession.model}
+          onModelChange={handleModelChange}
         />
       </>
     );

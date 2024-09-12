@@ -28,7 +28,7 @@ import Alert from "@/components/Alert";
 import { Attachment } from "@/types/Attachment";
 import { defaultDependencies } from "@/utils/config";
 import { SandpackError } from "@codesandbox/sandpack-client";
-import { checkAccess } from "@/utils/access";
+
 
 interface WorkspaceProps {
   projectId: string;
@@ -279,7 +279,7 @@ ${instructions}
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         user: "user", // Replace with actual user ID if available
-        model: "gpt-4", // Replace with the actual model used
+        model: "bedrock-claude-3.5-sonnet"
       };
 
       newArtifact = {
@@ -350,6 +350,7 @@ ${instructions}
         project,
         newArtifact,
         onChunk,
+        chatSession.model
       );
 
       chatSession =  {
@@ -359,6 +360,9 @@ ${instructions}
 
       const componentName = extractComponentName(code);
 
+      if(componentName === "MyApp") {
+        showAlert("warning", "Oops! It seems like code genie failed to generate the complete code. Please try again with a different model or break down your use case into smaller artifacts.");
+      }
 
       newArtifact = {
         ...newArtifact,
@@ -501,7 +505,8 @@ ${instructions}
         chatSession.messages,
         project,
         artifact,
-        onChunk
+        onChunk,
+        chatSession.model
       );
 
       console.log("Generated code:", code);
@@ -514,6 +519,10 @@ ${instructions}
       } as ChatSession;
 
       const componentName = extractComponentName(code);
+
+      if(componentName === "MyApp") {
+        showAlert("warning", "Oops! It seems like code genie failed to generate the complete code. Please try again with a different model or break down your use case into smaller artifacts.");
+      }
 
       const updatedArtifact = {
         ...artifact,

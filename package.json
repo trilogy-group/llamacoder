@@ -27,7 +27,7 @@
     "@langchain/anthropic": "^0.2.15",
     "@langchain/community": "^0.2.31",
     "@langchain/core": "^0.2.31",
-    "@langchain/openai": "^0.0.10",
+    "@langchain/openai": "^0.2.10",
     "@mui/icons-material": "^6.0.1",
     "@mui/material": "^6.0.1",
     "@openfga/sdk": "^0.6.3",
