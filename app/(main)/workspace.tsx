@@ -21,7 +21,7 @@ import { Project } from '@/types/Project'
 import { artifactApi } from '@/utils/apiClients/Artifact'
 import { genAiApi, parseExtraLibraries, parseResponse } from '@/utils/apiClients/GenAI'
 import { projectApi } from '@/utils/apiClients/Project'
-import { defaultDependencies } from '@/utils/config'
+import { defaultDependencies, defaultCode } from '@/utils/config'
 import { SandpackError } from '@codesandbox/sandpack-client'
 import { CircularProgress } from '@mui/material'
 import { useRouter } from 'next/navigation'
@@ -67,6 +67,7 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		(projectUpdater: (prev: Project | null) => Project | null, newSelectedArtifact: Artifact | null) => {
 			setProject(projectUpdater)
 			setSelectedArtifact(newSelectedArtifact)
+      console.log('Updated project and artifact:', project, newSelectedArtifact)
 		},
 		[]
 	)
@@ -240,11 +241,7 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 			id: uuidv4(),
 			name: name,
 			displayName: name, // Use the provided name for both name and displayName
-			code: `import React from 'react';
-const App = () => {
-return <div>Hello World</div>;
-};
-export default App;`,
+			code: defaultCode,
 			dependencies: defaultDependencies,
 			description,
 			projectId,
@@ -285,6 +282,7 @@ ${description}
 			}
 
 			newArtifact = await artifactApi.createArtifact(project.id, newArtifact)
+      console.log('newArtifact after create:', newArtifact)
 			callback()
 			setShowCreateForm(false)
 			setMode('editor')
@@ -305,38 +303,44 @@ ${description}
 			]
 
 			let response = ''
-			let generatedCode = ''
 			const onChunk = (chunks: { index: number; type: string; text: string }[]) => {
 				for (const chunk of chunks) {
 					response += chunk.text
-					if (response.includes('</CODE>')) {
-						if (generatedCode === '') {
-							const parsedResponse = parseResponse(response)
-							generatedCode = parsedResponse.CODE || ''
-							const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
-							newArtifact = {
-								...newArtifact,
-								name: extractComponentName(generatedCode),
-								displayName: name,
-								code: generatedCode,
-								dependencies: [...defaultDependencies, ...dependencies],
-							}
-							updateProjectAndArtifact(
-								(prevProject) => ({
-									...prevProject!,
-									artifacts: prevProject?.artifacts?.map((a) => (a.id === newArtifact.id ? newArtifact : a)) || [],
-								}),
-								newArtifact
-							)
-						}
-						setMode('preview')
-					}
+					// if (response.includes('</CODE>')) {
+					// 	if (generatedCode === '') {
+					// 		const parsedResponse = parseResponse(response)
+					// 		generatedCode = parsedResponse.CODE || ''
+					// 		const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
+          //     console.log('newArtifact before:', newArtifact)
+					// 		newArtifact = {
+					// 			...newArtifact,
+					// 			name: extractComponentName(generatedCode),
+					// 			displayName: name,
+					// 			code: generatedCode,
+					// 			dependencies: [...defaultDependencies, ...dependencies],
+					// 		}
+          //     console.log('Generated code:', generatedCode);
+          //     console.log('Response:', response);
+          //     console.log('parsedResponse:', parsedResponse);
+          //     console.log('newArtifact after:', newArtifact);
+
+					// 		updateProjectAndArtifact(
+					// 			(prevProject) => ({
+					// 				...prevProject!,
+					// 				artifacts: prevProject?.artifacts?.map((a) => (a.id === newArtifact.id ? newArtifact : a)) || [],
+					// 			}),
+					// 			newArtifact
+					// 		)
+					// 	}
+					// 	setMode('preview')
+					// }
 					setStreamingMessage({
 						role: 'assistant',
 						text: response,
 					})
 				}
 			}
+
 			console.log('Generating response with messages:', messages)
 			const { code, dependencies } = await genAiApi.generateResponse(messages, project, newArtifact, onChunk, chatSession.model)
 
@@ -502,30 +506,30 @@ ${description}
 				)
 				setMode('editor')
 				let response = ''
-				let generatedCode = ''
 				const onChunk = (chunks: { index: number; type: string; text: string }[]) => {
 					for (const chunk of chunks) {
 						response += chunk.text
-						if (response.includes('</CODE>')) {
-							if (generatedCode === '') {
-								const parsedResponse = parseResponse(response)
-								generatedCode = parsedResponse.CODE || ''
-								const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
-								updateProjectAndArtifact(
-									(prevProject) => ({
-										...prevProject!,
-										artifacts: prevProject?.artifacts?.map((a) => (a.id === artifact.id ? artifact : a)) || [],
-									}),
-									{
-										...artifact,
-										name: extractComponentName(generatedCode),
-										code: generatedCode,
-										dependencies: [...defaultDependencies, ...dependencies, ...(artifact?.dependencies || [])],
-									}
-								)
-							}
-							setMode('preview')
-						}
+						// if (response.includes('</CODE>')) {
+						// 	if (generatedCode === '') {
+						// 		const parsedResponse = parseResponse(response)
+						// 		generatedCode = parsedResponse.CODE || '';
+            //     console.log('Generated code:', generatedCode);
+						// 		const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
+						// 		updateProjectAndArtifact(
+						// 			(prevProject) => ({
+						// 				...prevProject!,
+						// 				artifacts: prevProject?.artifacts?.map((a) => (a.id === artifact.id ? artifact : a)) || [],
+						// 			}),
+						// 			{
+						// 				...artifact,
+						// 				name: extractComponentName(generatedCode),
+						// 				code: generatedCode,
+						// 				dependencies: [...defaultDependencies, ...dependencies, ...(artifact?.dependencies || [])],
+						// 			}
+						// 		)
+						// 	}
+						// 	setMode('preview')
+						// }
 						setStreamingMessage({
 							role: 'assistant',
 							text: response,

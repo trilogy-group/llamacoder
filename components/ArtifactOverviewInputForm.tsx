@@ -109,6 +109,8 @@ const ArtifactOverviewInputForm: React.FC<ArtifactOverviewInputFormProps> = ({ o
     onNext(name, description, attachments, () => setIsLoading(false));
   };
 
+  const isFormValid = name.trim() !== '' && description.trim() !== '';
+
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Create New Artifact</h2>
@@ -150,9 +152,9 @@ const ArtifactOverviewInputForm: React.FC<ArtifactOverviewInputFormProps> = ({ o
           </button>
           <button
             type="submit"
-            disabled={!name.trim() || isLoading}
+            disabled={!isFormValid || isLoading}
             className={`px-6 py-2 text-sm font-medium text-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 ease-in-out flex items-center ${
-              name.trim() && !isLoading
+              isFormValid && !isLoading
                 ? 'bg-blue-500 hover:bg-blue-600'
                 : 'bg-blue-300 cursor-not-allowed'
             }`}
