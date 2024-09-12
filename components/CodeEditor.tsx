@@ -1,3 +1,4 @@
+import { VersionController, useVersionController } from '@/hooks/useVersionController'
 import { parseResponse } from '@/utils/apiClients/GenAI'
 import { SandpackError } from '@codesandbox/sandpack-client'
 import {
@@ -16,6 +17,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import DownloadIcon from '@mui/icons-material/GetApp' // Changed to a more appropriate icon
 import RefreshIcon from '@mui/icons-material/Refresh'
 import VisibilityIcon from '@mui/icons-material/Visibility'
+import CircularProgress from '@mui/material/CircularProgress'
 import { saveAs } from 'file-saver'
 import { AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
@@ -31,22 +33,20 @@ interface CodeEditorProps {
 	children?: React.ReactNode
 }
 
-import CircularProgress from '@mui/material/CircularProgress'
-
 function SandpackContent({
 	children,
 	onAutoFix,
 	onSandpackError,
 	onReset,
 	onSuccess,
-	selectedArtifact,
+	versionController,
 }: {
 	children: React.ReactNode
 	onAutoFix: (error: SandpackError, callback: () => void) => void
 	onSandpackError?: (error: SandpackError) => void
 	onReset: () => void
 	onSuccess?: () => void
-	selectedArtifact: Artifact
+	versionController: VersionController
 }) {
 	const [isPreviewOnly, setIsPreviewOnly] = useState(true)
 
@@ -55,8 +55,6 @@ function SandpackContent({
 	const { code } = useActiveCode()
 	const [statusMessage, setStatusMessage] = useState<string | null>(null)
 	const [isAutoFixInProgress, setIsAutoFixInProgress] = useState(false)
-	const [currentVersion, setCurrentVersion] = useState(1)
-	const [totalVersions, setTotalVersions] = useState(1)
 
 	const handleDownload = () => {
 		const blob = new Blob([code], {
@@ -64,25 +62,6 @@ function SandpackContent({
 		})
 		saveAs(blob, 'App.tsx')
 	}
-
-	const handlePrevVersion = () => {
-		if (currentVersion > 1) setCurrentVersion(currentVersion - 1)
-	}
-
-	const handleNextVersion = () => {
-		if (currentVersion < totalVersions) setCurrentVersion(currentVersion + 1)
-	}
-
-	useEffect(() => {
-		const totalVersions = Math.ceil((selectedArtifact.chatSession?.messages.length || 0) / 2)
-		setTotalVersions(totalVersions)
-		setCurrentVersion(totalVersions)
-
-		const messageIndex = 2 * totalVersions - 1
-		const result = parseResponse(selectedArtifact.chatSession?.messages[messageIndex]?.text || '')
-		// TODO: Update this
-		// updateFile('/App.tsx', result['CODE'])
-	}, [selectedArtifact.chatSession?.messages, updateFile])
 
 	const actionButtons = (
 		<div className="absolute bottom-2 left-2 z-20 flex gap-2">
@@ -107,27 +86,37 @@ function SandpackContent({
 			</button>
 			<div className="group flex items-center" role="group">
 				<button
-					onClick={handlePrevVersion}
+					onClick={versionController.goToPreviousVersion}
 					className="rounded-l-full bg-[#444759] px-2 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white"
 					title="Previous Version"
-					disabled={currentVersion === 1}
+					disabled={versionController.currentVersion === 1}
 				>
-					<ChevronLeftIcon style={{ width: '16px', height: '16px', opacity: currentVersion === 1 ? 0.5 : 1 }} />
+					<ChevronLeftIcon style={{ width: '16px', height: '16px', opacity: versionController.currentVersion === 1 ? 0.5 : 1 }} />
 				</button>
 				<span className="cursor-default bg-[#444759] py-1 text-sm font-medium text-[#6272A4] group-hover:text-white">
-					{`Version ${currentVersion} of ${totalVersions}`}
+					{`Version ${versionController.currentVersion} of ${versionController.totalVersions}`}
 				</span>
 				<button
-					onClick={handleNextVersion}
+					onClick={versionController.goToNextVersion}
 					className="rounded-r-full bg-[#444759] px-2 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white"
 					title="Next Version"
-					disabled={currentVersion === totalVersions}
+					disabled={versionController.currentVersion === versionController.totalVersions}
 				>
-					<ChevronRightIcon style={{ width: '16px', height: '16px', opacity: currentVersion === totalVersions ? 0.5 : 1 }} />
+					<ChevronRightIcon
+						style={{
+							width: '16px',
+							height: '16px',
+							opacity: versionController.currentVersion === versionController.totalVersions ? 0.5 : 1,
+						}}
+					/>
 				</button>
 			</div>
 		</div>
 	)
+
+	useEffect(() => {
+		updateFile('/App.tsx', code)
+	}, [code, activeFile])
 
 	useEffect(() => {
 		if (error) {
@@ -263,6 +252,11 @@ function SandpackContent({
 
 export default function CodeEditor({ project, selectedArtifact, onAutoFix, onSandpackError, onSuccess, children }: CodeEditorProps) {
 	const [key, setKey] = useState(0)
+	const versionController = useVersionController(Math.ceil((selectedArtifact?.chatSession?.messages?.length ?? 1) / 2))
+
+	useEffect(() => {
+		versionController.updateTotalVersions(Math.ceil((selectedArtifact?.chatSession?.messages?.length ?? 1) / 2))
+	}, [selectedArtifact?.chatSession?.messages?.length])
 
 	const normalizedDependencies = useMemo(() => {
 		const allDependencies = project.artifacts?.flatMap((artifact) => artifact.dependencies || []) || []
@@ -277,6 +271,10 @@ export default function CodeEditor({ project, selectedArtifact, onAutoFix, onSan
 
 	const sandpackFiles = useMemo(() => {
 		const files: Record<string, { code: string; active: boolean; hidden: boolean; readOnly: boolean }> = {}
+
+		// Update selectedArtifact code based on selected version
+		selectedArtifact.code =
+			parseResponse(selectedArtifact.chatSession?.messages?.[versionController.currentVersion * 2 - 1]?.text ?? '')?.CODE || ''
 
 		// Add all project artifacts as files
 		project.artifacts?.forEach((artifact) => {
@@ -297,7 +295,7 @@ export default function CodeEditor({ project, selectedArtifact, onAutoFix, onSan
 		}
 
 		return files
-	}, [selectedArtifact.code, selectedArtifact.name, selectedArtifact.dependencies])
+	}, [selectedArtifact.code, selectedArtifact.name, selectedArtifact.dependencies, versionController.currentVersion])
 
 	const handleAutoFix = async (error: SandpackError, callback: () => void) => {
 		onAutoFix?.(error, callback)
@@ -327,7 +325,7 @@ export default function CodeEditor({ project, selectedArtifact, onAutoFix, onSan
 						onSandpackError={onSandpackError}
 						onReset={handleReset}
 						onSuccess={onSuccess}
-						selectedArtifact={selectedArtifact}
+						versionController={versionController}
 					>
 						{children}
 					</SandpackContent>
