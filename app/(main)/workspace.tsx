@@ -730,12 +730,12 @@ ${instructions}
 						<RenameDialog
 							message={
 								<>
-									Set the new name for <span className="mb-6 font-semibold text-blue-600">{artifactToRename.name}</span> arifact
+									Set the new name for <span className="font-semibold text-blue-600">{artifactToRename.name}</span> arifact
 									<input
 										type="text"
 										value={newArtifactName}
 										onChange={(e) => setNewArtifactName(e.target.value)}
-										className="mb-4 w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="my-4 w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 										autoFocus
 									/>
 								</>
