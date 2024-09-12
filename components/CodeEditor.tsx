@@ -112,7 +112,7 @@ function SandpackContent({
 					title="Previous Version"
 					disabled={currentVersion === 1}
 				>
-					<ChevronLeftIcon style={{ width: '16px', height: '16px' }} />
+					<ChevronLeftIcon style={{ width: '16px', height: '16px', opacity: currentVersion === 1 ? 0.5 : 1 }} />
 				</button>
 				<span className="cursor-default bg-[#444759] py-1 text-sm font-medium text-[#6272A4] group-hover:text-white">
 					{`Version ${currentVersion} of ${totalVersions}`}
@@ -123,7 +123,7 @@ function SandpackContent({
 					title="Next Version"
 					disabled={currentVersion === totalVersions}
 				>
-					<ChevronRightIcon style={{ width: '16px', height: '16px' }} />
+					<ChevronRightIcon style={{ width: '16px', height: '16px', opacity: currentVersion === totalVersions ? 0.5 : 1 }} />
 				</button>
 			</div>
 		</div>
