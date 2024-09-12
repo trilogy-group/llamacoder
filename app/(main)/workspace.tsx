@@ -403,35 +403,48 @@ ${instructions}
 
 	const handleRenameConfirm = async () => {
 		if (artifactToRename) {
-			await artifactApi.updateArtifact(projectId, artifactToRename.id, {
-				name: newArtifactName,
-			})
-			updateProjectAndArtifact(
-				(prevProject) => ({
-					...prevProject!,
-					artifacts: prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, name: newArtifactName } : a)) || [],
-				}),
-				selectedArtifact
-			)
-			setShowRenameModal(false)
-			setArtifactToRename(null)
+			try {
+				await artifactApi.updateArtifact(projectId, artifactToRename.id, {
+					name: newArtifactName,
+				})
+				updateProjectAndArtifact(
+					(prevProject) => ({
+						...prevProject!,
+						artifacts: prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, name: newArtifactName } : a)) || [],
+					}),
+					selectedArtifact
+				)
+			} catch (error) {
+				console.error('Error renaming artifact:', error)
+				showAlert('error', 'Failed to rename artifact')
+			} finally {
+				setShowRenameModal(false)
+				setArtifactToRename(null)
+			}
 		}
 	}
 
 	const handleDuplicateArtifact = async (artifact: Artifact) => {
-		const newArtifactData = {
-			...artifact,
-			id: uuidv4(),
-			name: `${artifact.name} (COPY)`,
+		try {
+			const newArtifactData = {
+				...artifact,
+				id: uuidv4(),
+				name: `${artifact.name} (COPY)`,
+			}
+			const newArtifact = await artifactApi.createArtifact(projectId, newArtifactData)
+			updateProjectAndArtifact(
+				(prevProject) => ({
+					...prevProject!,
+					artifacts: [...(prevProject?.artifacts || []), newArtifact],
+				}),
+				newArtifact
+			)
+		} catch (error) {
+			console.error('Error duplicating artifact:', error)
+			showAlert('error', 'Failed to duplicate artifact')
+		} finally {
+			// Any cleanup code if needed
 		}
-		const newArtifact = await artifactApi.createArtifact(projectId, newArtifactData)
-		updateProjectAndArtifact(
-			(prevProject) => ({
-				...prevProject!,
-				artifacts: [...(prevProject?.artifacts || []), newArtifact],
-			}),
-			newArtifact
-		)
 	}
 
 	const handleArtifactHover = (artifact: Artifact | null, event: React.MouseEvent) => {
