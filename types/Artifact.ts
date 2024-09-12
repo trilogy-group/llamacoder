@@ -10,10 +10,11 @@ export type ArtifactStatus = "idle" | "creating" | "updating" | "fixing" | "runn
 
 export type Artifact = {
     id: string;
+    name?: string;
+    displayName?: string;
     description: string;
     projectId: string;
     status: ArtifactStatus;
-    name?: string;
     code?: string;
     dependencies?: Dependency[];
     chatSession?: ChatSession | null;

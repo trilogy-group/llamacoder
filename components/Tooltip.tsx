@@ -36,18 +36,19 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children }) => {
       {isVisible && (
         <div
           ref={tooltipRef}
-          className="absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md shadow-sm dark:bg-gray-700"
+          className="absolute z-50 px-4 py-3 text-sm font-medium text-gray-800 bg-white rounded-md shadow-md border border-gray-200"
           style={{
             top: '100%',
             left: '50%',
             transform: 'translateX(-50%)',
             marginTop: '0.5rem',
-            whiteSpace: 'nowrap',
+            maxWidth: '200px',
+            width: 'max-content',
           }}
         >
-          {content}
+          <div className="break-words text-xs">{content}</div>
           <div
-            className="absolute w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45"
+            className="absolute w-2 h-2 bg-white transform rotate-45 border-l border-t border-gray-200"
             style={{
               top: '-0.25rem',
               left: '50%',

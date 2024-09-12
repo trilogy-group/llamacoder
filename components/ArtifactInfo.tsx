@@ -19,7 +19,7 @@ const ArtifactInfo: React.FC<ArtifactInfoProps> = ({ artifact }) => {
         <Image src={logo} alt="Artifact logo" width={40} height={40} />
       </div>
       <div className="flex-grow min-w-0">
-        <h3 className="text-sm font-semibold text-gray-800 truncate">{artifact.name || 'Unnamed Artifact'}</h3>
+        <h3 className="text-sm font-semibold text-gray-800 truncate">{artifact.displayName || artifact.name || 'New Artifact'}</h3>
         <p className="text-xs text-gray-500 line-clamp-2">{artifact.description || "No description"}</p>
         <div className="flex items-center text-xs text-gray-400 mt-1">
           <FiCalendar className="w-3 h-3 mr-1" />

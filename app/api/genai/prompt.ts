@@ -105,6 +105,10 @@ After following these steps, provide your output in the following format:
 - [ ] Additional libraries (if any) properly listed in EXTRA_LIBRARIES section
 </VERIFICATION>
 
+<EXPLANATION>
+[Brief explanation of the code and the decisions made if any]
+</EXPLANATION>
+
 Remember, your primary focus should be on implementing the requested functionality completely and correctly, with all props being optional and having default values. Once that's achieved, enhance the visual appeal to make it modern and attractive. Ensure the component works end-to-end with all necessary parts included and properly typed. 
 
 CRITICAL: Always provide the complete, fully functional code with all necessary imports, regardless of the scope of the change. Whether it's a minor update, a major overhaul, or a new component, your response must include the entire working code that can be used immediately without any further modifications.

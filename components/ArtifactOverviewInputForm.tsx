@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { FiArrowRight, FiPlus } from 'react-icons/fi';
+import { FiArrowRight, FiPlus, FiInfo } from 'react-icons/fi';
 import AttachmentList from './AttachmentList';
 import { Attachment } from '../types/Attachment';
+import Tooltip from './Tooltip';
 
 interface ArtifactOverviewInputFormProps {
   onCancel: () => void;
-  onNext: (description: string, instructions: string, attachments: Attachment[], callback: () => void) => void;
+  onNext: (name: string, description: string, attachments: Attachment[], callback: () => void) => void;
 }
 
 const AdditionalContext: React.FC<{
@@ -38,7 +39,12 @@ const AdditionalContext: React.FC<{
   return (
     <div className="p-4 bg-gray-50 border-b rounded-xl">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Additional Context</h3>
+        <div className="flex items-center">
+          <h3 className="text-sm font-semibold mr-2">Additional Context</h3>
+          <Tooltip content="Attached files will be used for this artifact only. Project level context will be coming soon!">
+            <FiInfo className="text-gray-400 hover:text-gray-600 cursor-pointer" size={16} />
+          </Tooltip>
+        </div>
         <button
           type="button"
           onClick={handleAttachmentClick}
@@ -73,20 +79,10 @@ const AdditionalContext: React.FC<{
 };
 
 const ArtifactOverviewInputForm: React.FC<ArtifactOverviewInputFormProps> = ({ onCancel, onNext }) => {
+  const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [instructions, setInstructions] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  const onNextCallback = () => {
-    setIsLoading(false);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    onNext(description, instructions, attachments, onNextCallback);
-  };
 
   const handleAddAttachments = (files: File[]) => {
     const newAttachments: Attachment[] = files.map((file) => ({
@@ -107,28 +103,36 @@ const ArtifactOverviewInputForm: React.FC<ArtifactOverviewInputFormProps> = ({ o
     setAttachments(attachments.filter((attachment) => attachment.id !== id));
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    onNext(name, description, attachments, () => setIsLoading(false));
+  };
+
+  const isFormValid = name.trim() !== '' && description.trim() !== '';
+
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Create New Artifact</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
-          <textarea
-            className="w-full text-sm p-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none shadow-sm"
-            placeholder="Enter a brief description of your artifact..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Name</h3>
+          <input
+            type="text"
+            className="w-full text-sm p-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+            placeholder="What do you want to call your artifact?"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Additional Instructions</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
           <textarea
             className="w-full text-sm p-3 text-gray-700 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none shadow-sm"
-            placeholder="Enter additional instructions..."
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            rows={3}
+            placeholder="Describe what your artifact should do, how it should look, and any other important details..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={5}
           />
         </div>
         <div className="mb-6">
@@ -148,9 +152,9 @@ const ArtifactOverviewInputForm: React.FC<ArtifactOverviewInputFormProps> = ({ o
           </button>
           <button
             type="submit"
-            disabled={!description.trim() || isLoading}
+            disabled={!isFormValid || isLoading}
             className={`px-6 py-2 text-sm font-medium text-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 ease-in-out flex items-center ${
-              description.trim() && !isLoading
+              isFormValid && !isLoading
                 ? 'bg-blue-500 hover:bg-blue-600'
                 : 'bg-blue-300 cursor-not-allowed'
             }`}
