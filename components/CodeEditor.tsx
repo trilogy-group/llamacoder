@@ -108,18 +108,18 @@ function SandpackContent({
 			<div className="group flex items-center" role="group">
 				<button
 					onClick={handlePrevVersion}
-					className="rounded-l-full border border-gray-200 bg-[#444759] px-2 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white"
+					className="rounded-l-full bg-[#444759] px-2 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white"
 					title="Previous Version"
 					disabled={currentVersion === 1}
 				>
 					<ChevronLeftIcon style={{ width: '16px', height: '16px' }} />
 				</button>
-				<span className="cursor-default border-b border-t border-gray-200 bg-[#444759] px-4 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white">
+				<span className="cursor-default bg-[#444759] py-1 text-sm font-medium text-[#6272A4] group-hover:text-white">
 					{`Version ${currentVersion} of ${totalVersions}`}
 				</span>
 				<button
 					onClick={handleNextVersion}
-					className="rounded-r-full border border-gray-200 bg-[#444759] px-2 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white"
+					className="rounded-r-full bg-[#444759] px-2 py-1 text-sm font-medium text-[#6272A4] group-hover:text-white"
 					title="Next Version"
 					disabled={currentVersion === totalVersions}
 				>

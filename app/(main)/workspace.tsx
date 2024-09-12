@@ -11,6 +11,7 @@ import HeaderV2 from '@/components/HeaderV2'
 import Preview from '@/components/Preview'
 import ProjectHeader from '@/components/ProjectHeader'
 import ProjectShareModal from '@/components/ProjectShareModal'
+import RenameDialog from '@/components/RenameDialog'
 import UpdateArtifact from '@/components/UpdateArtifact'
 import { Artifact } from '@/types/Artifact'
 import { Attachment } from '@/types/Attachment'
@@ -722,31 +723,26 @@ ${instructions}
 					</div>
 				</div>
 			)}
-			{showRenameModal && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-					<div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
-						<h3 className="mb-4 text-xl font-semibold">Rename Artifact</h3>
-						<input
-							type="text"
-							value={newArtifactName}
-							onChange={(e) => setNewArtifactName(e.target.value)}
-							className="mb-4 w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-							autoFocus
+			{showRenameModal && artifactToRename && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center">
+					<div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowRenameModal(false)}></div>
+					<div className="relative z-10">
+						<RenameDialog
+							message={
+								<>
+									Set the new name for <span className="mb-6 font-semibold text-blue-600">{artifactToRename.name}</span> arifact
+									<input
+										type="text"
+										value={newArtifactName}
+										onChange={(e) => setNewArtifactName(e.target.value)}
+										className="mb-4 w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+										autoFocus
+									/>
+								</>
+							}
+							onConfirm={handleRenameConfirm}
+							onCancel={() => setShowRenameModal(false)}
 						/>
-						<div className="flex justify-end space-x-4">
-							<button
-								onClick={() => setShowRenameModal(false)}
-								className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 transition-colors hover:bg-gray-300"
-							>
-								Cancel
-							</button>
-							<button
-								onClick={handleRenameConfirm}
-								className="rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
-							>
-								Rename
-							</button>
-						</div>
 					</div>
 				</div>
 			)}
