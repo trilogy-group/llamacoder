@@ -9,9 +9,11 @@ interface InputFormProps {
   artifact: Artifact;
   onSubmit: (message: string, attachments: Attachment[]) => void;
   isEmpty: boolean;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
 }
 
-const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, isEmpty }) => {
+const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, isEmpty, selectedModel, onModelChange }) => {
   const [inputMessage, setInputMessage] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,8 +59,8 @@ const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, is
     }
   }, [inputMessage]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback((e?: React.FormEvent) => {
+    e?.preventDefault();
     if (inputMessage.trim()) {
       onSubmit(inputMessage, attachments);
       setInputMessage("");
@@ -68,6 +70,13 @@ const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, is
       setError("Please enter a message before sending.");
     }
   }, [inputMessage, attachments, onSubmit]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputMessage(e.target.value);
@@ -107,6 +116,7 @@ const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, is
             ref={textareaRef}
             value={inputMessage}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             placeholder={isEmpty ? "Update your artifact..." : "Ask followup question..."}
             className={`w-full py-2 px-3 border rounded-lg text-xs focus:outline-none focus:ring-2 ${
               error ? 'border-red-300 focus:ring-red-500' : 'focus:ring-blue-500'
@@ -114,9 +124,10 @@ const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, is
             style={{ minHeight: "80px", maxHeight: "200px", paddingBottom: "30px" }}
           />
           <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-            <ModelSelector />
+            <ModelSelector selectedModel={selectedModel} onModelChange={onModelChange} />
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               className="text-blue-500 hover:text-blue-600"
             >
               <FiSend size={16} />

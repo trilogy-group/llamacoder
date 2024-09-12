@@ -1,17 +1,18 @@
-import { BedrockChat } from "@langchain/community/chat_models/bedrock";
 import { perplexitySearchTool } from "../../../utils/tools";
 import { systemPrompt } from "./prompt";
 import util from 'util';
 import { BaseMessageChunk } from "@langchain/core/messages";
 import { concat } from "@langchain/core/utils/stream";
 import { Message } from "@/types/Message";
+import { ChatModel } from "./models";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    let { messages, model } = await req.json();
+    let { messages, modelName } = await req.json();
     console.log("Received messages: ", util.inspect(messages, { showHidden: false, depth: null, colors: true }));
+    console.log("Received modelName: ", modelName);
 
     messages = messages.map((message: Message) => ({
       role: message.role,
@@ -23,16 +24,9 @@ export async function POST(req: Request) {
       ...messages
     ];
 
-    const bedrock = new BedrockChat({
-      model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
-      temperature: 0.2,
-      region: "us-east-1",
-      maxTokens: 8000,
-      streaming: true,
-    });
-
-    const llmWithTools = bedrock; // bedrock.bindTools([perplexitySearchTool]);
-
+    const llmWithTools = ChatModel(modelName, []); // ChatModel(model, [perplexitySearchTool]);
+    console.log("Using llm: ", llmWithTools);
+    
     const stream = new ReadableStream({
       async start(controller) {
         const sendChunk = (chunk: string) => {

@@ -7,7 +7,8 @@ export const genAiApi = {
     messages: Message[],
     project: Project | null,
     selectedArtifact: Artifact | null,
-    onChunk: (chunks: { index: number; type: string; text: string }[]) => void
+    onChunk: (chunks: { index: number; type: string; text: string }[]) => void,
+    model: string
   ): Promise<{ code: string; dependencies: Dependency[] }> => {
 
     if (!project || !selectedArtifact) {
@@ -63,7 +64,7 @@ export const genAiApi = {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ messages: processedMessages }),
+      body: JSON.stringify({ messages: processedMessages, modelName: model }),
     });
 
     if (!response.ok) {
