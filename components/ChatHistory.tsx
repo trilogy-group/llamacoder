@@ -228,7 +228,9 @@ const MessageItem: React.FC<MessageItemProps> = memo(({
       } ${
         hoveredMessage === index ? "border" : "border border-transparent"
       } transition-colors duration-200 ${
-        message.role === "assistant" && !isCollapsed ? "w-[calc(100%-3rem)]" : "max-w-[75%]"
+        message.role === "assistant" 
+          ? (isCollapsed ? "max-w-[75%]" : "w-full") 
+          : "max-w-[75%]"
       }`}
       onMouseEnter={() => setHoveredMessage(index)}
       onMouseLeave={() => setHoveredMessage(null)}
