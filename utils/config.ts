@@ -49,3 +49,34 @@ export const defaultDependencies = [
     },
   ];
   
+
+export const defaultCode = `import React, { useState, useEffect } from 'react';
+
+const DefaultApp = () => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+      <div className="text-center p-8 bg-white rounded-lg shadow-xl">
+        <h1 className="text-4xl font-bold text-gray-800 mb-4">
+          Welcome to TIArtifacts 👋
+        </h1>
+        {isLoading ? (
+          <p className="text-lg text-gray-600">Please wait while we get your app ready...</p>
+        ) : (
+          <p className="text-lg text-gray-600">Your app is ready! Enjoy!</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DefaultApp;`
