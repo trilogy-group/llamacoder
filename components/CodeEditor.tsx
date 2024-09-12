@@ -123,7 +123,7 @@ function SandpackContent({
 			onSandpackError?.(error)
 		}
 		const stopListening = listen((msg) => {
-			console.log('msg: ', msg)
+			// console.log('msg: ', msg)
 			if (error && onSandpackError) {
 				onSandpackError(error)
 			}
