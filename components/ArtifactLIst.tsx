@@ -44,7 +44,10 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
 	const [searchTerm, setSearchTerm] = useState('')
 	const [isSearchFocused, setIsSearchFocused] = useState(false)
 
-	const filteredArtifacts = artifacts.filter((artifact) => artifact.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+	const filteredArtifacts = artifacts.filter((artifact) => 
+		(artifact.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+		artifact.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+	)
 
 	const lastIdleArtifactIndex = filteredArtifacts.reduce((acc, artifact, index) => {
 		if (acc === -1 && artifact.status !== 'idle') {
@@ -219,7 +222,7 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 				<div onMouseEnter={(e) => onHover(artifact, e)} onMouseLeave={(e) => onHover(null, e)}>
 					{getStatusIcon()}
 				</div>
-				<span className="max-w-[70%] truncate font-medium">{artifact.name}</span>
+				<span className="max-w-[70%] truncate font-medium">{artifact.displayName || artifact.name}</span>
 			</div>
 			{!isViewer && (
 				<div className="relative" ref={menuRef}>

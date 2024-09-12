@@ -231,14 +231,15 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		return match ? match[1] : 'MyApp'
 	}
 
-	const handleCreateArtifact = async (description: string, instructions: string, attachments: Attachment[], callback: () => void) => {
+	const handleCreateArtifact = async (name: string, description: string, attachments: Attachment[], callback: () => void) => {
+		console.log('Creating artifact with name:', name)
 		console.log('Creating artifact with description:', description)
-		console.log('Creating artifact with instructions:', instructions)
 		console.log('Creating artifact with attachments:', attachments)
 
 		let newArtifact = {
 			id: uuidv4(),
-			name: 'New Artifact',
+			name: name,
+			displayName: name, // Use the provided name for both name and displayName
 			code: `import React from 'react';
 const App = () => {
 return <div>Hello World</div>;
@@ -260,25 +261,21 @@ export default App;`,
 			// Generate user message for the artifact
 			let userMessage = `Build me an artifact based on the following information:
 
-**Brief description of the artifact:** ${description}
-`
+**Name of the artifact:** ${name}
 
-			if (instructions.trim() !== '') {
-				userMessage += `
-**Additional instructions:**
-${instructions}
+**Description and requirements:**
+${description}
 `
-			}
 
 			// Create a new chat session
 			let chatSession: ChatSession = {
-				id: Date.now().toString(), // Generate a unique ID
+				id: Date.now().toString(),
 				artifactId: newArtifact.id,
 				messages: [{ role: 'user', text: userMessage, attachments: attachments }],
 				attachments: [],
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
-				user: 'user', // Replace with actual user ID if available
+				user: 'user',
 				model: 'bedrock-claude-3.5-sonnet',
 			}
 
@@ -320,6 +317,7 @@ ${instructions}
 							newArtifact = {
 								...newArtifact,
 								name: extractComponentName(generatedCode),
+								displayName: name,
 								code: generatedCode,
 								dependencies: [...defaultDependencies, ...dependencies],
 							}
@@ -358,6 +356,7 @@ ${instructions}
 			newArtifact = {
 				...newArtifact,
 				name: componentName,
+				displayName: name,
 				code: code,
 				dependencies: [...defaultDependencies, ...dependencies],
 				status: 'idle',
@@ -376,6 +375,7 @@ ${instructions}
 
 			await artifactApi.updateArtifact(projectId, newArtifact.id, {
 				name: componentName,
+				displayName: name,
 				code: code,
 				dependencies: [...defaultDependencies, ...dependencies],
 				status: 'idle',
@@ -392,6 +392,7 @@ ${instructions}
 		} finally {
 			setShowCreateForm(false)
 			setMode('preview')
+			callback()
 		}
 	}
 
@@ -401,8 +402,9 @@ ${instructions}
 	}
 
 	const handleRenameArtifact = (artifact: Artifact) => {
+		console.log('Renaming artifact:', artifact)
 		setArtifactToRename(artifact)
-		setNewArtifactName(artifact.name || '')
+		setNewArtifactName(artifact.displayName || artifact.name || '')
 		setShowRenameModal(true)
 	}
 
@@ -410,12 +412,12 @@ ${instructions}
 		if (artifactToRename) {
 			try {
 				await artifactApi.updateArtifact(projectId, artifactToRename.id, {
-					name: newArtifactName,
+          displayName: newArtifactName,
 				})
 				updateProjectAndArtifact(
 					(prevProject) => ({
 						...prevProject!,
-						artifacts: prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, name: newArtifactName } : a)) || [],
+						artifacts: prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, displayName: newArtifactName } : a)) || [],
 					}),
 					selectedArtifact
 				)
