@@ -84,6 +84,10 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
       borderColorClass = 'border-purple-400';
       titleColorClass = 'text-purple-300';
       bgColorClass = 'bg-gray-900';
+    } else if (color === 'blue') {
+      borderColorClass = 'border-blue-400';
+      titleColorClass = 'text-blue-300';
+      bgColorClass = 'bg-gray-900';
     }
 
     return (
@@ -131,7 +135,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
   }, []);
 
   const renderMessageContent = useCallback((text: string, messageId: string, isStreaming: boolean = false): ReactNode => {
-    const parts = text.split(/(<CODE>[\s\S]*?<\/CODE>|<ANALYSIS>[\s\S]*?<\/ANALYSIS>|<VERIFICATION>[\s\S]*?<\/VERIFICATION>|<EXTRA_LIBRARIES>[\s\S]*?<\/EXTRA_LIBRARIES>)/);
+    const parts = text.split(/(<CODE>[\s\S]*?<\/CODE>|<ANALYSIS>[\s\S]*?<\/ANALYSIS>|<VERIFICATION>[\s\S]*?<\/VERIFICATION>|<EXTRA_LIBRARIES>[\s\S]*?<\/EXTRA_LIBRARIES>|<EXPLANATION>[\s\S]*?<\/EXPLANATION>)/);
   
     return (
       <React.Fragment>
@@ -146,10 +150,12 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
             return renderSpecialBlock(part.slice(14, -15).trim(), 'Verification', messageId, index, '✅', 'green');
           } else if (part.startsWith('<EXTRA_LIBRARIES>') && part.endsWith('</EXTRA_LIBRARIES>')) {
             return renderCodeBlock(part.slice(17, -18).trim(), `${messageId}-libraries-${index}`, 'bash');
+          } else if (part.startsWith('<EXPLANATION>') && part.endsWith('</EXPLANATION>')) {
+            return renderSpecialBlock(part.slice(13, -14).trim(), 'Explanation', messageId, index, '💡', 'blue');
           }
 
           if (isStreaming) {
-            const match = part.match(/<(CODE|ANALYSIS|VERIFICATION|EXTRA_LIBRARIES)>/);
+            const match = part.match(/<(CODE|ANALYSIS|VERIFICATION|EXTRA_LIBRARIES|EXPLANATION)>/);
             if (match) {
               const type = match[1];
               return (
