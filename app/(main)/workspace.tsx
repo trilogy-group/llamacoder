@@ -67,7 +67,6 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		(projectUpdater: (prev: Project | null) => Project | null, newSelectedArtifact: Artifact | null) => {
 			setProject(projectUpdater)
 			setSelectedArtifact(newSelectedArtifact)
-      console.log('Updated project and artifact:', project, newSelectedArtifact)
 		},
 		[]
 	)
@@ -118,7 +117,7 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		}
 
 		fetchProjectAndArtifacts()
-	}, [projectId, updateProjectAndArtifact])
+	}, [])
 
 	const onAutoFix = async (error: SandpackError, callback: () => void) => {
 		console.log('Auto fixing error:', error)
@@ -162,12 +161,8 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		// console.log("Error udpatedArtifact: ", updatedArtifact);
 	}
 
-	useEffect(() => {
-		console.log('Selected artifact: ', selectedArtifact)
-	}, [selectedArtifact])
-
 	const onSuccess = () => {
-		console.log('Success')
+		// console.log('Success')
 		// if(selectedArtifact?.status !== "error") {
 		//   return;
 		// }
@@ -282,7 +277,6 @@ ${description}
 			}
 
 			newArtifact = await artifactApi.createArtifact(project.id, newArtifact)
-      console.log('newArtifact after create:', newArtifact)
 			callback()
 			setShowCreateForm(false)
 			setMode('editor')
@@ -406,7 +400,6 @@ ${description}
 	}
 
 	const handleRenameArtifact = (artifact: Artifact) => {
-		console.log('Renaming artifact:', artifact)
 		setArtifactToRename(artifact)
 		setNewArtifactName(artifact.displayName || artifact.name || '')
 		setShowRenameModal(true)
@@ -537,18 +530,26 @@ ${description}
 					}
 				}
 
-				console.log('Generating response with messages:', chatSession.messages)
+        let messages = chatSession.messages;
+
+        if(chatSession.messages.length > 3) {
+          messages = [
+            chatSession.messages[0],
+            chatSession.messages[1],
+            chatSession.messages[chatSession.messages.length - 3],
+            chatSession.messages[chatSession.messages.length - 2],
+            chatSession.messages[chatSession.messages.length - 1],
+          ] as Message[];
+        }
+
+				console.log('Generating response with messages:', messages)
 				const { code, dependencies: extractedDependencies } = await genAiApi.generateResponse(
-					chatSession.messages,
+					messages,
 					project,
 					artifact,
 					onChunk,
 					chatSession.model
 				)
-
-				console.log('Generated code:', code)
-				console.log('Dependencies:', extractedDependencies)
-				console.log('Response:', response)
 
 				const updatedChatSession = {
 					...chatSession,

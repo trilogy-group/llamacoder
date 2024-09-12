@@ -1,7 +1,7 @@
-import React, { useState, memo, useEffect, useRef, useCallback, useMemo, ReactNode } from "react";
+import React, { useState, memo, useEffect, useRef, useCallback, useMemo } from "react";
 import { Artifact } from "../types/Artifact";
 import { ChatSession } from "../types/ChatSession";
-import { FiCopy, FiLoader } from "react-icons/fi";
+import { FiCopy, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message } from "../types/Message";
@@ -13,30 +13,21 @@ import { Attachment } from "../types/Attachment";
 interface ChatHistoryProps {
   artifact: Artifact;
   chatSession: ChatSession;
-  streamingMessage: Message | null;
 }
 
-interface RenderMessageContentProps {
-  renderMessageContent: (text: string, messageId: string, isStreaming?: boolean) => ReactNode;
-}
-
-const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, streamingMessage }) => {
+const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession }) => {
   const [hoveredMessage, setHoveredMessage] = useState<number | null>(null);
   const [hoveredCodeBlock, setHoveredCodeBlock] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const streamingMessageRef = useRef<HTMLDivElement>(null);
+  const [collapsedMessages, setCollapsedMessages] = useState<Set<number>>(() => 
+    new Set(chatSession.messages.map((_, index) => index).filter(index => index % 2 !== 0))
+  );
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatSession.messages, streamingMessage]);
-
-  useEffect(() => {
-    if (streamingMessageRef.current) {
-      streamingMessageRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [streamingMessage]);
+  }, [chatSession.messages]);
 
   const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
@@ -117,24 +108,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
     );
   }, []);
 
-  const renderStreamingIndicator = useCallback((type: string) => {
-    const messages = {
-      CODE: "Generating code",
-      ANALYSIS: "Analyzing",
-      VERIFICATION: "Verifying",
-      EXTRA_LIBRARIES: "Checking libraries",
-    };
-    const message = messages[type as keyof typeof messages] || "Processing";
-
-    return (
-      <div key="streaming-indicator" className="flex items-center space-x-2 p-2 bg-gray-100 rounded-md">
-        <FiLoader className="animate-spin text-blue-500" />
-        <span className="text-sm text-gray-700">{message}...</span>
-      </div>
-    );
-  }, []);
-
-  const renderMessageContent = useCallback((text: string, messageId: string, isStreaming: boolean = false): ReactNode => {
+  const renderMessageContent = useCallback((text: string, messageId: string): React.ReactNode => {
     const parts = text.split(/(<CODE>[\s\S]*?<\/CODE>|<ANALYSIS>[\s\S]*?<\/ANALYSIS>|<VERIFICATION>[\s\S]*?<\/VERIFICATION>|<EXTRA_LIBRARIES>[\s\S]*?<\/EXTRA_LIBRARIES>|<EXPLANATION>[\s\S]*?<\/EXPLANATION>)/);
   
     return (
@@ -154,21 +128,6 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
             return renderSpecialBlock(part.slice(13, -14).trim(), 'Explanation', messageId, index, '💡', 'blue');
           }
 
-          if (isStreaming) {
-            const match = part.match(/<(CODE|ANALYSIS|VERIFICATION|EXTRA_LIBRARIES|EXPLANATION)>/);
-            if (match) {
-              const type = match[1];
-              return (
-                <React.Fragment key={`${messageId}-streaming-${index}`}>
-                  <Markdown remarkPlugins={[remarkGfm]} className="text-xs">
-                    {part.slice(0, match.index).trim()}
-                  </Markdown>
-                  {renderStreamingIndicator(type)}
-                </React.Fragment>
-              );
-            }
-          }
-
           return (
             <Markdown
               key={`${messageId}-${index}`}
@@ -181,7 +140,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
         })}
       </React.Fragment>
     );
-  }, [renderCodeBlock, renderSpecialBlock, renderStreamingIndicator]);
+  }, [renderCodeBlock, renderSpecialBlock]);
 
   const renderAttachments = useCallback((attachments: Attachment[], isUserMessage: boolean) => {
     if (!attachments || attachments.length === 0) return null;
@@ -197,33 +156,39 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession, s
     );
   }, []);
 
+  const toggleMessageCollapse = useCallback((index: number) => {
+    setCollapsedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  }, []);
+
   const renderedMessages = useMemo(() => {
     return chatSession.messages.map((message, index) => (
-      <MessageItem
-        key={`${message.role}-${index}`}
-        message={message}
-        index={index}
-        hoveredMessage={hoveredMessage}
-        setHoveredMessage={setHoveredMessage}
-        renderMessageContent={renderMessageContent}
-        renderAttachments={renderAttachments}
-        copyToClipboard={copyToClipboard}
-      />
+      <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+        <MessageItem
+          message={message}
+          index={index}
+          hoveredMessage={hoveredMessage}
+          setHoveredMessage={setHoveredMessage}
+          renderMessageContent={renderMessageContent}
+          renderAttachments={renderAttachments}
+          copyToClipboard={copyToClipboard}
+          isCollapsed={message.role === "assistant" && collapsedMessages.has(index)}
+          toggleCollapse={() => toggleMessageCollapse(index)}
+        />
+      </div>
     ));
-  }, [chatSession.messages, hoveredMessage, renderMessageContent, renderAttachments, copyToClipboard]);
+  }, [chatSession.messages, hoveredMessage, renderMessageContent, renderAttachments, copyToClipboard, collapsedMessages, toggleMessageCollapse]);
 
   return (
     <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
-      {streamingMessage ? (
-        <div ref={streamingMessageRef}>
-          <StreamingMessage
-            message={streamingMessage}
-            renderMessageContent={renderMessageContent}
-          />
-        </div>
-      ) : (
-        renderedMessages
-      )}
+      {renderedMessages}
     </div>
   );
 });
@@ -233,9 +198,11 @@ interface MessageItemProps {
   index: number;
   hoveredMessage: number | null;
   setHoveredMessage: React.Dispatch<React.SetStateAction<number | null>>;
-  renderMessageContent: (text: string, messageId: string, isStreaming?: boolean) => ReactNode;
-  renderAttachments: (attachments: Attachment[], isUserMessage: boolean) => ReactNode | null;
+  renderMessageContent: (text: string, messageId: string) => React.ReactNode;
+  renderAttachments: (attachments: Attachment[], isUserMessage: boolean) => React.ReactNode | null;
   copyToClipboard: (text: string) => void;
+  isCollapsed: boolean;
+  toggleCollapse: () => void;
 }
 
 const MessageItem: React.FC<MessageItemProps> = memo(({
@@ -245,29 +212,54 @@ const MessageItem: React.FC<MessageItemProps> = memo(({
   setHoveredMessage,
   renderMessageContent,
   renderAttachments,
-  copyToClipboard
+  copyToClipboard,
+  isCollapsed,
+  toggleCollapse
 }) => {
+  const previewWords = 20;
+  const previewText = message.text.split(' ').slice(0, previewWords).join(' ') + (message.text.split(' ').length > previewWords ? '...' : '');
+
   return (
     <div
-      className={`w-full rounded-lg shadow-sm relative ${
+      className={`rounded-lg shadow-sm relative ${
         message.role === "user" 
-          ? "bg-gray-50 hover:border-blue-500" 
-          : "bg-blue-50 hover:border-green-500"
+          ? "bg-blue-100 hover:border-blue-500 ml-12" 
+          : "bg-blue-50 hover:border-green-500 mr-12"
       } ${
         hoveredMessage === index ? "border" : "border border-transparent"
-      } transition-colors duration-200`}
+      } transition-colors duration-200 ${
+        message.role === "assistant" && !isCollapsed ? "w-[calc(100%-3rem)]" : "max-w-[75%]"
+      }`}
       onMouseEnter={() => setHoveredMessage(index)}
       onMouseLeave={() => setHoveredMessage(null)}
     >
       <div className="flex flex-col p-3">
-        {message.attachments && message.attachments.length > 0 && renderAttachments(message.attachments, message.role === "user")}
-        <div className="overflow-y-auto">
-          <div className="text-xs text-gray-800 break-words">
-            {renderMessageContent(message.text, index.toString())}
+        {message.role === "assistant" && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">
+              🚀 v{Math.floor(index / 2) + 1}
+            </span>
+            <button onClick={toggleCollapse} className="text-gray-500 hover:text-gray-700">
+              {isCollapsed ? <FiChevronDown size={16} /> : <FiChevronUp size={16} />}
+            </button>
           </div>
-        </div>
+        )}
+        {message.role === "assistant" && isCollapsed ? (
+          <div className="text-xs text-gray-800 break-words">
+            {previewText}
+          </div>
+        ) : (
+          <>
+            {message.attachments && message.attachments.length > 0 && renderAttachments(message.attachments, message.role === "user")}
+            <div className="overflow-y-auto">
+              <div className="text-xs text-gray-800 break-words">
+                {renderMessageContent(message.text, index.toString())}
+              </div>
+            </div>
+          </>
+        )}
       </div>
-      {hoveredMessage === index && (
+      {hoveredMessage === index && !isCollapsed && message.role === "user" && (
         <button
           onClick={() => copyToClipboard(message.text)}
           className="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded-md opacity-50 hover:opacity-100 transition-opacity duration-200"
@@ -280,30 +272,6 @@ const MessageItem: React.FC<MessageItemProps> = memo(({
 });
 
 MessageItem.displayName = 'MessageItem';
-
-const StreamingMessage: React.FC<{ message: Message } & RenderMessageContentProps> = memo(({ message, renderMessageContent }) => {
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = contentRef.current.scrollHeight;
-    }
-  }, [message.text]);
-
-  return (
-    <div className="w-full rounded-lg shadow-sm relative bg-blue-50 border border-transparent transition-colors duration-200">
-      <div className="flex flex-col">
-        <div ref={contentRef} className="p-3 overflow-y-auto max-h-[300px]">
-          <div className="text-xs text-gray-800 break-words">
-            {renderMessageContent(message.text, 'streaming-message', true)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-StreamingMessage.displayName = 'StreamingMessage';
-
 ChatHistory.displayName = 'ChatHistory';
+
 export default React.memo(ChatHistory);
