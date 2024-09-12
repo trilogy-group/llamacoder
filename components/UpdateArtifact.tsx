@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import ChatHistory from './ChatHistory'
 import InputForm from './InputForm'
 import ArtifactInfo from './ArtifactInfo'
@@ -32,11 +32,19 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
 		)
 	})
 
+	const streamingMessageRef = useRef<HTMLDivElement>(null)
+
 	useEffect(() => {
 		if (artifact.chatSession) {
 			setChatSession(artifact.chatSession)
 		}
 	}, [artifact.chatSession])
+
+	useEffect(() => {
+		if (streamingMessageRef.current) {
+			streamingMessageRef.current.scrollIntoView({ behavior: 'instant', block: 'end' })
+		}
+	}, [streamingMessage, artifact.status])
 
 	const handleSubmit = useCallback(
 		(text: string, attachments: Attachment[]) => {
@@ -73,12 +81,15 @@ const UpdateArtifact: React.FC<UpdateArtifactProps> = ({ artifact, streamingMess
 	const renderContent = () => {
 		return (
 			<>
-				<div className="flex flex-grow flex-col overflow-hidden">
-					<ChatHistory artifact={artifact} chatSession={chatSession} />
-					<StreamingMessage
-						message={streamingMessage}
-						isThinking={!streamingMessage && (artifact.status === 'creating' || artifact.status === 'updating')}
-					/>
+				<div className="flex flex-col flex-grow overflow-hidden">
+					<div className="flex-grow overflow-y-auto">
+						<ChatHistory artifact={artifact} chatSession={chatSession} />
+						<StreamingMessage
+							ref={streamingMessageRef}
+							message={streamingMessage}
+							isThinking={!streamingMessage && (artifact.status === 'creating' || artifact.status === 'updating')}
+						/>
+					</div>
 				</div>
 				<InputForm
 					artifact={artifact}

@@ -187,7 +187,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = memo(({ artifact, chatSession })
   }, [chatSession.messages, hoveredMessage, renderMessageContent, renderAttachments, copyToClipboard, collapsedMessages, toggleMessageCollapse]);
 
   return (
-    <div ref={chatContainerRef} className="h-full w-full overflow-y-auto p-4 space-y-4">
+    <div className="w-full p-4 space-y-4">
       {renderedMessages}
     </div>
   );

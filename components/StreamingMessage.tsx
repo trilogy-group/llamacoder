@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from 'react'
+import React, { memo, forwardRef } from 'react'
 import { Message } from '../types/Message'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -11,26 +11,30 @@ interface StreamingMessageProps {
 	isThinking: boolean
 }
 
-const StreamingMessage: React.FC<StreamingMessageProps> = memo(({ message, isThinking }) => {
-	const contentRef = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		if (contentRef.current && message) {
-			contentRef.current.scrollTop = contentRef.current.scrollHeight
+const StreamingMessage = forwardRef<HTMLDivElement, StreamingMessageProps>(({ message, isThinking }, ref) => {
+	const renderContent = () => {
+		if (isThinking) {
+			return (
+				<div className="flex items-center justify-center p-4">
+					<FiLoader className="animate-spin text-blue-500" size={24} />
+					<span className="ml-2 text-xs text-gray-700">Thinking...</span>
+				</div>
+			)
 		}
-	}, [message?.text])
 
-	if (isThinking) {
+		if (!message) {
+			return null
+		}
+
 		return (
-			<div className="flex flex-grow items-center justify-center">
-				<FiLoader className="animate-spin text-blue-500" size={24} />
-				<span className="ml-2 text-xs text-gray-700">Thinking...</span>
+			<div className="relative rounded-lg border border-transparent bg-blue-50 shadow-sm transition-colors duration-200">
+				<div className="flex flex-col">
+					<div className="p-3">
+						<div className="break-words text-xs text-gray-800">{renderMessageContent(message.text)}</div>
+					</div>
+				</div>
 			</div>
 		)
-	}
-
-	if (!message) {
-		return null
 	}
 
 	const renderMessageContent = (text: string): React.ReactNode => {
@@ -76,7 +80,11 @@ const StreamingMessage: React.FC<StreamingMessageProps> = memo(({ message, isThi
 
 	const renderCodeBlock = (code: string, blockId: string, language: string = 'typescript') => (
 		<div key={blockId} className="relative">
-			<SyntaxHighlighter language={language} style={tomorrow} className="my-2 max-h-[300px] overflow-y-auto rounded-md text-xs">
+			<SyntaxHighlighter 
+				language={language} 
+				style={tomorrow} 
+				className="my-2 rounded-md text-xs max-h-[300px] overflow-y-auto"
+			>
 				{code}
 			</SyntaxHighlighter>
 		</div>
@@ -104,7 +112,7 @@ const StreamingMessage: React.FC<StreamingMessageProps> = memo(({ message, isThi
 		return (
 			<div
 				key={`streaming-${title.toLowerCase()}-${index}`}
-				className={`${bgColorClass} my-2 rounded-md border p-3 text-white ${borderColorClass} max-h-[300px] w-full overflow-y-auto`}
+				className={`${bgColorClass} my-2 rounded-md border p-3 text-white ${borderColorClass} w-full max-h-[300px] overflow-y-auto`}
 			>
 				<div className="mb-2 flex items-center">
 					<span className="mr-2" role="img" aria-label={title}>
@@ -148,14 +156,8 @@ const StreamingMessage: React.FC<StreamingMessageProps> = memo(({ message, isThi
 	}
 
 	return (
-		<div className="w-full space-y-4 p-4">
-			<div className="relative rounded-lg border border-transparent bg-blue-50 shadow-sm transition-colors duration-200">
-				<div className="flex flex-col">
-					<div ref={contentRef} className="max-h-[200px] overflow-y-auto p-3">
-						<div className="break-words text-xs text-gray-800">{renderMessageContent(message.text)}</div>
-					</div>
-				</div>
-			</div>
+		<div ref={ref} className="w-full p-4">
+			{renderContent()}
 		</div>
 	)
 })
