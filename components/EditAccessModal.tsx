@@ -8,9 +8,10 @@ interface EditAccessModalProps {
   };
   onClose: () => void;
   onUpdateAccess: (email: string, newAccessLevel: string) => void;
+  userAccessLevel?: string;
 }
 
-const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess }) => {
+const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess, userAccessLevel }) => {
   const [newAccessLevel, setNewAccessLevel] = useState(user.accessLevel);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,8 +37,8 @@ const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpda
               className="w-full rounded border p-2"
             >
               <option value="viewer">Viewer</option>
-              <option value="editor">Editor</option>
-              <option value="revoke">Revoke Access</option>
+              {userAccessLevel !== 'viewer' && <option value="editor">Editor</option>}
+              {userAccessLevel === 'owner' && <option value="revoke">Revoke Access</option>}
             </select>
           </div>
           <div className="flex justify-end">

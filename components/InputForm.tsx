@@ -134,4 +134,5 @@ const InputForm: React.FC<InputFormProps> = React.memo(({ artifact, onSubmit, is
   );
 });
 
-export default InputForm;
+InputForm.displayName = 'InputForm';
+export default React.memo(InputForm);

@@ -2,7 +2,7 @@ import React, { useState, ReactNode } from 'react';
 
 interface ConfirmationDialogProps {
   message: ReactNode;
-  onConfirm: () => Promise<string>;
+  onConfirm: () => Promise<string | void>;
   onCancel: () => void;
 }
 
@@ -18,7 +18,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     setIsConfirming(true);
     try {
       const resultMessage = await onConfirm();
-      setResult(resultMessage);
+      setResult(typeof resultMessage === 'string' ? resultMessage : 'Action completed successfully');
     } catch (error) {
       setResult(error instanceof Error ? error.message : 'An error occurred');
     } finally {

@@ -3,12 +3,14 @@ import { FiX, FiCopy } from 'react-icons/fi';
 import { toast } from 'sonner';
 import axios from 'axios';
 import EditAccessModal from './EditAccessModal';
+import { projectApi } from '@/utils/apiClients/Project';
 
 interface ShareProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
   projectTitle: string;
+  userAccessLevel?: string;
 }
 
 interface ProjectUser {
@@ -17,9 +19,10 @@ interface ProjectUser {
   accessLevel: string;
 }
 
-const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, projectId, projectTitle }) => {
+const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, projectId, projectTitle, userAccessLevel }) => {
   const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState('viewer');
+  const [currentUserAccessLevel, setCurrentUserAccessLevel] = useState<string | undefined>(userAccessLevel);
   const [isSharing, setIsSharing] = useState(false);
   const [projectUsers, setProjectUsers] = useState<ProjectUser[]>([]);
   const [editingUser, setEditingUser] = useState<ProjectUser | null>(null);
@@ -29,6 +32,17 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
       fetchProjectUsers();
     }
   }, [isOpen, projectId]);
+
+  const fetchUserAccessLevel = async () => {
+    const { accessLevel } = await projectApi.getProject(projectId);
+    setCurrentUserAccessLevel(accessLevel);
+  };
+
+  useEffect(() => {
+    if (!currentUserAccessLevel) {
+      fetchUserAccessLevel();
+    }
+  }, [projectId, userAccessLevel, currentUserAccessLevel, fetchUserAccessLevel]);
 
   const fetchProjectUsers = async () => {
     try {
@@ -77,11 +91,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
         }
       }
 
-      console.log(allUsers);
-
       setProjectUsers(allUsers);
-
-      console.log(projectUsers);
     } catch (error) {
       console.error('Error fetching project users:', error);
       toast.error('Failed to fetch project users');
@@ -164,7 +174,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Share "{projectTitle}"</h2>
+          <h2 className="text-xl font-semibold">Share <i className="text-blue-500 text-md">{projectTitle}</i></h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <FiX size={24} />
           </button>
@@ -182,7 +192,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           className="mb-4 w-full rounded border p-2"
         >
           <option value="viewer">Can view</option>
-          <option value="editor">Can edit</option>
+          {currentUserAccessLevel !== 'viewer' && <option value="editor">Can edit</option>}
         </select>
         <button
           onClick={handleShare}
@@ -223,6 +233,7 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           user={editingUser}
           onClose={() => setEditingUser(null)}
           onUpdateAccess={handleAccessUpdate}
+          userAccessLevel={currentUserAccessLevel}
         />
       )}
     </div>

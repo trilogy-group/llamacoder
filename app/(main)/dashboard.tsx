@@ -5,21 +5,34 @@ import EmptyProjectMessage from "@/components/EmptyProjectMessage";
 import HeaderV2 from "@/components/HeaderV2";
 import ProjectList from "@/components/ProjectList";
 import ProjectOverviewInputForm from "@/components/ProjectOverviewInputForm";
+import ProjectShareModal from "@/components/ProjectShareModal";
 import { useAppContext } from "@/contexts/AppContext";
 import { Project } from "@/types/Project";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Toaster, toast } from "sonner";
-import { projectApi } from "@/utils/apiClients/Project";
+import Alert from "@/components/Alert";
 import { CircularProgress } from "@mui/material";
+import { projectApi } from "@/utils/apiClients/Project";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
 const Dashboard: React.FC = () => {
   const { user, error: userError, isLoading: userLoading } = useUser();
   const { projects, dispatchProjectsUpdate, projectsLoading } = useAppContext();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
+  const [alert, setAlert] = useState<{
+    type: "error" | "info" | "warning" | "success";
+    message: string;
+  } | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+
   const router = useRouter();
 
   const handleCreateProject = async (description: string) => {
@@ -35,35 +48,66 @@ const Dashboard: React.FC = () => {
         description: description,
         thumbnail: "",
         context: [],
-        status: "Inactive"
+        status: "Inactive",
       };
 
       const createdProject = await projectApi.createProject(newProject);
       dispatchProjectsUpdate([...projects, createdProject]);
       setShowCreateForm(false);
+      router.push(`/workspaces/${createdProject.id}`);
     } catch (error) {
       console.error("Error creating project:", error);
-      toast.error("Failed to create project. Please try again.");
+      setAlert({
+        type: "error",
+        message: "Failed to create project. Please try again.",
+      });
     } finally {
       setIsCreatingProject(false);
     }
   };
 
-  const handleOpenProject = (projectId: string) => {
-    router.push(`/workspaces/${projectId}`);
+  const handleShareClick = (projectId: string): void => {
+    setSelectedProjectId(projectId);
+    setShowShareModal(true);
   };
 
-  const handleProjectDeleted = async (deletedProjectId: string) => {
+  const handleProjectDeleted = async (
+    deletedProjectId: string,
+  ): Promise<void> => {
     try {
       await projectApi.deleteProject(deletedProjectId);
-      dispatchProjectsUpdate(projects.filter(project => project.id !== deletedProjectId));
+      setAlert({ type: "success", message: "Project deleted successfully." });
+      dispatchProjectsUpdate(
+        projects.filter((project) => project.id !== deletedProjectId),
+      );
     } catch (error) {
       console.error("Error deleting project:", error);
-      toast.error("Failed to delete project. Please try again.");
+      setAlert({
+        type: "error",
+        message: "Failed to delete project. Please try again.",
+      });
     }
   };
 
-  if (userLoading || projectsLoading) {
+  const handleDeleteClick = (projectId: string): void => {
+    setProjectToDelete(projectId);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (projectToDelete) {
+      await handleProjectDeleted(projectToDelete);
+      setShowDeleteConfirmation(false);
+      setProjectToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
+    setProjectToDelete(null);
+  };
+
+  if (userLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <CircularProgress size={60} />
@@ -71,12 +115,25 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (userError) return <div>{userError.message}</div>;
+  if (projectsLoading) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-gray-50">
+        <CircularProgress size={64} />
+        <h2 className="mb-2 mt-4 text-2xl font-semibold text-gray-700">
+          Loading your projects...
+        </h2>
+      </div>
+    );
+  }
+
+  if (userError) {
+    router.push("/api/auth/login");
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderV2 user={user} />
-      <main className="mt-16 w-full flex-1">
+      <main className="mt-24 w-full flex-1">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {projects.length > 0 ? (
             <>
@@ -91,9 +148,9 @@ const Dashboard: React.FC = () => {
               </div>
               <ProjectList
                 projects={projects}
-                onCreateProject={() => setShowCreateForm(true)}
-                onOpenProject={handleOpenProject}
                 onProjectDeleted={handleProjectDeleted}
+                onShareClick={handleShareClick}
+                onDeleteClick={handleDeleteClick}
               />
             </>
           ) : (
@@ -107,9 +164,11 @@ const Dashboard: React.FC = () => {
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4 backdrop-blur-[2px]">
           {isCreatingProject ? (
-            <div className="flex flex-col items-center rounded-lg bg-white p-6">
-              <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
-              <p className="text-gray-600">Creating your project...</p>
+            <div className="flex flex-col items-center justify-center bg-gray-50 p-10">
+              <CircularProgress size={64} />
+              <h2 className="mb-4 mt-6 ml-10 mr-10 text-2xl font-semibold text-gray-700">
+                Creating your project...
+              </h2>
             </div>
           ) : (
             <ProjectOverviewInputForm
@@ -119,7 +178,37 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       )}
-      <Toaster position="bottom-right" />
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
+      {showShareModal && selectedProjectId && (
+        <ProjectShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          projectId={selectedProjectId}
+          projectTitle={
+            projects.find((p) => p.id === selectedProjectId)?.title || ""
+          }
+        />
+      )}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <ConfirmationDialog
+            message={
+              <p>
+                Are you sure you want to delete this project? This action cannot
+                be undone.
+              </p>
+            }
+            onConfirm={handleDeleteConfirm}
+            onCancel={handleDeleteCancel}
+          />
+        </div>
+      )}
     </div>
   );
 };

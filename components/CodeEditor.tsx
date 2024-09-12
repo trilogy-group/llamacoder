@@ -1,4 +1,5 @@
 import { parseResponse } from '@/utils/apiClients/GenAI'
+import { SandpackError } from '@codesandbox/sandpack-client'
 import {
 	SandpackCodeEditor,
 	SandpackLayout,
@@ -6,16 +7,15 @@ import {
 	SandpackProvider,
 	useActiveCode,
 	useSandpack,
-	useSandpackConsole,
 } from '@codesandbox/sandpack-react'
 import { dracula as draculaTheme } from '@codesandbox/sandpack-themes'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CodeIcon from '@mui/icons-material/Code'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import DownloadIcon from '@mui/icons-material/GetApp' // Changed to a more appropriate icon
 import RefreshIcon from '@mui/icons-material/Refresh'
 import VisibilityIcon from '@mui/icons-material/Visibility'
-import CircularProgress from '@mui/material/CircularProgress'
 import { saveAs } from 'file-saver'
 import { AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
@@ -25,48 +25,44 @@ import { Project } from '../types/Project' // Assuming you have a Project type
 interface CodeEditorProps {
 	project: Project
 	selectedArtifact: Artifact
-	onFixIt?: (errorMessage: string) => void
+	onAutoFix?: (error: SandpackError, callback: () => void) => void
+	onSandpackError?: (error: SandpackError) => void
+	onSuccess?: () => void
 	children?: React.ReactNode
 }
 
+import CircularProgress from '@mui/material/CircularProgress'
+
 function SandpackContent({
 	children,
-	status,
-	onFixIt,
+	onAutoFix,
+	onSandpackError,
 	onReset,
+	onSuccess,
 	selectedArtifact,
 }: {
 	children: React.ReactNode
-	status: 'idle' | 'creating' | 'updating'
-	onFixIt: (errorMessage: string) => void
+	onAutoFix: (error: SandpackError, callback: () => void) => void
+	onSandpackError?: (error: SandpackError) => void
 	onReset: () => void
+	onSuccess?: () => void
 	selectedArtifact: Artifact
 }) {
 	const [isPreviewOnly, setIsPreviewOnly] = useState(true)
-	const [hasCompilationError, setHasCompilationError] = useState(false)
-	const [errorMessage, setErrorMessage] = useState<string | null>(null)
-	const [isFixButtonDisabled, setIsFixButtonDisabled] = useState(false)
-	const [currentVersion, setCurrentVersion] = useState(1)
-	const [totalVersions, setTotalVersions] = useState(1)
 
 	const { sandpack, listen } = useSandpack()
-	const { activeFile, updateFile } = sandpack
+	const { activeFile, updateFile, error, status } = sandpack
 	const { code } = useActiveCode()
 	const [statusMessage, setStatusMessage] = useState<string | null>(null)
-	const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true })
+	const [isAutoFixInProgress, setIsAutoFixInProgress] = useState(false)
+	const [currentVersion, setCurrentVersion] = useState(1)
+	const [totalVersions, setTotalVersions] = useState(1)
 
 	const handleDownload = () => {
 		const blob = new Blob([code], {
 			type: 'text/plain;charset=utf-8',
 		})
 		saveAs(blob, 'App.tsx')
-	}
-
-	const handleFixIt = () => {
-		if (errorMessage) {
-			onFixIt(errorMessage)
-			setIsFixButtonDisabled(true)
-		}
 	}
 
 	const handlePrevVersion = () => {
@@ -76,6 +72,17 @@ function SandpackContent({
 	const handleNextVersion = () => {
 		if (currentVersion < totalVersions) setCurrentVersion(currentVersion + 1)
 	}
+
+	useEffect(() => {
+		const totalVersions = Math.ceil((selectedArtifact.chatSession?.messages.length || 0) / 2)
+		setTotalVersions(totalVersions)
+		setCurrentVersion(totalVersions)
+
+		const messageIndex = 2 * totalVersions - 1
+		const result = parseResponse(selectedArtifact.chatSession?.messages[messageIndex]?.text || '')
+		// TODO: Update this
+		// updateFile('/App.tsx', result['CODE'])
+	}, [selectedArtifact.chatSession?.messages, updateFile])
 
 	const actionButtons = (
 		<div className="absolute bottom-2 left-2 z-20 flex gap-2">
@@ -123,50 +130,41 @@ function SandpackContent({
 	)
 
 	useEffect(() => {
-		const totalVersions = Math.ceil((selectedArtifact.chatSession?.messages.length || 0) / 2)
-		setTotalVersions(totalVersions)
-		setCurrentVersion(totalVersions)
-
-		const messageIndex = 2 * totalVersions - 1
-		const result = parseResponse(selectedArtifact.chatSession?.messages[messageIndex]?.text || '')
-		// TODO: Update this
-		// updateFile('/App.tsx', result['CODE'])
-	}, [selectedArtifact.chatSession?.messages, updateFile])
-
-	useEffect(() => {
-		updateFile('/App.tsx', code)
-	}, [code, activeFile])
-
-	useEffect(() => {
+		if (error) {
+			onSandpackError?.(error)
+		}
 		const stopListening = listen((msg) => {
 			console.log('msg: ', msg)
-			if (msg.type === 'action' && msg.action === 'show-error') {
-				setErrorMessage(msg.message)
-				setIsFixButtonDisabled(false)
-			} else if (msg.type === 'dependencies') {
+			if (error && onSandpackError) {
+				onSandpackError(error)
+			}
+			if (msg.type === 'dependencies') {
 				setStatusMessage('📦 Installing dependencies...')
 			} else if (msg.type === 'status') {
 				if (msg.status === 'transpiling') {
 					setStatusMessage('⚙️ Assembling your code...')
 				} else if (msg.status === 'evaluating') {
 					setStatusMessage('🚀 Your app is almost ready!')
-				} else if (msg.status === 'idle') {
+				} else if (msg.status === 'idle' && !error) {
 					setStatusMessage('')
 				}
-			} else if (msg.type == 'done') {
-				if ('compilatonError' in msg) {
-					setHasCompilationError(msg.compilatonError)
-					if (msg.compilatonError) {
-						setIsFixButtonDisabled(false)
-					}
-				}
-				console.log('logs: ', logs)
+			} else if (msg.type === 'done' && msg.compilatonError === false) {
+				onSuccess?.()
 			}
 		})
 		return () => {
 			stopListening()
 		}
-	}, [listen, statusMessage])
+	}, [listen, statusMessage, error, status])
+
+	const handleAutoFix = () => {
+		if (error && onAutoFix) {
+			setIsAutoFixInProgress(true)
+			onAutoFix(error, () => {
+				setIsAutoFixInProgress(false)
+			})
+		}
+	}
 
 	return (
 		<div className="relative">
@@ -212,6 +210,26 @@ function SandpackContent({
 					)}
 				</div>
 				{statusMessage === '' && actionButtons}
+				{error && (
+					<button
+						onClick={handleAutoFix}
+						className="sp-icon-standalone sp-c-bxeRRt sp-c-gMfcns sp-c-dEbKhQ sp-button absolute right-2 top-2 z-50 flex items-center gap-2 rounded-md px-3 py-1.5 font-semibold shadow-md transition-colors duration-200"
+						title={`Automatically fix error: ${error.message}`}
+						style={{
+							backgroundColor: '#3b82f6', // Blue-600
+							borderColor: '#3b82f6', // Blue-600
+							color: 'white',
+						}}
+						disabled={isAutoFixInProgress}
+					>
+						{isAutoFixInProgress ? (
+							<CircularProgress size={20} thickness={4} style={{ color: 'white' }} />
+						) : (
+							<ErrorOutlineIcon style={{ width: '16px', height: '16px' }} />
+						)}
+						<span>{isAutoFixInProgress ? 'Fixing...' : 'Auto Fix'}</span>
+					</button>
+				)}
 			</SandpackLayout>
 			{statusMessage !== '' && (
 				<div className="absolute bottom-2 left-0 right-0 z-10 flex justify-center">
@@ -243,7 +261,7 @@ function SandpackContent({
 	)
 }
 
-export default function CodeEditor({ project, selectedArtifact, children }: CodeEditorProps) {
+export default function CodeEditor({ project, selectedArtifact, onAutoFix, onSandpackError, onSuccess, children }: CodeEditorProps) {
 	const [key, setKey] = useState(0)
 
 	const normalizedDependencies = useMemo(() => {
@@ -281,12 +299,11 @@ export default function CodeEditor({ project, selectedArtifact, children }: Code
 		return files
 	}, [selectedArtifact.code, selectedArtifact.name, selectedArtifact.dependencies])
 
-	const handleFixIt = (errorMessage: string) => {
-		console.log('errorMessage: ', errorMessage)
+	const handleAutoFix = async (error: SandpackError, callback: () => void) => {
+		onAutoFix?.(error, callback)
 	}
 
 	const handleReset = () => {
-		console.log('handleReset: ', key)
 		setKey((prevKey) => prevKey + 1)
 	}
 
@@ -305,7 +322,13 @@ export default function CodeEditor({ project, selectedArtifact, children }: Code
 					}}
 					files={sandpackFiles}
 				>
-					<SandpackContent selectedArtifact={selectedArtifact} status={selectedArtifact.status} onFixIt={handleFixIt} onReset={handleReset}>
+					<SandpackContent
+						onAutoFix={handleAutoFix}
+						onSandpackError={onSandpackError}
+						onReset={handleReset}
+						onSuccess={onSuccess}
+						selectedArtifact={selectedArtifact}
+					>
 						{children}
 					</SandpackContent>
 				</SandpackProvider>

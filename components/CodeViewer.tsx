@@ -8,17 +8,18 @@ import { dracula as draculaTheme } from "@codesandbox/sandpack-themes";
 import { useEffect, useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import CircularProgress from "@mui/material/CircularProgress";
+import { ArtifactStatus } from "@/types/Artifact";
 
 interface CodeEditorProps {
   code: string;
-  status: "idle" | "creating" | "updating";
+  status: ArtifactStatus;
 }
 
 function SandpackContent({
   status,
   code,
 }: {
-  status: "idle" | "creating" | "updating";
+  status: ArtifactStatus;
   code: string;
 }) {
   const [statusMessage, setStatusMessage] = useState<string>("");
@@ -26,9 +27,9 @@ function SandpackContent({
   useEffect(() => {
     if (code === "") {
       if (status === "creating") {
-        setStatusMessage("⚙️ Please wait while we create your artifact...");
+        setStatusMessage("🚀 Please wait while we create your artifact...");
       } else if (status === "updating") {
-        setStatusMessage("⚙️ Please wait while we update your artifact...");
+        setStatusMessage("🚀 Please wait while we update your artifact...");
       }
     } else {
       setStatusMessage("");
