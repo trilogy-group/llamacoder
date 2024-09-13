@@ -603,6 +603,10 @@ ${description}
 		[updateProjectAndArtifact, projectId, showAlert, project]
 	)
 
+	const handleDashboardClick = useCallback(() => {
+		router.push('/dashboard');
+	}, [router]);
+
 	if (isLoading) {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center bg-gray-50">
@@ -671,7 +675,7 @@ ${description}
 
 	return (
 		<div className="flex flex-col h-screen">
-			<ProjectHeader user={user} project={project} />
+			<ProjectHeader user={user} project={project} onDashboardClick={handleDashboardClick} />
 			<div className="flex-1 flex flex-col overflow-hidden pt-6" style={{ marginTop: '64px' }}>
 				{project.artifacts && project.artifacts.length > 0 ? (
 					<PanelGroup direction="horizontal" className="flex-1">

@@ -8,13 +8,16 @@ import { HiUserGroup } from "react-icons/hi";
 import logo from "../public/logo.png";
 import { Project } from "@/types/Project";
 import { formatDistanceToNow } from 'date-fns';
+import { FiArrowLeft } from "react-icons/fi";
+import Tooltip from './Tooltip';
 
 interface HeaderProps {
   user?: UserProfile;
   project: Project;
+  onDashboardClick: () => void; // Add this new prop
 }
 
-export default function ProjectHeader({ user, project }: HeaderProps) {
+export default function ProjectHeader({ user, project, onDashboardClick }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
@@ -31,6 +34,10 @@ export default function ProjectHeader({ user, project }: HeaderProps) {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleDashboardClick = () => {
+    onDashboardClick(); // Call the passed function instead of using router
   };
 
   useEffect(() => {
@@ -51,29 +58,39 @@ export default function ProjectHeader({ user, project }: HeaderProps) {
     <header className="fixed left-0 right-0 top-0 z-50 bg-white shadow-sm">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-4">
-          <div className="flex items-start">
+          <div className="flex items-center">
             <div className="w-10 h-10 flex-shrink-0 bg-blue-100 rounded-lg overflow-hidden mr-3">
               <Image src={logo} alt="Artifact Logo" width={40} height={40} />
             </div>
             <div className="flex-grow min-w-0">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-800 truncate mr-2">
-                  {project.title}
-                </h1>
+                <Tooltip content="Go to Dashboard">
+                  <button
+                    onClick={handleDashboardClick}
+                    className="mr-2 p-1 rounded-full hover:bg-gray-100 transition duration-300 ease-in-out"
+                  >
+                    <FiArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                </Tooltip>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-800 truncate mr-2">
+                    {project.title}
+                  </h1>
+                  <div className="flex items-center text-xs text-gray-400">
+                    <FiCalendar className="w-3 h-3 mr-1" />
+                    <span>
+                      {project.updatedBy ? `${project.updatedBy} · ` : ''}
+                      {timeAgo}
+                    </span>
+                  </div>
+                </div>
                 <button
                   ref={infoButtonRef}
                   onClick={() => setShowProjectInfo(!showProjectInfo)}
-                  className="text-gray-400 hover:text-gray-600 relative"
+                  className="text-gray-400 hover:text-gray-600 relative ml-2"
                 >
                   <FiInfo className="w-5 h-5" />
                 </button>
-              </div>
-              <div className="flex items-center text-xs text-gray-400 mt-1">
-                <FiCalendar className="w-3 h-3 mr-1" />
-                <span>
-                  {project.updatedBy ? `${project.updatedBy} · ` : ''}
-                  {timeAgo}
-                </span>
               </div>
             </div>
           </div>
