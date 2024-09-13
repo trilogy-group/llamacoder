@@ -10,6 +10,7 @@ import { Project } from "@/types/Project";
 import { formatDistanceToNow } from 'date-fns';
 import { FiArrowLeft } from "react-icons/fi";
 import Tooltip from './Tooltip';
+import Alert from './Alert';
 
 interface HeaderProps {
   user?: UserProfile;
@@ -22,6 +23,7 @@ export default function ProjectHeader({ user, project, onDashboardClick, onShare
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
   const infoButtonRef = useRef<HTMLButtonElement>(null);
   const infoCardRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +41,18 @@ export default function ProjectHeader({ user, project, onDashboardClick, onShare
 
   const handleDashboardClick = () => {
     onDashboardClick(); // Call the passed function instead of using router
+  };
+
+  const copyWorkspaceLink = () => {
+    const baseUrl = window.location.origin;
+    const workspaceLink = `${baseUrl}/workspaces/${project.id}`;
+    
+    navigator.clipboard.writeText(workspaceLink).then(() => {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    }).catch((err) => {
+      console.error('Failed to copy: ', err);
+    });
   };
 
   useEffect(() => {
@@ -105,7 +119,10 @@ export default function ProjectHeader({ user, project, onDashboardClick, onShare
                 <HiUserGroup className="h-5 w-5" />
                 <span>Share</span>
               </button>
-              <button className="flex items-center px-3 py-2 border-l border-blue-400 hover:bg-blue-600 transition duration-300 ease-in-out">
+              <button 
+                className="flex items-center px-3 py-2 border-l border-blue-400 hover:bg-blue-600 transition duration-300 ease-in-out"
+                onClick={copyWorkspaceLink}
+              >
                 <FiLink className="h-5 w-5" />
               </button>
             </div>
@@ -221,6 +238,15 @@ export default function ProjectHeader({ user, project, onDashboardClick, onShare
             </div>
           )}
         </div>
+      )}
+      
+      {showAlert && (
+        <Alert
+          type="success"
+          message="Workspace link copied to clipboard!"
+          duration={3000}
+          onClose={() => setShowAlert(false)}
+        />
       )}
     </header>
   );
