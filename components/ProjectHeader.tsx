@@ -14,10 +14,11 @@ import Tooltip from './Tooltip';
 interface HeaderProps {
   user?: UserProfile;
   project: Project;
-  onDashboardClick: () => void; // Add this new prop
+  onDashboardClick: () => void;
+  onShare: () => void;  // Add this line
 }
 
-export default function ProjectHeader({ user, project, onDashboardClick }: HeaderProps) {
+export default function ProjectHeader({ user, project, onDashboardClick, onShare }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
@@ -97,7 +98,10 @@ export default function ProjectHeader({ user, project, onDashboardClick }: Heade
 
           <div className="flex items-center space-x-3">
             <div className="flex rounded-full overflow-hidden bg-blue-500 text-white text-sm font-medium">
-              <button className="flex items-center space-x-2 px-4 py-2 hover:bg-blue-600 transition duration-300 ease-in-out">
+              <button 
+                className="flex items-center space-x-2 px-4 py-2 hover:bg-blue-600 transition duration-300 ease-in-out"
+                onClick={onShare}  // Add this line
+              >
                 <HiUserGroup className="h-5 w-5" />
                 <span>Share</span>
               </button>
