@@ -7,7 +7,6 @@ import ArtifactOverviewInputForm from '@/components/ArtifactOverviewInputForm'
 import CodeViewer from '@/components/CodeViewer'
 import ConfirmationDialog from '@/components/ConfirmationDialog'
 import EmptyArtifactsMessage from '@/components/EmptyArtifactsMessage'
-import HeaderV2 from '@/components/HeaderV2'
 import Preview from '@/components/Preview'
 import ProjectHeader from '@/components/ProjectHeader'
 import ProjectShareModal from '@/components/ProjectShareModal'
@@ -29,14 +28,14 @@ import React, { memo, useCallback, useEffect, useState } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useUser } from '@auth0/nextjs-auth0/client'
 
 interface WorkspaceProps {
 	projectId: string
 }
 
 const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
-	const { user } = useUser();
+	const { user } = useUser()
 	const [project, setProject] = useState<Project | null>(null)
 	const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null)
 	const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false)
@@ -307,7 +306,7 @@ ${description}
 					// 		const parsedResponse = parseResponse(response)
 					// 		generatedCode = parsedResponse.CODE || ''
 					// 		const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
-          //     console.log('newArtifact before:', newArtifact)
+					//     console.log('newArtifact before:', newArtifact)
 					// 		newArtifact = {
 					// 			...newArtifact,
 					// 			name: extractComponentName(generatedCode),
@@ -315,10 +314,10 @@ ${description}
 					// 			code: generatedCode,
 					// 			dependencies: [...defaultDependencies, ...dependencies],
 					// 		}
-          //     console.log('Generated code:', generatedCode);
-          //     console.log('Response:', response);
-          //     console.log('parsedResponse:', parsedResponse);
-          //     console.log('newArtifact after:', newArtifact);
+					//     console.log('Generated code:', generatedCode);
+					//     console.log('Response:', response);
+					//     console.log('parsedResponse:', parsedResponse);
+					//     console.log('newArtifact after:', newArtifact);
 
 					// 		updateProjectAndArtifact(
 					// 			(prevProject) => ({
@@ -411,12 +410,13 @@ ${description}
 		if (artifactToRename) {
 			try {
 				await artifactApi.updateArtifact(projectId, artifactToRename.id, {
-          displayName: newArtifactName,
+					displayName: newArtifactName,
 				})
 				updateProjectAndArtifact(
 					(prevProject) => ({
 						...prevProject!,
-						artifacts: prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, displayName: newArtifactName } : a)) || [],
+						artifacts:
+							prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, displayName: newArtifactName } : a)) || [],
 					}),
 					selectedArtifact
 				)
@@ -508,7 +508,7 @@ ${description}
 						// 	if (generatedCode === '') {
 						// 		const parsedResponse = parseResponse(response)
 						// 		generatedCode = parsedResponse.CODE || '';
-            //     console.log('Generated code:', generatedCode);
+						//     console.log('Generated code:', generatedCode);
 						// 		const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
 						// 		updateProjectAndArtifact(
 						// 			(prevProject) => ({
@@ -532,17 +532,17 @@ ${description}
 					}
 				}
 
-        let messages = chatSession.messages;
+				let messages = chatSession.messages
 
-        if(chatSession.messages.length > 3) {
-          messages = [
-            chatSession.messages[0],
-            chatSession.messages[1],
-            chatSession.messages[chatSession.messages.length - 3],
-            chatSession.messages[chatSession.messages.length - 2],
-            chatSession.messages[chatSession.messages.length - 1],
-          ] as Message[];
-        }
+				if (chatSession.messages.length > 3) {
+					messages = [
+						chatSession.messages[0],
+						chatSession.messages[1],
+						chatSession.messages[chatSession.messages.length - 3],
+						chatSession.messages[chatSession.messages.length - 2],
+						chatSession.messages[chatSession.messages.length - 1],
+					] as Message[]
+				}
 
 				console.log('Generating response with messages:', messages)
 				const { code, dependencies: extractedDependencies } = await genAiApi.generateResponse(
@@ -670,18 +670,9 @@ ${description}
 	}
 
 	return (
-		<div className="flex h-screen flex-col">
-			<HeaderV2 user={user} />
-			<div className="flex flex-1 flex-col overflow-hidden" style={{ marginTop: '64px' }}>
-				<ProjectHeader
-					projectTitle={project.title}
-					projectDescription={project.description}
-					onMyProjectsClick={handleMyProjectsClick}
-					onShareClick={handleShare}
-					onDeleteClick={handleDelete}
-					projectId={project.id}
-					isViewer={isViewer}
-				/>
+		<div className="flex flex-col h-screen">
+			<ProjectHeader user={user} project={project} />
+			<div className="flex-1 flex flex-col overflow-hidden pt-6" style={{ marginTop: '64px' }}>
 				{project.artifacts && project.artifacts.length > 0 ? (
 					<PanelGroup direction="horizontal" className="flex-1">
 						<Panel defaultSize={20} minSize={0} maxSize={100} collapsible={true}>
