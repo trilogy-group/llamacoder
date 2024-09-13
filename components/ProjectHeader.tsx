@@ -3,7 +3,7 @@ import { UserProfile } from "@auth0/nextjs-auth0/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { FiLogOut, FiUser, FiLink, FiMoreHorizontal, FiCalendar, FiInfo, FiExternalLink, FiCpu } from "react-icons/fi";
+import { FiLogOut, FiUser, FiLink, FiMoreHorizontal, FiCalendar, FiInfo, FiExternalLink, FiCpu, FiEdit } from "react-icons/fi";
 import { HiUserGroup } from "react-icons/hi";
 import logo from "../public/logo.png";
 import { Project } from "@/types/Project";
@@ -11,21 +11,28 @@ import { formatDistanceToNow } from 'date-fns';
 import { FiArrowLeft } from "react-icons/fi";
 import Tooltip from './Tooltip';
 import Alert from './Alert';
+import { CircularProgress } from '@mui/material';
 
 interface HeaderProps {
   user?: UserProfile;
   project: Project;
   onDashboardClick: () => void;
-  onShare: () => void;  // Add this line
+  onShare: () => void;
+  onProjectTitleUpdate: (newTitle: string) => void;
 }
 
-export default function ProjectHeader({ user, project, onDashboardClick, onShare }: HeaderProps) {
+export default function ProjectHeader({ user, project, onDashboardClick, onShare, onProjectTitleUpdate }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(project.title);
+  const [localTitle, setLocalTitle] = useState(project.title);
+  const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
   const infoButtonRef = useRef<HTMLButtonElement>(null);
   const infoCardRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
@@ -55,6 +62,36 @@ export default function ProjectHeader({ user, project, onDashboardClick, onShare
     });
   };
 
+  const handleTitleClick = () => {
+    setIsEditingTitle(true);
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedTitle(e.target.value);
+  };
+
+  const handleTitleBlur = async () => {
+    if (editedTitle !== localTitle) {
+      setIsUpdatingTitle(true);
+      try {
+        await onProjectTitleUpdate(editedTitle);
+        setLocalTitle(editedTitle);
+      } catch (error) {
+        console.error('Failed to update project title:', error);
+        // Optionally, show an error message to the user
+      } finally {
+        setIsUpdatingTitle(false);
+      }
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      titleInputRef.current?.blur();
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (infoCardRef.current && !infoCardRef.current.contains(event.target as Node) &&
@@ -69,48 +106,80 @@ export default function ProjectHeader({ user, project, onDashboardClick, onShare
     };
   }, []);
 
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+    }
+  }, [isEditingTitle]);
+
   return (
     <header className="fixed left-0 right-0 top-0 z-50 bg-white shadow-sm">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-4">
-          <div className="flex items-center">
+          <div className="flex items-center flex-grow">
             <div className="w-10 h-10 flex-shrink-0 bg-blue-100 rounded-lg overflow-hidden mr-3">
               <Image src={logo} alt="Artifact Logo" width={40} height={40} />
             </div>
-            <div className="flex-grow min-w-0">
-              <div className="flex items-center">
-                <Tooltip content="Go to Dashboard">
-                  <button
-                    onClick={handleDashboardClick}
-                    className="mr-2 p-1 rounded-full hover:bg-gray-100 transition duration-300 ease-in-out"
-                  >
-                    <FiArrowLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                </Tooltip>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-800 truncate mr-2">
-                    {project.title}
-                  </h1>
-                  <div className="flex items-center text-xs text-gray-400">
-                    <FiCalendar className="w-3 h-3 mr-1" />
-                    <span>
-                      {project.updatedBy ? `${project.updatedBy} · ` : ''}
-                      {timeAgo}
+            <div className="flex-grow min-w-0 flex items-center">
+              <Tooltip content="Go to Dashboard">
+                <button
+                  onClick={handleDashboardClick}
+                  className="mr-2 p-1 rounded-full hover:bg-gray-100 transition duration-300 ease-in-out flex-shrink-0"
+                >
+                  <FiArrowLeft className="w-5 h-5 text-gray-600" />
+                </button>
+              </Tooltip>
+              <div className="flex-grow mr-2">
+                {isEditingTitle ? (
+                  <div className="relative">
+                    <input
+                      ref={titleInputRef}
+                      type="text"
+                      value={editedTitle}
+                      onChange={handleTitleChange}
+                      onBlur={handleTitleBlur}
+                      onKeyDown={handleTitleKeyDown}
+                      className="w-full text-xl font-semibold text-gray-800 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-4 py-2 pr-10 shadow-sm transition duration-150 ease-in-out"
+                      style={{ minWidth: '200px', maxWidth: '100%' }}
+                      disabled={isUpdatingTitle}
+                    />
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      {isUpdatingTitle ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <FiEdit className="h-5 w-5 text-gray-400" />
+                      )}
                     </span>
                   </div>
+                ) : (
+                  <div className="flex items-center">
+                    <h1
+                      className="text-xl font-semibold text-gray-800 truncate cursor-pointer hover:text-blue-600 mr-2"
+                      onClick={handleTitleClick}
+                    >
+                      {localTitle}
+                    </h1>
+                    <button
+                      ref={infoButtonRef}
+                      onClick={() => setShowProjectInfo(!showProjectInfo)}
+                      className="text-gray-400 hover:text-gray-600 relative flex-shrink-0"
+                    >
+                      <FiInfo className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center text-xs text-gray-400 mt-1">
+                  <FiCalendar className="w-3 h-3 mr-1" />
+                  <span>
+                    {project.updatedBy ? `${project.updatedBy} · ` : ''}
+                    {timeAgo}
+                  </span>
                 </div>
-                <button
-                  ref={infoButtonRef}
-                  onClick={() => setShowProjectInfo(!showProjectInfo)}
-                  className="text-gray-400 hover:text-gray-600 relative ml-2"
-                >
-                  <FiInfo className="w-5 h-5" />
-                </button>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 ml-4">
             <div className="flex rounded-full overflow-hidden bg-blue-500 text-white text-sm font-medium">
               <button 
                 className="flex items-center space-x-2 px-4 py-2 hover:bg-blue-600 transition duration-300 ease-in-out"

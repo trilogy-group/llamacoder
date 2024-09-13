@@ -11,7 +11,7 @@ import { Project } from "@/types/Project";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Alert from "@/components/Alert";
 import { CircularProgress } from "@mui/material";
 import { projectApi } from "@/utils/apiClients/Project";
@@ -19,7 +19,7 @@ import ConfirmationDialog from "@/components/ConfirmationDialog";
 
 const Dashboard: React.FC = () => {
   const { user, error: userError, isLoading: userLoading } = useUser();
-  const { projects, dispatchProjectsUpdate, projectsLoading } = useAppContext();
+  const { projects, projectsLoading, projectsError, refreshProjects } = useAppContext();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -34,6 +34,12 @@ const Dashboard: React.FC = () => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   const router = useRouter();
+
+  useEffect(() => {
+    if (!projectsLoading && !projectsError && projects.length === 0) {
+      refreshProjects();
+    }
+  }, [projectsLoading, projectsError, projects, refreshProjects]);
 
   const handleCreateProject = async (description: string) => {
     setIsCreatingProject(true);
@@ -52,7 +58,7 @@ const Dashboard: React.FC = () => {
       };
 
       const createdProject = await projectApi.createProject(newProject);
-      dispatchProjectsUpdate([...projects, createdProject]);
+      await refreshProjects();
       setShowCreateForm(false);
       router.push(`/workspaces/${createdProject.id}`);
     } catch (error) {
@@ -77,9 +83,7 @@ const Dashboard: React.FC = () => {
     try {
       await projectApi.deleteProject(deletedProjectId);
       setAlert({ type: "success", message: "Project deleted successfully." });
-      dispatchProjectsUpdate(
-        projects.filter((project) => project.id !== deletedProjectId),
-      );
+      await refreshProjects();
     } catch (error) {
       console.error("Error deleting project:", error);
       setAlert({

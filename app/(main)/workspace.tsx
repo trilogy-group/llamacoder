@@ -18,13 +18,13 @@ import { ChatSession } from '@/types/ChatSession'
 import { Message } from '@/types/Message'
 import { Project } from '@/types/Project'
 import { artifactApi } from '@/utils/apiClients/Artifact'
-import { genAiApi, parseExtraLibraries, parseResponse } from '@/utils/apiClients/GenAI'
+import { genAiApi, parseResponse } from '@/utils/apiClients/GenAI'
 import { projectApi } from '@/utils/apiClients/Project'
 import { defaultDependencies, defaultCode } from '@/utils/config'
 import { SandpackError } from '@codesandbox/sandpack-client'
 import { CircularProgress } from '@mui/material'
 import { useRouter } from 'next/navigation'
-import React, { memo, useCallback, useEffect, useState } from 'react'
+import React, { memo, useCallback, useEffect, useState, useRef } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
@@ -72,7 +72,11 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		[]
 	)
 
+	const fetchedRef = useRef(false);
+
 	useEffect(() => {
+		if (fetchedRef.current || !projectId) return;
+
 		const fetchProjectAndArtifacts = async () => {
 			setIsLoading(true)
 			try {
@@ -109,6 +113,7 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 					}),
 					updatedArtifacts.length > 0 ? updatedArtifacts[0] : null
 				)
+				fetchedRef.current = true;
 			} catch (err) {
 				console.error('Error fetching project and artifacts:', err)
 				setError('Failed to fetch project and artifacts')
@@ -118,7 +123,7 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		}
 
 		fetchProjectAndArtifacts()
-	}, [])
+	}, [projectId])
 
 	const onAutoFix = async (error: SandpackError, callback: () => void) => {
 		console.log('Auto fixing error:', error)
@@ -607,6 +612,17 @@ ${description}
 		router.push('/dashboard');
 	}, [router]);
 
+	const handleProjectTitleUpdate = useCallback(async (newTitle: string) => {
+		try {
+			await projectApi.updateProject(projectId, { title: newTitle });
+			setProject(prevProject => prevProject ? { ...prevProject, title: newTitle } : null);
+			showAlert('success', 'Project title updated successfully');
+		} catch (error) {
+			console.error('Error updating project title:', error);
+			showAlert('error', 'Failed to update project title');
+		}
+	}, [projectId, showAlert]);
+
 	if (isLoading) {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center bg-gray-50">
@@ -675,7 +691,7 @@ ${description}
 
 	return (
 		<div className="flex flex-col h-screen">
-			<ProjectHeader user={user} project={project} onDashboardClick={handleDashboardClick} onShare={handleShare} />
+			<ProjectHeader user={user} project={project} onDashboardClick={handleDashboardClick} onShare={handleShare} onProjectTitleUpdate={handleProjectTitleUpdate} />
 			<div className="flex-1 flex flex-col overflow-hidden pt-6" style={{ marginTop: '64px' }}>
 				{project.artifacts && project.artifacts.length > 0 ? (
 					<PanelGroup direction="horizontal" className="flex-1">
