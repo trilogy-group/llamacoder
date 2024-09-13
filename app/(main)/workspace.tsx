@@ -29,12 +29,14 @@ import React, { memo, useCallback, useEffect, useState } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 interface WorkspaceProps {
 	projectId: string
 }
 
 const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
+	const { user } = useUser();
 	const [project, setProject] = useState<Project | null>(null)
 	const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null)
 	const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false)
@@ -669,7 +671,7 @@ ${description}
 
 	return (
 		<div className="flex h-screen flex-col">
-			<HeaderV2 />
+			<HeaderV2 user={user} />
 			<div className="flex flex-1 flex-col overflow-hidden" style={{ marginTop: '64px' }}>
 				<ProjectHeader
 					projectTitle={project.title}
