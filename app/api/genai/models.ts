@@ -28,7 +28,6 @@ export const ChatModel = (model: string, tools: DynamicStructuredTool<any>[]): R
         const llm = new ChatOpenAI({
             modelName: "gpt-4o",
             temperature: 0.2,
-            maxTokens: 8192
         });
         return tools && tools.length > 0 ? llm.bindTools(tools) : llm;
     }
