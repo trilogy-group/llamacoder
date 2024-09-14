@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types/Project';
-import { FiExternalLink, FiShare2, FiTrash2, FiEdit3 } from 'react-icons/fi';
+import { FiExternalLink, FiShare2, FiTrash2, FiEdit3, FiEye } from 'react-icons/fi';
 import Tooltip from './Tooltip';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -61,6 +61,60 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
     onDeleteClick(project);
   };
 
+  const accessLevelColor = {
+    owner: 'bg-purple-100 text-purple-800',
+    editor: 'bg-orange-100 text-orange-800',
+    viewer: 'bg-green-100 text-green-800',
+  };
+
+  const getActionButton = () => {
+    if (project.accessLevel === 'viewer') {
+      return (
+        <Tooltip content="View project">
+          <button
+            onClick={handleOpenProject}
+            className="bg-green-500 text-white hover:bg-green-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2"
+            disabled={isOpeningWorkspace}
+          >
+            {isOpeningWorkspace ? (
+              <>
+                <CircularProgress size={20} color="inherit" />
+                <span className="text-sm font-medium">Opening...</span>
+              </>
+            ) : (
+              <>
+                <FiEye className="w-5 h-5" />
+                <span className="text-sm font-medium">View</span>
+              </>
+            )}
+          </button>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip content="Open for development">
+        <button
+          onClick={handleOpenProject}
+          className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2"
+          disabled={isOpeningWorkspace}
+        >
+          {isOpeningWorkspace ? (
+            <>
+              <CircularProgress size={20} color="inherit" />
+              <span className="text-sm font-medium">Opening...</span>
+            </>
+          ) : (
+            <>
+              <FiEdit3 className="w-5 h-5" />
+              <span className="text-sm font-medium">Open</span>
+            </>
+          )}
+        </button>
+      </Tooltip>
+    );
+  };
+
   return (
     <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] bg-gradient-to-br from-blue-50/80 to-white/70 flex flex-col h-full">
       <div className="relative aspect-video mb-4 bg-gray-100 rounded-lg overflow-hidden">
@@ -114,6 +168,11 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
             {tag}
           </span>
         ))}
+        {project.accessLevel && (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${accessLevelColor[project.accessLevel]}`}>
+            {project.accessLevel}
+          </span>
+        )}
       </div>
 
       <div className="flex justify-between items-center mt-auto">
@@ -138,35 +197,19 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
               </a>
             </Tooltip>
           )}
-          <Tooltip content="Delete">
-            <button 
-              onClick={handleDeleteClick}
-              className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition duration-300 ease-in-out"
-            >
-              <FiTrash2 className="w-5 h-5" />
-            </button>
-          </Tooltip>
+          {project.accessLevel === 'owner' && (
+            <Tooltip content="Delete">
+              <button 
+                onClick={handleDeleteClick}
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition duration-300 ease-in-out"
+              >
+                <FiTrash2 className="w-5 h-5" />
+              </button>
+            </Tooltip>
+          )}
         </div>
         
-        <Tooltip content="Open for development">
-          <button 
-            onClick={handleOpenProject}
-            className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-full transition duration-300 ease-in-out flex items-center space-x-2"
-            disabled={isOpeningWorkspace}
-          >
-            {isOpeningWorkspace ? (
-              <>
-              <CircularProgress size={20} color="inherit" />
-              <span className="text-sm font-medium">Opening...</span>
-              </>
-            ) : (
-              <>
-                <FiEdit3 className="w-5 h-5" />
-                <span className="text-sm font-medium">Open</span>
-              </>
-            )}
-          </button>
-        </Tooltip>
+        {getActionButton()}
       </div>
 
       {alert && (
