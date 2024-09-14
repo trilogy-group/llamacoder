@@ -2,6 +2,7 @@ import { Message } from '@/types/Message';
 import { Artifact, Dependency } from '@/types/Artifact';
 import { Project } from '@/types/Project';
 import * as pdfjs from 'pdfjs-dist';
+import mammoth from 'mammoth';
 
 // Set the worker source for pdf.js
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -32,6 +33,13 @@ async function getBase64FromUrl(url: string): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+async function extractDocxText(url: string): Promise<string> {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
 }
 
 export const genAiApi = {
@@ -67,6 +75,12 @@ export const genAiApi = {
               content.push({
                 type: "text",
                 text: `Content of ${attachment.fileName} (PDF):\n${pdfText}`,
+              });
+            } else if (attachment.fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+              const docxText = await extractDocxText(attachment.url);
+              content.push({
+                type: "text",
+                text: `Content of ${attachment.fileName} (DOCX):\n${docxText}`,
               });
             } else {
               const response = await fetch(attachment.url);
