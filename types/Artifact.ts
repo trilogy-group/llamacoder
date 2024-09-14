@@ -6,7 +6,7 @@ export type Dependency = {
     version: string;
 };
 
-export type ArtifactStatus = "idle" | "creating" | "updating" | "fixing" | "running" | "error" | "success";
+export type ArtifactStatus = "idle" | "creating" | "updating" | "fixing" | "running" | "error" | "success" | "publishing";
 
 export type Artifact = {
     id: string;
@@ -21,4 +21,5 @@ export type Artifact = {
     createdAt?: string;
     updatedAt?: string;
     error?: SandpackError | null;
+    publishedUrl?: string;
 };

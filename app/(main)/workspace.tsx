@@ -688,6 +688,21 @@ ${description}
 		[projectId, showAlert]
 	)
 
+	const handlePublishArtifact = async (artifact: Artifact) => {
+		console.log('Publishing artifact:', artifact)
+		const { success, url } = await artifactApi.publish(artifact)
+		if (success) {
+			updateProjectAndArtifact(
+				(prevProject) => ({
+					...prevProject!,
+					artifacts: prevProject?.artifacts?.map((a) => (a.id === artifact.id ? { ...a, publishedUrl: url } : a)) || [],
+				}),
+				artifact.id == selectedArtifact?.id ? { ...artifact, publishedUrl: url } as Artifact : artifact
+			)
+		}
+		console.log('Artifact published:', artifact)
+	}
+
 	if (isLoading) {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center bg-gray-50">
@@ -779,6 +794,7 @@ ${description}
 								onDuplicateArtifact={handleDuplicateArtifact}
 								onRenameArtifact={handleRenameArtifact}
 								isViewer={project?.accessLevel === 'viewer'}
+								onPublish={handlePublishArtifact}
 							/>
 						</Panel>
 						{!isArtifactListCollapsed && <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />}
