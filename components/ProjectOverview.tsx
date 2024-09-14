@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Project } from '../types/Project';
 import { FiExternalLink, FiShare2, FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Tooltip from './Tooltip';
@@ -9,23 +8,21 @@ import logo from './../public/logo.png';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from './Alert';
 
-
 interface ProjectOverviewProps {
   project: Project;
-  onProjectDeleted: (deletedProjectId: string) => Promise<void>;
-  onShareClick: (projectId: string) => void;
-  onDeleteClick: (projectId: string) => void;
+  onProjectDeleted: (deletedProject: Project) => Promise<void>;
+  onShareClick: (project: Project) => void;
+  onDeleteClick: (project: Project) => void;
 }
 
 const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDeleted, onShareClick, onDeleteClick }) => {  
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [alert, setAlert] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   // Mock tags - replace with actual project tags when available
-  const mockTags = ['React', 'TypeScript', 'AI', 'Mobile'];
-  const projectTags = mockTags.slice(0, Math.floor(Math.random() * 3) + 1);
+  const mockTags = ['React', 'TypeScript', 'AI'];
+  const projectTags = mockTags;
   const [contributors, setContributors] = useState<string[]>([]);
   const [showContributorsModal, setShowContributorsModal] = useState(false);
 
@@ -39,26 +36,13 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
 
   const projectColor = getColorFromString(project.createdBy);
 
-  const fetchContributors = async () => {
-    try {
-      const editorResponse = await axios.post('/api/fga', {
-        action: 'listUsers',
-        data: {
-          object: { type: 'project', id: project.id },
-          relation: 'editor'
-        }
-      });
-      const editors = editorResponse.data.users.map((user: any) => user.object.id);
-      const allContributors = Array.from(new Set([project.createdBy, ...editors]));
-      setContributors(allContributors);
-    } catch (error) {
-      console.error('Error fetching contributors:', error);
-    }
-  };
-
   useEffect(() => {
-    fetchContributors();
-  }, [project.id]);
+    const allContributors = Array.from(new Set([
+      project.createdBy,
+      ...(project.contributors || []).map(user => user.email || '')
+    ])) as string[];
+    setContributors(allContributors);
+  }, [project.id, project.createdBy, project.contributors]);
 
   const handleContributorsClick = () => {
     setShowContributorsModal(true);
@@ -74,7 +58,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
   };
 
   const handleDeleteClick = () => {
-    onDeleteClick(project.id);
+    onDeleteClick(project);
   };
 
   return (
@@ -136,7 +120,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
         <div className="flex space-x-2">
           <Tooltip content="Share project">
             <button
-              onClick={() => onShareClick(project.id)}
+              onClick={() => onShareClick(project)}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition duration-300 ease-in-out"
             >
               <FiShare2 className="w-5 h-5" />
@@ -158,7 +142,6 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project, onProjectDel
             <button 
               onClick={handleDeleteClick}
               className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition duration-300 ease-in-out"
-              disabled={isDeleting}
             >
               <FiTrash2 className="w-5 h-5" />
             </button>

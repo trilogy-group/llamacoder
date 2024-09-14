@@ -1,6 +1,13 @@
 import { FileContext } from "./FileContext";
 import { Artifact } from "./Artifact";
 
+export type AccessLevel = 'owner' | 'editor' | 'viewer';
+
+export interface Contributor {
+    email: string;
+    accessLevel: AccessLevel;
+}
+
 export interface Project {
     id: string;
     title: string;
@@ -15,4 +22,6 @@ export interface Project {
     createdBy?: string | null | undefined;
     updatedBy?: string | null | undefined;
     publishedUrl?: string;
+    accessLevel?: AccessLevel;
+    contributors?: Contributor[];
 }

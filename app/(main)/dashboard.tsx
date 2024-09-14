@@ -7,7 +7,7 @@ import ProjectList from "@/components/ProjectList";
 import ProjectOverviewInputForm from "@/components/ProjectOverviewInputForm";
 import ProjectShareModal from "@/components/ProjectShareModal";
 import { useAppContext } from "@/contexts/AppContext";
-import { Project } from "@/types/Project";
+import { Project, AccessLevel } from "@/types/Project";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+  const [selectedProject, setSelectedProject] = useState<Project | null>(
     null,
   );
   const [alert, setAlert] = useState<{
@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
     message: string;
   } | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const router = useRouter();
 
@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
     if (!projectsLoading && !projectsError && projects.length === 0) {
       refreshProjects();
     }
-  }, [projectsLoading, projectsError, projects, refreshProjects]);
+  }, [projectsLoading, projectsError, projects.length, refreshProjects]);
 
   const handleCreateProject = async (description: string) => {
     setIsCreatingProject(true);
@@ -72,16 +72,16 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleShareClick = (projectId: string): void => {
-    setSelectedProjectId(projectId);
+  const handleShareClick = (project: Project): void => {
+    setSelectedProject(project);
     setShowShareModal(true);
   };
 
   const handleProjectDeleted = async (
-    deletedProjectId: string,
+    deletedProject: Project,
   ): Promise<void> => {
     try {
-      await projectApi.deleteProject(deletedProjectId);
+      await projectApi.deleteProject(deletedProject.id);
       setAlert({ type: "success", message: "Project deleted successfully." });
       await refreshProjects();
     } catch (error) {
@@ -93,8 +93,8 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = (projectId: string): void => {
-    setProjectToDelete(projectId);
+  const handleDeleteClick = (project: Project): void => {
+    setProjectToDelete(project);
     setShowDeleteConfirmation(true);
   };
 
@@ -110,6 +110,72 @@ const Dashboard: React.FC = () => {
     setShowDeleteConfirmation(false);
     setProjectToDelete(null);
   };
+
+  const handleUpdateAccessLevel = async (email: string, accessLevel: AccessLevel | 'revoke') => {
+		console.log('Adding contributor:', email, accessLevel);
+    if(!selectedProject) {
+      setAlert({
+        type: "error",
+        message: "Failed to add contributor. Please try again.",
+      });
+      return;
+    }
+		const { success } = await projectApi.shareProject(selectedProject?.id, email, accessLevel);
+    if(!success) {
+      setAlert({
+        type: "error",
+        message: "Failed to add contributor. Please try again.",
+      });
+      return;
+    }
+    if(accessLevel === 'revoke') {
+			setSelectedProject(prevProject => {
+				if (!prevProject) return null;
+				return {
+					...prevProject,
+					contributors: prevProject?.contributors?.filter(contributor => contributor.email !== email)
+				};
+			});
+		} else {
+			setSelectedProject(prevProject => {
+				if (!prevProject) return null;
+				return {
+					...prevProject,
+					contributors: prevProject?.contributors?.map(contributor => contributor.email === email ? { ...contributor, accessLevel } : contributor)
+				};
+			});
+		}
+	}
+
+	const handleAddContributor = async (email: string, accessLevel: AccessLevel | 'revoke') => {
+		console.log('Adding contributor:', email, accessLevel);
+    if(!selectedProject) {
+      setAlert({
+        type: "error",
+        message: "Failed to add contributor. Please try again.",
+      });
+      return;
+    }
+		const { success } = await projectApi.shareProject(selectedProject?.id, email, accessLevel);
+    if(!success) {
+      setAlert({
+        type: "error",
+        message: "Failed to add contributor. Please try again.",
+      });
+      return;
+    }
+		if(accessLevel === 'revoke') {
+			return;
+		} else {
+			setSelectedProject(prevProject => {
+				if (!prevProject) return null;
+				return {
+					...prevProject,
+					contributors: [...(prevProject.contributors || []), { email, accessLevel }]
+				};
+			});
+		}
+	}
 
   if (userLoading) {
     return (
@@ -189,14 +255,13 @@ const Dashboard: React.FC = () => {
           onClose={() => setAlert(null)}
         />
       )}
-      {showShareModal && selectedProjectId && (
+      {showShareModal && selectedProject && (
         <ProjectShareModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
-          projectId={selectedProjectId}
-          projectTitle={
-            projects.find((p) => p.id === selectedProjectId)?.title || ""
-          }
+          project={selectedProject}
+          onUpdateAccessLevel={handleUpdateAccessLevel}
+          onAddContributor={handleAddContributor}
         />
       )}
       {showDeleteConfirmation && (

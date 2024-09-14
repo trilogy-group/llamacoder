@@ -1,4 +1,4 @@
-import { Project } from '@/types/Project';
+import { Project, AccessLevel } from '@/types/Project';
 
 export const projectApi = {
     getProjects: async (): Promise<Project[]> => {
@@ -9,7 +9,7 @@ export const projectApi = {
         return response.json();
     },
 
-    getProject: async (id: string): Promise<{ project: Project; accessLevel: string }> => {
+    getProject: async (id: string): Promise<Project> => {
         const response = await fetch(`/api/projects?id=${id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch project');
@@ -52,5 +52,27 @@ export const projectApi = {
         if (!response.ok) {
             throw new Error('Failed to delete project');
         }
+    },
+
+    fetchContributors: async (projectId: string): Promise<any[]> => {
+        const response = await fetch(`/api/projects/${projectId}/contributors`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch contributors');
+        }
+        return response.json();
+    },
+
+    shareProject: async (projectId: string, email: string, accessLevel: AccessLevel | 'revoke'): Promise<{ success: boolean, message: string }> => {
+        const response = await fetch(`/api/projects/share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ projectId, email, accessLevel }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to share project');
+        }
+        return response.json();
     },
 };

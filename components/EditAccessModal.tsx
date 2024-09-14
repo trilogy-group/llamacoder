@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiX } from 'react-icons/fi';
+import { CircularProgress } from '@mui/material';
 
 interface EditAccessModalProps {
   user: {
@@ -9,9 +10,10 @@ interface EditAccessModalProps {
   onClose: () => void;
   onUpdateAccess: (email: string, newAccessLevel: string) => void;
   userAccessLevel?: string;
+  isAccessUpdateInProgress: boolean;
 }
 
-const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess, userAccessLevel }) => {
+const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess, userAccessLevel, isAccessUpdateInProgress }) => {
   const [newAccessLevel, setNewAccessLevel] = useState(user.accessLevel);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,9 +53,14 @@ const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpda
             </button>
             <button
               type="submit"
-              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              disabled={isAccessUpdateInProgress}
+              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:bg-gray-300 relative"
             >
-              Update Access
+              {isAccessUpdateInProgress ? (
+                <CircularProgress size={24} color="inherit" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+              ) : (
+                'Update Access'
+              )}
             </button>
           </div>
         </form>

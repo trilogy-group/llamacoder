@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { ddbClient } from '@/utils/ddbClient';
-import { checkAccess } from '@/utils/access';
 import { v4 as uuidv4 } from 'uuid';
 import { Project } from '@/types/Project';
 import { FileContext } from '@/types/FileContext';
 // @ts-ignore
 import { getSession } from '@auth0/nextjs-auth0';
 import fgaClient from "@/lib/oktaFGA";
+import { AccessLevel } from '@/types/Project';
+import { checkAccess, fetchContributors } from '@/utils/project';
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
       createdBy: session.user.email,
       updatedBy: session.user.email,
     };
-    
+
     const dbProject = {
       ...project,
       createdAt: now.toISOString(),
@@ -50,8 +51,6 @@ export async function POST(request: Request) {
         object: `project:${project.id}`,
       }],
     });
-    
-    console.log("Response: ", response);
 
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
@@ -73,17 +72,21 @@ export async function GET(request: Request) {
 
     if (id) {
       // Check if user has access to this project
-      const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, id);
+      const { allowed, accessLevel } = await checkAccess(id, session.user);
+
       if (!allowed) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
 
       // Fetch a single project by ID
       const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
-      
+
       if (!result.Item) {
         return NextResponse.json({ error: 'Project not found' }, { status: 404 });
       }
+
+      // Fetch contributors
+      const contributors = await fetchContributors(id);
 
       const project: Project = {
         id: result.Item.id,
@@ -98,56 +101,57 @@ export async function GET(request: Request) {
         createdBy: result.Item.createdBy,
         updatedBy: result.Item.updatedBy,
         publishedUrl: result.Item.publishedUrl,
+        accessLevel: accessLevel as AccessLevel,
+        contributors: contributors,
       };
 
-      return NextResponse.json({project, accessLevel});
+      return NextResponse.json(project);
     } else {
-
       // Fetch all projects the user has access to
-      const ownedProjects = await fgaClient.listObjects({
-        user: `user:${session.user.sub}`,
-        relation: 'can_view',
-        type: 'project',
-      });
+      const responses = await Promise.all([
+        await fgaClient.read({
+          user: `user:${session.user.email}`,
+          object: 'project:',
+        }),
+        await fgaClient.read({
+          user: `user:${session.user.sub}`,
+          object: 'project:',
+        }),
+      ]);
 
-      const sharedViewProjects = await fgaClient.listObjects({
-        user: `user:${session.user.email}`,
-        relation: 'viewer',
-        type: 'project',
-      });
+      const tuples: any[] = [];
+      for (const response of responses) {
+        tuples.push(...response.tuples.map((tuple: any) => { return { id: tuple.key.object.split(':')[1], accessLevel: tuple.key.relation } }));
+      }
 
-      const sharedEditProjects = await fgaClient.listObjects({
-        user: `user:${session.user.email}`,
-        relation: 'editor',
-        type: 'project',
-      });
-
-      const projectIds = Array.from(new Set([
-        ...ownedProjects.objects.map(obj => obj.split(':')[1]),
-        ...sharedViewProjects.objects.map(obj => obj.split(':')[1]),
-        ...sharedEditProjects.objects.map(obj => obj.split(':')[1])
-      ]));
-
-      const projects: Project[] = [];
-      for (const projectId of projectIds) {
-        const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${projectId}`, SK: `PROJECT#${projectId}` });
-        if (result.Item) {
-          projects.push({
-            id: result.Item.id,
-            title: result.Item.title,
-            description: result.Item.description,
-            thumbnail: result.Item.thumbnail,
-            context: result.Item.context as FileContext[],
-            entrypoint: result.Item.entrypoint,
-            status: result.Item.status,
-            createdAt: result.Item.createdAt,
-            updatedAt: result.Item.updatedAt,
-            createdBy: result.Item.createdBy,
-            updatedBy: result.Item.updatedBy,
-            publishedUrl: result.Item.publishedUrl,
-          });
+      const projectPromises = tuples.map(async (projectTuple: any) => {
+        const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${projectTuple.id}`, SK: `PROJECT#${projectTuple.id}` });
+        return {
+          ...result,
+          accessLevel: projectTuple.accessLevel,
         }
       }
+      );
+
+      const projectResults = await Promise.all(projectPromises);
+
+      const projects: Project[] = projectResults
+        .filter(result => result.Item)
+        .map((result, index) => ({
+          id: result?.Item?.id,
+          title: result?.Item?.title,
+          description: result?.Item?.description,
+          thumbnail: result?.Item?.thumbnail,
+          context: result?.Item?.context as FileContext[],
+          entrypoint: result?.Item?.entrypoint,
+          status: result?.Item?.status,
+          createdAt: result?.Item?.createdAt,
+          updatedAt: result?.Item?.updatedAt,
+          createdBy: result?.Item?.createdBy,
+          updatedBy: result?.Item?.updatedBy,
+          publishedUrl: result?.Item?.publishedUrl,
+          accessLevel: result.accessLevel,
+        }));
 
       return NextResponse.json(projects);
     }
@@ -174,7 +178,7 @@ export async function PUT(request: Request) {
     }
 
     // Check if user has access to modify this project
-    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, id);
+    const { allowed, accessLevel } = await checkAccess(id, session.user);
     if (!allowed || accessLevel !== 'owner' && accessLevel !== 'editor') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -191,13 +195,13 @@ export async function PUT(request: Request) {
       ':updatedBy': session.user.email,
     };
 
-    await ddbClient.update(TABLE_NAME, 
-      { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` }, 
+    await ddbClient.update(TABLE_NAME,
+      { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` },
       updateExpression,
       expressionAttributeValues,
       expressionAttributeNames,
     );
-    
+
     const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
     if (!result.Item) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
@@ -241,7 +245,7 @@ export async function DELETE(request: Request) {
     }
 
     // Check if user has access to delete this project
-    const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, id);
+    const { allowed, accessLevel } = await checkAccess(id, session.user);
     if (!allowed || accessLevel !== 'owner') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -249,7 +253,7 @@ export async function DELETE(request: Request) {
     await ddbClient.delete(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` });
 
     // Remove all FGA relationships for this project
-    // await fgaClient.write({
+    // await fgaClientCall('write', {
     //   deletes: [
     //   {
     //     user: `user:${session.user.sub}`,
