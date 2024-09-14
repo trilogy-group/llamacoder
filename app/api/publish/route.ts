@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         const publishedUrl = `https://apps.ti.trilogy.com/${artifact.id.split('-')[0]}/`;
 
         // Clean up the temporary directory
-        // await fs.remove(tempDir);
+        await fs.remove(tempDir);
 
         return NextResponse.json({ success: true, url: publishedUrl });
     } catch (error) {
