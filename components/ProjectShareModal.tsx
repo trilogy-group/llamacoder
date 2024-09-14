@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { FiX, FiCopy } from 'react-icons/fi';
+import { FiX, FiCopy, FiUser, FiEdit2, FiEye } from 'react-icons/fi';
 import { toast } from 'sonner';
 import EditAccessModal from './EditAccessModal';
 import { Project, Contributor, AccessLevel } from '@/types/Project';
-import { CircularProgress } from '@mui/material'; // Add this import
+import { CircularProgress, Select, MenuItem, styled } from '@mui/material';
 
 interface ShareProjectModalProps {
   isOpen: boolean;
@@ -13,7 +13,20 @@ interface ShareProjectModalProps {
   onAddContributor: (email: string, accessLevel: AccessLevel) => Promise<void>;
 }
 
-const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, project, onUpdateAccessLevel, onAddContributor }) => {
+const StyledSelect = styled(Select)(({ theme }) => ({
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderRadius: '12px',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+    borderWidth: '2px',
+  },
+}));
+
+const ProjectShareModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, project, onUpdateAccessLevel, onAddContributor }) => {
   const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState('viewer');
   const [editingUser, setEditingUser] = useState<Contributor | null>(null);
@@ -64,66 +77,115 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
     toast.success('Link copied to clipboard');
   };
 
+  const getAccessLevelIcon = (accessLevel: AccessLevel) => {
+    switch (accessLevel) {
+      case 'owner':
+        return <FiUser className="w-4 h-4 text-purple-600" />;
+      case 'editor':
+        return <FiEdit2 className="w-4 h-4 text-orange-600" />;
+      case 'viewer':
+        return <FiEye className="w-4 h-4 text-green-600" />;
+      default:
+        return null;
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Share <i className="text-blue-500 text-md">{project.title}</i></h2>
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Share Project</h2>
+            <p className="text-sm text-blue-600">{project.title}</p>
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <FiX size={24} />
+            <FiX size={20} />
           </button>
         </div>
-        <input
-          type="email"
-          placeholder="Enter email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full rounded border p-2"
-        />
-        <select
-          value={accessLevel}
-          onChange={(e) => setAccessLevel(e.target.value)}
-          className="mb-4 w-full rounded border p-2"
-        >
-          <option value="viewer">Can view</option>
-          {project.accessLevel !== 'viewer' && <option value="editor">Can edit</option>}
-        </select>
+        
+        {/* Email input and access level select */}
+        <div className="mb-3 space-y-2">
+          <input
+            type="email"
+            placeholder="Enter email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <StyledSelect
+            value={accessLevel}
+            onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
+            fullWidth
+            variant="outlined"
+            size="small"
+          >
+            <MenuItem value="viewer">Can view</MenuItem>
+            {project.accessLevel !== 'viewer' && <MenuItem value="editor">Can edit</MenuItem>}
+          </StyledSelect>
+        </div>
+
+        {/* Share button */}
         <button
           onClick={handleShare}
           disabled={isShareInProgress || !email}
-          className="mb-4 w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600 disabled:bg-gray-300 relative"
+          className={`w-full rounded-full p-2 text-sm font-medium text-white transition duration-300 ease-in-out relative ${
+            isShareInProgress || !email ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+          } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
         >
           {isShareInProgress ? (
-            <CircularProgress size={24} color="inherit" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <>
+              <span className="opacity-0">Share</span>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </>
           ) : (
             'Share'
           )}
         </button>
-        <div className="mb-4 flex items-center justify-between rounded border p-2">
-          <span className="text-sm text-gray-600">Shareable Link</span>
-          <button
-            onClick={copyLinkToClipboard}
-            className="flex items-center text-blue-500 hover:text-blue-600"
-          >
-            <FiCopy size={18} className="mr-1" />
-            Copy
-          </button>
+
+        {/* Shareable link */}
+        <div className="mt-3 mb-3 rounded-md border border-gray-200 p-2 bg-gray-50">
+          <span className="text-xs font-medium text-gray-600 block mb-1">Shareable Link</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500 truncate mr-2">{`${window.location.origin}/workspaces/${project.id}`}</span>
+            <button
+              onClick={copyLinkToClipboard}
+              className="text-xs text-blue-500 hover:text-blue-600 transition duration-300 ease-in-out"
+            >
+              Copy
+            </button>
+          </div>
         </div>
-        <div className="mt-4">
-          <h3 className="mb-2 font-semibold">Users with access:</h3>
-          <ul className="max-h-40 overflow-y-auto">
+
+        {/* Users with access */}
+        <div className="mt-3">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">Users with access:</h3>
+          <ul className="max-h-28 overflow-y-auto space-y-1">
             {project.contributors?.map((contributor, index) => (
-              <li key={index} className="mb-1 flex items-center justify-between">
-                <span>{contributor.email}</span>
+              <li key={index} className="flex items-center justify-between bg-gray-50 rounded-md p-1.5">
+                <div className="flex items-center">
+                  {getAccessLevelIcon(contributor.accessLevel as AccessLevel)}
+                  <span className="text-xs text-gray-600 ml-2">{contributor.email}</span>
+                </div>
                 <button
                   onClick={() => handleEditAccess(contributor)}
                   disabled={isAccessUpdateInProgress && updatingContributorEmail === contributor.email}
-                  className="ml-2 rounded bg-blue-500 px-2 py-1 text-sm text-white hover:bg-blue-600 disabled:bg-gray-300 relative"
+                  className={`ml-2 rounded-full px-4 py-1 text-xs font-medium text-white transition duration-300 ease-in-out relative ${
+                    isAccessUpdateInProgress && updatingContributorEmail === contributor.email
+                      ? 'bg-blue-300 cursor-not-allowed'
+                      : 'bg-blue-500 hover:bg-blue-600'
+                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                 >
                   {isAccessUpdateInProgress && updatingContributorEmail === contributor.email ? (
-                    <CircularProgress size={16} color="inherit" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    <>
+                      <span className="opacity-0">Edit Access</span>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    </>
                   ) : (
                     'Edit Access'
                   )}
@@ -139,11 +201,10 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
           onClose={() => setEditingUser(null)}
           onUpdateAccess={(email, newAccessLevel) => handleAccessUpdate(email, newAccessLevel as AccessLevel | 'revoke')}
           userAccessLevel={project.accessLevel}
-          isAccessUpdateInProgress={isAccessUpdateInProgress}
         />
       )}
     </div>
   );
 };
 
-export default ShareProjectModal;
+export default ProjectShareModal;
