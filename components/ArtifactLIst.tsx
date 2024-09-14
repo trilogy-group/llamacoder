@@ -199,9 +199,21 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 				<CircularProgress
 					size={20}
 					thickness={5}
-					className="mr-3"
-					style={{ color: '#9333ea' }} // Purple color for publishing
+					style={{ color: '#9333ea' }}
 				/>
+			)
+		}
+
+		if (artifact.status === 'idle' && artifact.publishedUrl) {
+			return (
+				<a
+					href={artifact.publishedUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<FiGlobe className={`h-5 w-5 ${isSelected ? 'text-green-600' : 'text-green-500'}`} />
+				</a>
 			)
 		}
 
@@ -211,8 +223,7 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 					<CircularProgress
 						size={20}
 						thickness={5}
-						className="mr-3"
-						style={{ color: '#3b82f6' }} // Blue color for creating
+						style={{ color: '#3b82f6' }}
 					/>
 				)
 			case 'updating':
@@ -220,16 +231,15 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 					<CircularProgress
 						size={20}
 						thickness={5}
-						className="mr-3"
-						style={{ color: '#eab308' }} // Yellow color for updating
+						style={{ color: '#eab308' }}
 					/>
 				)
 			case 'error':
-				return <FiAlertCircle className="mr-3 h-5 w-5 text-red-500" />
+				return <FiAlertCircle className="h-5 w-5 text-red-500" />
 			case 'success':
-				return <FiCheckCircle className="mr-3 h-5 w-5 text-green-500" />
+				return <FiCheckCircle className="h-5 w-5 text-green-500" />
 			default:
-				return <FiBox className={`mr-3 h-5 w-5 ${isSelected ? 'text-blue-500' : 'text-blue-400'}`} />
+				return <FiBox className={`h-5 w-5 ${isSelected ? 'text-blue-500' : 'text-blue-400'}`} />
 		}
 	}
 
@@ -258,7 +268,11 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 			onClick={onClick}
 		>
 			<div className="flex flex-grow items-center overflow-hidden">
-				<div onMouseEnter={(e) => onHover(artifact, e)} onMouseLeave={(e) => onHover(null, e)}>
+				<div 
+					className="flex items-center mr-3"
+					onMouseEnter={(e) => onHover(artifact, e)} 
+					onMouseLeave={(e) => onHover(null, e)}
+				>
 					{getStatusIcon()}
 				</div>
 				<span className="max-w-[70%] truncate font-medium">{artifact.displayName || artifact.name}</span>

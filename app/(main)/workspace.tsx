@@ -699,6 +699,8 @@ ${description}
 				}),
 				artifact.id == selectedArtifact?.id ? { ...artifact, publishedUrl: url } as Artifact : artifact
 			)
+			showAlert('success', 'Artifact published successfully!')
+			await artifactApi.updateArtifact(projectId, artifact.id, { publishedUrl: url })
 		}
 		console.log('Artifact published:', artifact)
 	}
