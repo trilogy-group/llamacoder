@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FiX } from 'react-icons/fi';
-import { CircularProgress } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
 interface EditAccessModalProps {
   user: {
@@ -8,62 +9,122 @@ interface EditAccessModalProps {
     accessLevel: string;
   };
   onClose: () => void;
-  onUpdateAccess: (email: string, newAccessLevel: string) => void;
+  onUpdateAccess: (email: string, newAccessLevel: string) => Promise<void>;
   userAccessLevel?: string;
-  isAccessUpdateInProgress: boolean;
 }
 
-const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess, userAccessLevel, isAccessUpdateInProgress }) => {
-  const [newAccessLevel, setNewAccessLevel] = useState(user.accessLevel);
+const StyledSelect = styled(Select)(({ theme }) => ({
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderRadius: '12px',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+    borderWidth: '2px',
+  },
+}));
 
-  const handleSubmit = (e: React.FormEvent) => {
+const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  '&.Mui-selected': {
+    backgroundColor: theme.palette.primary.light,
+    '&:hover': {
+      backgroundColor: theme.palette.primary.light,
+    },
+  },
+}));
+
+const EditAccessModal: React.FC<EditAccessModalProps> = ({ user, onClose, onUpdateAccess, userAccessLevel }) => {
+  const [newAccessLevel, setNewAccessLevel] = useState(user.accessLevel);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateAccess(user.email, newAccessLevel);
+    setIsUpdating(true);
+    try {
+      await onUpdateAccess(user.email, newAccessLevel);
+      setResult('Access updated successfully');
+    } catch (error) {
+      setResult(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Edit Access for {user.email}</h2>
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Edit Access</h2>
+            <p className="text-sm italic text-blue-600 mt-1">{user.email}</p>
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <FiX size={24} />
           </button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="mb-2 block font-semibold">Access Level</label>
-            <select
-              value={newAccessLevel}
-              onChange={(e) => setNewAccessLevel(e.target.value)}
-              className="w-full rounded border p-2"
-            >
-              <option value="viewer">Viewer</option>
-              {userAccessLevel !== 'viewer' && <option value="editor">Editor</option>}
-              {userAccessLevel === 'owner' && <option value="revoke">Revoke Access</option>}
-            </select>
+        {result ? (
+          <div className="mb-6 text-center">
+            <p className={`text-lg ${result.includes('error') ? 'text-red-600' : 'text-green-600'}`}>
+              {result}
+            </p>
           </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="mr-2 rounded bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isAccessUpdateInProgress}
-              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:bg-gray-300 relative"
-            >
-              {isAccessUpdateInProgress ? (
-                <CircularProgress size={24} color="inherit" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
-              ) : (
-                'Update Access'
-              )}
-            </button>
-          </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <FormControl fullWidth variant="outlined" className="mb-6">
+              <InputLabel id="access-level-label">Access Level</InputLabel>
+              <StyledSelect
+                labelId="access-level-label"
+                value={newAccessLevel}
+                onChange={(e) => setNewAccessLevel(e.target.value as string)}
+                label="Access Level"
+              >
+                <StyledMenuItem value="viewer">Viewer</StyledMenuItem>
+                {userAccessLevel !== 'viewer' && (
+                  <StyledMenuItem value="editor">Editor</StyledMenuItem>
+                )}
+                {userAccessLevel === 'owner' && (
+                  <StyledMenuItem value="revoke" style={{ color: 'red' }}>
+                    Revoke Access
+                  </StyledMenuItem>
+                )}
+              </StyledSelect>
+            </FormControl>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 text-sm font-medium text-gray-600 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-300 ease-in-out"
+                disabled={isUpdating}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdating}
+                className={`px-6 py-2 text-sm font-medium text-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 ease-in-out flex items-center justify-center relative ${
+                  isUpdating ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                {isUpdating ? (
+                  <>
+                    <span className="opacity-0">Update Access</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  </>
+                ) : (
+                  'Update Access'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
