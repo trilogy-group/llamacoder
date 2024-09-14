@@ -1,6 +1,38 @@
 import { Message } from '@/types/Message';
 import { Artifact, Dependency } from '@/types/Artifact';
 import { Project } from '@/types/Project';
+import * as pdfjs from 'pdfjs-dist';
+
+// Set the worker source for pdf.js
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+async function extractPdfText(url: string): Promise<string> {
+  const pdf = await pdfjs.getDocument(url).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const strings = content.items.map((item: any) => item.str);
+    text += strings.join(' ') + '\n';
+  }
+  return text;
+}
+
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64data = reader.result as string;
+      // Remove the data URL prefix to get only the base64 string
+      const base64Content = base64data.split(',')[1];
+      resolve(base64Content);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 export const genAiApi = {
   generateResponse: async (
@@ -10,54 +42,54 @@ export const genAiApi = {
     onChunk: (chunks: { index: number; type: string; text: string }[]) => void,
     model: string
   ): Promise<{ code: string; dependencies: Dependency[] }> => {
-
     if (!project || !selectedArtifact) {
       throw new Error('Project and selected artifact are required');
     }
 
     console.log("Generating response with messages:", messages);
 
-    // Process messages to include attachment contents
     const processedMessages = await Promise.all(messages.map(async (message) => {
+      const content: any[] = [{ type: "text", text: message.text }];
+
       if (message.attachments && message.attachments.length > 0) {
-        let attachmentContent = "\n\nAdditional context from attachments:\n";
         for (const attachment of message.attachments) {
           try {
-            const response = await fetch(attachment.url);
-            const content = await response.text();
-            attachmentContent += `\nContent of ${attachment.fileName}:\n${content}\n`;
+            if (attachment.fileType.startsWith('image/')) {
+              const base64Data = await getBase64FromUrl(attachment.url);
+              content.push({
+                type: "image_url",
+                image_url: {
+                  url: `data:${attachment.fileType};base64,${base64Data}`,
+                },
+              });
+            } else if (attachment.fileType === 'application/pdf') {
+              const pdfText = await extractPdfText(attachment.url);
+              content.push({
+                type: "text",
+                text: `Content of ${attachment.fileName} (PDF):\n${pdfText}`,
+              });
+            } else {
+              const response = await fetch(attachment.url);
+              const textContent = await response.text();
+              content.push({
+                type: "text",
+                text: `Content of ${attachment.fileName}:\n${textContent}`,
+              });
+            }
           } catch (error) {
-            console.error(`Error reading attachment ${attachment.fileName}:`, error);
-            attachmentContent += `\nError reading content of ${attachment.fileName}\n`;
+            console.error(`Error processing attachment ${attachment.fileName}:`, error);
+            // content.push({
+            //   type: "text",
+            //   text: `Error processing attachment ${attachment.fileName}: ${error}`,
+            // });
           }
         }
-        return { ...message, text: message.text + attachmentContent };
       }
-      return message;
+
+      return { ...message, content };
     }));
 
     console.log("Processed messages:", processedMessages);
-
-//     const availableComponents = project?.artifacts?.filter(artifact => artifact.id !== selectedArtifact.id)
-//       .map(artifact => `- ${artifact.name}: ${artifact.description}`)
-//       .join('\n');
-
-//     console.log("Available components:", availableComponents);
-
-//     if (availableComponents && availableComponents.length > 0) {
-//       processedMessages[0].text += `
-// These are custom components available for use:
-// ${availableComponents}
-  
-// You can import them like this:
-// import CustomComponent from './CustomComponent';
-
-// For example, to use the Login component, you can import it like this:
-// import Login from './Login';
-
-// Please use these components as needed in your response, assuming they don't require any props for now.
-//   `;
-//     }
 
     const response = await fetch('/api/genai', {
       method: 'POST',
