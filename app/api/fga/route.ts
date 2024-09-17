@@ -34,26 +34,27 @@ export async function POST(req: Request) {
 		op: action === 'share' ? WarrantOp.Create : action === 'delete' ? WarrantOp.Delete : undefined,
 	})
 
-	const formatted_data = Array.isArray(data) ? data.map(formatWarrant) : formatWarrant(data)
+	const formatted_data = Array.isArray(data) ? data.map(formatWarrant) : [formatWarrant(data)]
 	try {
 		switch (action) {
 			case 'share':
 				// Add relationships for all records in data
 				// response = await fgaClient.write({ writes: data })
-				response = await workos.fga.batchWriteWarrants(Array.isArray(formatted_data) ? formatted_data : [formatted_data])
+				response = await workos.fga.batchWriteWarrants(formatted_data)
 				return NextResponse.json(response)
 
 			case 'delete':
 				// Remove relationships for all records in data
 				// response = await fgaClient.write({ deletes: data })
-				response = await workos.fga.batchWriteWarrants(Array.isArray(formatted_data) ? formatted_data : [formatted_data])
+				response = await workos.fga.batchWriteWarrants(formatted_data)
 				return NextResponse.json(response)
 
 			case 'check':
 				// Check access for all records in data. Response would be in allowed property for each object
 				// response = await fgaClient.batchCheck(data)
-				response = await workos.fga.checkBatch({ checks: Array.isArray(formatted_data) ? formatted_data : [formatted_data] })
-				return NextResponse.json(response)
+				response = await workos.fga.checkBatch({ checks: formatted_data })
+				const mappedResponse = response.map((item) => ({ allowed: item.result === 'authorized' }))
+				return NextResponse.json(mappedResponse)
 
 			case 'listObjects':
 				// List projects for given user and relation
@@ -62,8 +63,13 @@ export async function POST(req: Request) {
 				// 	relation: data.relation,
 				// 	type: 'project',
 				// })
-				response = workos.fga.listWarrants({ subjectId: data.user })
-				return NextResponse.json(response)
+				response = await workos.fga.listWarrants({
+					// @ts-ignore
+					subjectId: formatted_data[0].subject.resourceId,
+					subjectType: 'user',
+					resourceType: 'project',
+				})
+				return NextResponse.json(response.data)
 
 			case 'listUsers':
 				// List users for given object and relation
@@ -72,8 +78,13 @@ export async function POST(req: Request) {
 				// 	user_filters: [{ type: 'user' }],
 				// 	relation: data.relation,
 				// })
-				response = workos.fga.listWarrants({ resourceId: data.object })
-				return NextResponse.json(response)
+				response = await workos.fga.listWarrants({
+					// @ts-ignore
+					resourceId: formatted_data[0].resource.resourceId,
+					subjectType: 'user',
+					resourceType: 'project',
+				})
+				return NextResponse.json(response.data)
 
 			default:
 				return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
