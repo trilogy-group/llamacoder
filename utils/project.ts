@@ -8,23 +8,16 @@ export const fetchContributors = async (projectId: string) => {
 
 export const checkAccess = async (projectId: string, user: any) => {
 	const accessLevels = ['owner', 'editor', 'viewer']
-	const batchCheckResponse = (await handleFGAOperation('check', [
-		{
-			user: `user:${user.sub}`,
-			relation: accessLevels[1],
+	const userIds = [user.sub, user.email]
+	const checkCombinations = accessLevels.flatMap((level) =>
+		userIds.map((id) => ({
+			user: `user:${id}`,
+			relation: level,
 			object: `project:${projectId}`,
-		},
-		{
-			user: `user:${user.email}`,
-			relation: accessLevels[2],
-			object: `project:${projectId}`,
-		},
-		{
-			user: `user:${user.email}`,
-			relation: accessLevels[3],
-			object: `project:${projectId}`,
-		},
-	])) as AccessData[]
+		}))
+	)
+
+	const batchCheckResponse = (await handleFGAOperation('check', checkCombinations)) as AccessData[]
 
 	let allowed = false
 	let accessLevel = 'none'
