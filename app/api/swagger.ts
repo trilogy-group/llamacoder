@@ -162,14 +162,12 @@ const options = {
                 ProjectUpdateInput: {
                     type: 'object',
                     properties: {
-                        id: { type: 'string' },
                         title: { type: 'string', description: 'The title of the project' },
                         description: { type: 'string', description: 'The description of the project' },
                         thumbnail: { type: 'string', description: 'The URL of the thumbnail image' },
                         status: { type: 'string', description: 'The status of the project' },
                         publishedUrl: { type: 'string', description: 'The published URL of the project' },
                     },
-                    required: ['id'],
                 },
                 CreateProjectResponse: {
                     type: 'object',
