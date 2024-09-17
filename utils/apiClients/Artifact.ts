@@ -55,12 +55,8 @@ export const artifactApi = {
   },
   
   publish: async (artifact: Artifact): Promise<{ success: boolean; url?: string }> => {
-    const response = await fetch('/api/publish', {
+    const response = await fetch(`/api/projects/${artifact.projectId}/artifacts/${artifact.id}/publish`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(artifact),
     });
     if (!response.ok) {
       throw new Error('Failed to publish artifact');

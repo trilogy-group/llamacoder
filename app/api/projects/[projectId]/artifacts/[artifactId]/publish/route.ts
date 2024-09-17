@@ -4,16 +4,68 @@ import fs from 'fs-extra';
 import path from 'path';
 import { Artifact } from '@/types/Artifact';
 import { deleteExistingFiles, uploadDirectory } from '@/utils/s3Client';
+import { ddbClient } from '@/utils/ddbClient';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || "ti-artifact-apps";
+const TABLE_NAME = process.env.DDB_TABLE_NAME || "ti-artifacts";
 
-export async function POST(request: Request) {
+/**
+ * @swagger
+ * /api/projects/{projectId}/artifacts/{artifactId}/publish:
+ *   post:
+ *     summary: Publish an artifact
+ *     description: Builds and publishes the artifact to S3
+ *     tags: [Artifacts]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project
+ *       - in: path
+ *         name: artifactId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the artifact to publish
+ *     responses:
+ *       200:
+ *         description: Artifact published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 url:
+ *                   type: string
+ *                   description: The URL of the published artifact
+ *       404:
+ *         description: Artifact not found
+ *       500:
+ *         description: Failed to publish artifact
+ */
+export async function POST(
+    request: Request,
+    { params }: { params: { projectId: string; artifactId: string } }
+) {
     try {
-        const artifact = await request.json() as Artifact;
-        console.log("Artifact: ", artifact);
+        const { projectId, artifactId } = params;
+
+        // Fetch the artifact from the database
+        const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${projectId}`, SK: `ARTIFACT#${artifactId}` });
+        
+        if (!result.Item) {
+            return NextResponse.json({ error: 'Artifact not found' }, { status: 404 });
+        }
+
+        const artifact = result.Item as Artifact;
+
         // Create a temporary directory
         const tempDir = path.join(process.cwd(), 'temp', artifact.id);
         await fs.ensureDir(tempDir);

@@ -63,12 +63,12 @@ export const projectApi = {
     },
 
     shareProject: async (projectId: string, email: string, accessLevel: AccessLevel | 'revoke'): Promise<{ success: boolean, message: string }> => {
-        const response = await fetch(`/api/projects/share`, {
+        const response = await fetch(`/api/projects/${projectId}/share`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ projectId, email, accessLevel }),
+            body: JSON.stringify({ email, accessLevel }),
         });
         if (!response.ok) {
             throw new Error('Failed to share project');
