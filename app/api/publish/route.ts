@@ -35,9 +35,9 @@ export async function POST(request: Request) {
         artifact.dependencies?.forEach(dep => {
             dependencies[dep.name] = dep.version;
         });
-        packageJson.dependencies = { ...packageJson.dependencies, ...dependencies };
-        packageJson.homepage = `/${artifact.id}`;
-        packageJson.name = artifact.name;
+        packageJson.dependencies = { ...dependencies, ...packageJson.dependencies };
+        packageJson.homepage = `/${artifact.id.split('-')[0]}`;
+        packageJson.name = artifact.id.split('-')[0];
         await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
 
         // Run npm install
@@ -87,16 +87,16 @@ export async function POST(request: Request) {
         });
 
         console.log('Build command completed.');
-        
+
         const buildFolder = path.join(tempDir, 'build');
 
         // Delete existing files before uploading
         await deleteExistingFiles(BUCKET_NAME, artifact.id);
 
         // Upload the build folder to S3
-        await uploadDirectory(BUCKET_NAME, buildFolder, artifact.id);
+        await uploadDirectory(BUCKET_NAME, buildFolder, artifact.id.split('-')[0]);
 
-        const publishedUrl = `https://apps.ti.trilogy.com/${artifact.id}/index.html`;
+        const publishedUrl = `https://apps.ti.trilogy.com/${artifact.id.split('-')[0]}/`;
 
         // Clean up the temporary directory
         await fs.remove(tempDir);

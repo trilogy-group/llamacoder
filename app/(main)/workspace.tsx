@@ -7,7 +7,6 @@ import ArtifactOverviewInputForm from '@/components/ArtifactOverviewInputForm'
 import CodeViewer from '@/components/CodeViewer'
 import ConfirmationDialog from '@/components/ConfirmationDialog'
 import EmptyArtifactsMessage from '@/components/EmptyArtifactsMessage'
-import HeaderV2 from '@/components/HeaderV2'
 import Preview from '@/components/Preview'
 import ProjectHeader from '@/components/ProjectHeader'
 import ProjectShareModal from '@/components/ProjectShareModal'
@@ -17,24 +16,27 @@ import { Artifact } from '@/types/Artifact'
 import { Attachment } from '@/types/Attachment'
 import { ChatSession } from '@/types/ChatSession'
 import { Message } from '@/types/Message'
-import { Project } from '@/types/Project'
+import { Project, AccessLevel } from '@/types/Project'
 import { artifactApi } from '@/utils/apiClients/Artifact'
-import { genAiApi, parseExtraLibraries, parseResponse } from '@/utils/apiClients/GenAI'
+import { genAiApi, parseResponse } from '@/utils/apiClients/GenAI'
 import { projectApi } from '@/utils/apiClients/Project'
 import { defaultDependencies, defaultCode } from '@/utils/config'
 import { SandpackError } from '@codesandbox/sandpack-client'
 import { CircularProgress } from '@mui/material'
 import { useRouter } from 'next/navigation'
-import React, { memo, useCallback, useEffect, useState } from 'react'
+import React, { memo, useCallback, useEffect, useState, useRef } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
+import { useUser } from '@auth0/nextjs-auth0/client'
+import { useAppContext } from '@/contexts/AppContext'
 
 interface WorkspaceProps {
 	projectId: string
 }
 
 const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
+	const { user } = useUser()
 	const [project, setProject] = useState<Project | null>(null)
 	const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null)
 	const [isArtifactListCollapsed, setIsArtifactListCollapsed] = useState(false)
@@ -58,7 +60,6 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 	const [showRenameModal, setShowRenameModal] = useState(false)
 	const [artifactToRename, setArtifactToRename] = useState<Artifact | null>(null)
 	const [newArtifactName, setNewArtifactName] = useState('')
-	const [accessLevel, setAccessLevel] = useState<string>('none')
 
 	const router = useRouter()
 
@@ -79,13 +80,10 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 					throw new Error('Project ID is undefined')
 				}
 				console.log('Fetching project with ID:', projectId)
-				const { project, accessLevel } = await projectApi.getProject(projectId)
+				const project = await projectApi.getProject(projectId)
 				console.log('Fetched project:', project)
 				const artifacts = await artifactApi.getArtifacts(projectId)
 				console.log('Fetched artifacts:', artifacts)
-
-				console.log('Access level:', accessLevel)
-				setAccessLevel(accessLevel)
 
 				// Update artifacts to ensure each message in the chat session has attachments set to an empty array
 				const updatedArtifacts = artifacts.map((artifact) => ({
@@ -115,9 +113,8 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 				setIsLoading(false)
 			}
 		}
-
 		fetchProjectAndArtifacts()
-	}, [])
+	}, [projectId])
 
 	const onAutoFix = async (error: SandpackError, callback: () => void) => {
 		console.log('Auto fixing error:', error)
@@ -181,7 +178,6 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		//   updatedArtifact
 		// );
 	}
-	const isViewer = accessLevel === 'viewer'
 
 	const showAlert = useCallback((type: 'error' | 'info' | 'warning' | 'success', message: string) => {
 		setAlert({ type, message })
@@ -191,13 +187,9 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 		setSelectedArtifact(artifact)
 	}
 
-	const handleMyProjectsClick = () => {
-		router.push('/dashboard')
-	}
-
-	const handleShare = () => {
+	const handleShare = useCallback(() => {
 		setShowShareModal(true)
-	}
+	}, [])
 
 	const handleDelete = () => {
 		setShowDeleteConfirmation(true)
@@ -305,7 +297,7 @@ ${description}
 					// 		const parsedResponse = parseResponse(response)
 					// 		generatedCode = parsedResponse.CODE || ''
 					// 		const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
-          //     console.log('newArtifact before:', newArtifact)
+					//     console.log('newArtifact before:', newArtifact)
 					// 		newArtifact = {
 					// 			...newArtifact,
 					// 			name: extractComponentName(generatedCode),
@@ -313,10 +305,10 @@ ${description}
 					// 			code: generatedCode,
 					// 			dependencies: [...defaultDependencies, ...dependencies],
 					// 		}
-          //     console.log('Generated code:', generatedCode);
-          //     console.log('Response:', response);
-          //     console.log('parsedResponse:', parsedResponse);
-          //     console.log('newArtifact after:', newArtifact);
+					//     console.log('Generated code:', generatedCode);
+					//     console.log('Response:', response);
+					//     console.log('parsedResponse:', parsedResponse);
+					//     console.log('newArtifact after:', newArtifact);
 
 					// 		updateProjectAndArtifact(
 					// 			(prevProject) => ({
@@ -409,12 +401,13 @@ ${description}
 		if (artifactToRename) {
 			try {
 				await artifactApi.updateArtifact(projectId, artifactToRename.id, {
-          displayName: newArtifactName,
+					displayName: newArtifactName,
 				})
 				updateProjectAndArtifact(
 					(prevProject) => ({
 						...prevProject!,
-						artifacts: prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, displayName: newArtifactName } : a)) || [],
+						artifacts:
+							prevProject?.artifacts?.map((a) => (a.id === artifactToRename.id ? { ...a, displayName: newArtifactName } : a)) || [],
 					}),
 					selectedArtifact
 				)
@@ -506,7 +499,7 @@ ${description}
 						// 	if (generatedCode === '') {
 						// 		const parsedResponse = parseResponse(response)
 						// 		generatedCode = parsedResponse.CODE || '';
-            //     console.log('Generated code:', generatedCode);
+						//     console.log('Generated code:', generatedCode);
 						// 		const dependencies = parseExtraLibraries(parsedResponse.EXTRA_LIBRARIES || '')
 						// 		updateProjectAndArtifact(
 						// 			(prevProject) => ({
@@ -530,17 +523,17 @@ ${description}
 					}
 				}
 
-        let messages = chatSession.messages;
+				let messages = chatSession.messages
 
-        if(chatSession.messages.length > 3) {
-          messages = [
-            chatSession.messages[0],
-            chatSession.messages[1],
-            chatSession.messages[chatSession.messages.length - 3],
-            chatSession.messages[chatSession.messages.length - 2],
-            chatSession.messages[chatSession.messages.length - 1],
-          ] as Message[];
-        }
+				if (chatSession.messages.length > 3) {
+					messages = [
+						chatSession.messages[0],
+						chatSession.messages[1],
+						chatSession.messages[chatSession.messages.length - 3],
+						chatSession.messages[chatSession.messages.length - 2],
+						chatSession.messages[chatSession.messages.length - 1],
+					] as Message[]
+				}
 
 				console.log('Generating response with messages:', messages)
 				const { code, dependencies: extractedDependencies } = await genAiApi.generateResponse(
@@ -600,6 +593,117 @@ ${description}
 		},
 		[updateProjectAndArtifact, projectId, showAlert, project]
 	)
+
+	const handleDashboardClick = useCallback(() => {
+		router.push('/dashboard')
+	}, [router])
+
+	const handleUpdateAccessLevel = async (email: string, accessLevel: AccessLevel | 'revoke') => {
+		console.log('Adding contributor:', email, accessLevel)
+		if (!project) {
+			setAlert({
+				type: 'error',
+				message: 'Failed to add contributor. Please try again.',
+			})
+			return
+		}
+		const { success } = await projectApi.shareProject(project?.id, email, accessLevel)
+		if (!success) {
+			setAlert({
+				type: 'error',
+				message: 'Failed to add contributor. Please try again.',
+			})
+			return
+		}
+		setAlert({
+			type: 'success',
+			message: accessLevel === 'revoke' ? 'Access revoked successfully' : 'Access updated successfully',
+		})
+		if (accessLevel === 'revoke') {
+			setProject((prevProject) => {
+				if (!prevProject) return null
+				return {
+					...prevProject,
+					contributors: prevProject?.contributors?.filter((contributor) => contributor.email !== email),
+				}
+			})
+		} else {
+			setProject((prevProject) => {
+				if (!prevProject) return null
+				return {
+					...prevProject,
+					contributors: prevProject?.contributors?.map((contributor) =>
+						contributor.email === email ? { ...contributor, accessLevel } : contributor
+					),
+				}
+			})
+		}
+	}
+
+	const handleAddContributor = async (email: string, accessLevel: AccessLevel | 'revoke') => {
+		console.log('Adding contributor:', email, accessLevel)
+		if (!project) {
+			setAlert({
+				type: 'error',
+				message: 'Failed to add contributor. Please try again.',
+			})
+			return
+		}
+		const { success } = await projectApi.shareProject(project?.id, email, accessLevel)
+		if (!success) {
+			setAlert({
+				type: 'error',
+				message: 'Failed to add contributor. Please try again.',
+			})
+			return
+		}
+		setAlert({
+			type: 'success',
+			message: accessLevel === 'revoke' ? 'Access revoked successfully' : 'Contributor added successfully',
+		})
+		if (accessLevel === 'revoke') {
+			return
+		} else {
+			setProject((prevProject) => {
+				if (!prevProject) return null
+				return {
+					...prevProject,
+					contributors: [...(prevProject.contributors || []), { email, accessLevel }],
+				}
+			})
+		}
+	}
+
+	const handleProjectTitleUpdate = useCallback(
+		async (newTitle: string) => {
+			try {
+				await projectApi.updateProject(projectId, { title: newTitle })
+				setProject((prevProject) => (prevProject ? { ...prevProject, title: newTitle } : null))
+				showAlert('success', 'Project title updated successfully')
+			} catch (error) {
+				console.error('Error updating project title:', error)
+				showAlert('error', 'Failed to update project title')
+			}
+		},
+		[projectId, showAlert]
+	)
+
+	const handlePublishArtifact = async (artifact: Artifact) => {
+		console.log('Publishing artifact:', artifact)
+		const { success, url } = await artifactApi.publish(artifact)
+		if (success) {
+			updateProjectAndArtifact(
+				(prevProject) => ({
+					...prevProject!,
+					artifacts: prevProject?.artifacts?.map((a) => (a.id === artifact.id ? { ...a, publishedUrl: url } : a)) || [],
+				}),
+				artifact.id == selectedArtifact?.id ? { ...artifact, publishedUrl: url } as Artifact : artifact
+			)
+			showAlert('success', 'Artifact published successfully!')
+			await artifactApi.updateArtifact(projectId, artifact.id, { publishedUrl: url })
+		}
+		console.log('Artifact published:', artifact)
+	}
 
 	if (isLoading) {
 		return (
@@ -669,17 +773,14 @@ ${description}
 
 	return (
 		<div className="flex h-screen flex-col">
-			<HeaderV2 />
-			<div className="flex flex-1 flex-col overflow-hidden" style={{ marginTop: '64px' }}>
-				<ProjectHeader
-					projectTitle={project.title}
-					projectDescription={project.description}
-					onMyProjectsClick={handleMyProjectsClick}
-					onShareClick={handleShare}
-					onDeleteClick={handleDelete}
-					projectId={project.id}
-					isViewer={isViewer}
-				/>
+			<ProjectHeader
+				user={user}
+				project={project}
+				onDashboardClick={handleDashboardClick}
+				onShare={handleShare}
+				onProjectTitleUpdate={handleProjectTitleUpdate}
+			/>
+			<div className="flex flex-1 flex-col overflow-hidden pt-6" style={{ marginTop: '64px' }}>
 				{project.artifacts && project.artifacts.length > 0 ? (
 					<PanelGroup direction="horizontal" className="flex-1">
 						<Panel defaultSize={20} minSize={0} maxSize={100} collapsible={true}>
@@ -694,7 +795,8 @@ ${description}
 								onArtifactHover={handleArtifactHover}
 								onDuplicateArtifact={handleDuplicateArtifact}
 								onRenameArtifact={handleRenameArtifact}
-								isViewer={isViewer}
+								isViewer={project?.accessLevel === 'viewer'}
+								onPublish={handlePublishArtifact}
 							/>
 						</Panel>
 						{!isArtifactListCollapsed && <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />}
@@ -717,7 +819,7 @@ ${description}
 						</Panel>
 						{!isUpdateArtifactCollapsed && <PanelResizeHandle className="w-1 bg-gray-200 transition-colors hover:bg-gray-300" />}
 						<Panel defaultSize={20} minSize={0} maxSize={100} collapsible={true}>
-							{selectedArtifact && !isViewer && (
+							{selectedArtifact && project?.accessLevel !== 'viewer' && (
 								<UpdateArtifact
 									artifact={selectedArtifact}
 									isCollapsed={isUpdateArtifactCollapsed}
@@ -729,7 +831,10 @@ ${description}
 						</Panel>
 					</PanelGroup>
 				) : (
-					<EmptyArtifactsMessage onCreateArtifact={() => !isViewer && setShowCreateForm(true)} isViewer={isViewer} />
+					<EmptyArtifactsMessage
+						onCreateArtifact={() => project?.accessLevel !== 'viewer' && setShowCreateForm(true)}
+						isViewer={project?.accessLevel === 'viewer'}
+					/>
 				)}
 			</div>
 			{showDeleteConfirmation && (
@@ -788,9 +893,9 @@ ${description}
 				<ProjectShareModal
 					isOpen={showShareModal}
 					onClose={() => setShowShareModal(false)}
-					projectId={project.id}
-					projectTitle={project.title}
-					userAccessLevel={accessLevel}
+					project={project}
+					onUpdateAccessLevel={handleUpdateAccessLevel}
+					onAddContributor={handleAddContributor}
 				/>
 			)}
 			{showDeleteArtifactConfirmation && artifactToDelete && (

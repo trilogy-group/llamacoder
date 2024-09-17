@@ -4,9 +4,9 @@ import { Project } from "@/types/Project";
 
 interface ProjectListProps {
   projects: Project[];
-  onProjectDeleted: (deletedProjectId: string) => Promise<void>;
-  onShareClick: (projectId: string) => void;
-  onDeleteClick: (projectId: string) => void;
+  onProjectDeleted: (deletedProject: Project) => Promise<void>;
+  onShareClick: (project: Project) => void;
+  onDeleteClick: (project: Project) => void;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectDeleted, onShareClick, onDeleteClick }) => {

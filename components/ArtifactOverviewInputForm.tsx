@@ -29,7 +29,10 @@ const AdditionalContext: React.FC<{
           fileType.startsWith('image/') ||
           fileType === 'application/json' ||
           fileName.endsWith('.graphql') ||
-          fileType === 'text/plain'
+          fileType === 'text/plain' ||
+          fileType === 'text/markdown' ||
+          fileName.endsWith('.md') ||
+          fileType === 'application/pdf'
         );
       });
       onAdd(allowedFiles);
@@ -59,7 +62,7 @@ const AdditionalContext: React.FC<{
         onChange={handleFileChange}
         className="hidden"
         multiple
-        accept="image/*,.json,.graphql,.txt"
+        accept="image/*,.json,.graphql,.txt,.md,.yaml,.ts,.tsx,.js,.jsx,.py"
       />
       <div className="overflow-y-auto max-h-[60px]">
         {attachments.length > 0 ? (

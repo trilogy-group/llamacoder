@@ -3,7 +3,6 @@ import { systemPrompt } from "./prompt";
 import util from 'util';
 import { BaseMessageChunk } from "@langchain/core/messages";
 import { concat } from "@langchain/core/utils/stream";
-import { Message } from "@/types/Message";
 import { ChatModel } from "./models";
 
 export const runtime = "nodejs";
@@ -14,9 +13,9 @@ export async function POST(req: Request) {
     console.log("Received messages: ", util.inspect(messages, { showHidden: false, depth: null, colors: true }));
     console.log("Received modelName: ", modelName);
 
-    messages = messages.map((message: Message) => ({
+    messages = messages.map((message: { role: string, content: any[] }) => ({
       role: message.role,
-      content: message.text,
+      content: message.content,
     }));
 
     const allMessages = [

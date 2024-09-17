@@ -53,4 +53,18 @@ export const artifactApi = {
       throw new Error('Failed to delete artifact');
     }
   },
+  
+  publish: async (artifact: Artifact): Promise<{ success: boolean; url?: string }> => {
+    const response = await fetch('/api/publish', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(artifact),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to publish artifact');
+    }
+    return response.json();
+  },
 };

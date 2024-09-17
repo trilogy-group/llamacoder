@@ -12,7 +12,10 @@ import {
 	FiPackage,
 	FiSearch,
 	FiTrash2,
+	FiGlobe,
+	FiExternalLink,
 } from 'react-icons/fi'
+import { CircularProgress } from '@mui/material'
 
 interface ArtifactListProps {
 	artifacts: Artifact[]
@@ -26,6 +29,7 @@ interface ArtifactListProps {
 	onRenameArtifact: (artifact: Artifact) => void
 	onDuplicateArtifact: (artifact: Artifact) => void
 	isViewer: boolean
+	onPublish: (artifact: Artifact) => void
 }
 
 const ArtifactList: React.FC<ArtifactListProps> = ({
@@ -40,6 +44,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
 	onRenameArtifact,
 	onDuplicateArtifact,
 	isViewer,
+	onPublish,
 }) => {
 	const [searchTerm, setSearchTerm] = useState('')
 	const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -119,6 +124,7 @@ const ArtifactList: React.FC<ArtifactListProps> = ({
 								onRename={handleRenameArtifact}
 								onDuplicate={handleDuplicateArtifact}
 								isViewer={isViewer}
+								onPublish={onPublish}
 							/>
 						))}
 					</ul>
@@ -156,6 +162,7 @@ interface ArtifactItemProps {
 	onRename: (artifact: Artifact) => void
 	onDuplicate: (artifact: Artifact) => void
 	isViewer: boolean
+	onPublish: (artifact: Artifact) => void
 }
 
 const ArtifactItem: React.FC<ArtifactItemProps> = ({
@@ -167,8 +174,10 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 	onRename,
 	onDuplicate,
 	isViewer,
+	onPublish,
 }) => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false)
+	const [isPublishing, setIsPublishing] = useState(false)
 	const menuRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -185,30 +194,70 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 	}, [])
 
 	const getStatusIcon = () => {
+		if (isPublishing) {
+			return (
+				<CircularProgress
+					size={20}
+					thickness={5}
+					style={{ color: '#9333ea' }}
+				/>
+			)
+		}
+
+		if (artifact.status === 'idle' && artifact.publishedUrl) {
+			return (
+				<a
+					href={artifact.publishedUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<FiGlobe className={`h-5 w-5 ${isSelected ? 'text-green-600' : 'text-green-500'}`} />
+				</a>
+			)
+		}
+
 		switch (artifact.status) {
 			case 'creating':
 				return (
-					<div className="relative mr-3 h-5 w-5">
-						<div className="absolute inset-0 flex items-center justify-center">
-							<div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-						</div>
-					</div>
+					<CircularProgress
+						size={20}
+						thickness={5}
+						style={{ color: '#3b82f6' }}
+					/>
 				)
 			case 'updating':
 				return (
-					<div className="relative mr-3 h-5 w-5">
-						<div className="absolute inset-0 flex items-center justify-center">
-							<div className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>
-						</div>
-					</div>
+					<CircularProgress
+						size={20}
+						thickness={5}
+						style={{ color: '#eab308' }}
+					/>
 				)
 			case 'error':
-				return <FiAlertCircle className="mr-3 h-5 w-5 text-red-500" />
+				return <FiAlertCircle className="h-5 w-5 text-red-500" />
 			case 'success':
-				return <FiCheckCircle className="mr-3 h-5 w-5 text-green-500" />
+				return <FiCheckCircle className="h-5 w-5 text-green-500" />
 			default:
-				return <FiBox className={`mr-3 h-5 w-5 ${isSelected ? 'text-blue-500' : 'text-blue-400'}`} />
+				return <FiBox className={`h-5 w-5 ${isSelected ? 'text-blue-500' : 'text-blue-400'}`} />
 		}
+	}
+
+	const handleCopyUrl = (e: React.MouseEvent, url: string) => {
+		e.stopPropagation()
+		navigator.clipboard.writeText(url)
+		// Optionally, you can add a toast notification here to inform the user that the URL has been copied
+	}
+
+	const handlePublish = async (e: React.MouseEvent) => {
+		e.stopPropagation()
+		setIsPublishing(true)
+		try {
+			await onPublish(artifact)
+		} finally {
+			setIsPublishing(false)
+		}
+		setIsMenuOpen(false)
 	}
 
 	return (
@@ -219,7 +268,11 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 			onClick={onClick}
 		>
 			<div className="flex flex-grow items-center overflow-hidden">
-				<div onMouseEnter={(e) => onHover(artifact, e)} onMouseLeave={(e) => onHover(null, e)}>
+				<div 
+					className="flex items-center mr-3"
+					onMouseEnter={(e) => onHover(artifact, e)} 
+					onMouseLeave={(e) => onHover(null, e)}
+				>
 					{getStatusIcon()}
 				</div>
 				<span className="max-w-[70%] truncate font-medium">{artifact.displayName || artifact.name}</span>
@@ -274,6 +327,39 @@ const ArtifactItem: React.FC<ArtifactItemProps> = ({
 								<FiAlertCircle className="mr-2 h-4 w-4 text-gray-400" />
 								Deprecate
 							</button>
+							<button
+								className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100"
+								onClick={handlePublish}
+								disabled={isPublishing}
+							>
+								{isPublishing ? (
+									<CircularProgress size={16} thickness={5} className="mr-2" style={{ color: '#9333ea' }} />
+								) : (
+									<FiGlobe className="mr-2 h-4 w-4 text-purple-500" />
+								)}
+								{artifact.publishedUrl ? 'Update Published App' : 'Publish App'}
+							</button>
+							{artifact.publishedUrl && (
+								<>
+									<button
+										className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100"
+										onClick={(e) => handleCopyUrl(e, artifact.publishedUrl!)}
+									>
+										<FiCopy className="mr-2 h-4 w-4 text-blue-500" />
+										Copy Published URL
+									</button>
+									<a
+										href={artifact.publishedUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100"
+										onClick={(e) => e.stopPropagation()}
+									>
+										<FiExternalLink className="mr-2 h-4 w-4 text-green-500" />
+										Open Published App
+									</a>
+								</>
+							)}
 						</div>
 					)}
 				</div>
