@@ -4,7 +4,7 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Next.js API Documentation',
+            title: 'ArTIfacts API Documentation',
             version: '1.0.0',
         },
         components: {
@@ -236,6 +236,29 @@ const options = {
                 ProjectsResponse: {
                     type: 'array',
                     items: { $ref: '#/components/schemas/ProjectResponse' },
+                },
+                CreateArtifactInput: {
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string' },
+                        displayName: { type: 'string' },
+                        description: { type: 'string' },
+                        dependencies: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, version: { type: 'string' } } } },
+                        code: { type: 'string' },
+                    },
+                },
+                ArtifactUpdateInput: {
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string' },
+                        displayName: { type: 'string' },
+                        description: { type: 'string' },
+                        dependencies: { type: 'array', items: { type: 'string' } },
+                        status: { type: 'string' },
+                        code: { type: 'string' },
+                        error: { type: 'object' },
+                        publishedUrl: { type: 'string' },
+                    },
                 },
             },
         },
