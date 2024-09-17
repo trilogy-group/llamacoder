@@ -1,4 +1,4 @@
-import { perplexitySearchTool } from "../../../utils/tools";
+import { perplexitySearchTool } from "../../../../utils/tools";
 import { systemPrompt } from "./prompt";
 import util from 'util';
 import { BaseMessageChunk } from "@langchain/core/messages";
@@ -7,6 +7,51 @@ import { ChatModel } from "./models";
 
 export const runtime = "nodejs";
 
+/**
+ * @swagger
+ * /api/genai/code:
+ *   post:
+ *     summary: Generate code
+ *     description: Generates an AI response based on the provided messages and model. Supports all the formats supported by [`langchain`](https://v03.api.js.langchain.com/types/_langchain_core.messages.MessageContent.html). The role can be `user` or `assistant` only. Returns a `stream` of data.
+ *     tags:
+ *       - GenAI
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant]
+ *                     content:
+ *                       type: string
+ *               modelName:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           text/event-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
 export async function POST(req: Request) {
   try {
     let { messages, modelName } = await req.json();
@@ -24,7 +69,6 @@ export async function POST(req: Request) {
     ];
 
     const llmWithTools = ChatModel(modelName, []); // ChatModel(model, [perplexitySearchTool]);
-    console.log("Using llm: ", llmWithTools);
     
     const stream = new ReadableStream({
       async start(controller) {

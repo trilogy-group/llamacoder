@@ -105,7 +105,7 @@ export const genAiApi = {
 
     console.log("Processed messages:", processedMessages);
 
-    const response = await fetch('/api/genai', {
+    const response = await fetch('/api/genai/code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

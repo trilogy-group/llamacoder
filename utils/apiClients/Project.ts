@@ -10,7 +10,7 @@ export const projectApi = {
     },
 
     getProject: async (id: string): Promise<Project> => {
-        const response = await fetch(`/api/projects?id=${id}`);
+        const response = await fetch(`/api/projects/${id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch project');
         }
@@ -32,12 +32,12 @@ export const projectApi = {
     },
 
     updateProject: async (id: string, projectData: Partial<Project>): Promise<Project> => {
-        const response = await fetch('/api/projects', {
+        const response = await fetch(`/api/projects/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ id, ...projectData }),
+            body: JSON.stringify({ ...projectData }),
         });
         if (!response.ok) {
             throw new Error('Failed to update project');
@@ -46,7 +46,7 @@ export const projectApi = {
     },
 
     deleteProject: async (id: string): Promise<void> => {
-        const response = await fetch(`/api/projects?id=${id}`, {
+        const response = await fetch(`/api/projects/${id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -63,12 +63,12 @@ export const projectApi = {
     },
 
     shareProject: async (projectId: string, email: string, accessLevel: AccessLevel | 'revoke'): Promise<{ success: boolean, message: string }> => {
-        const response = await fetch(`/api/projects/share`, {
+        const response = await fetch(`/api/projects/${projectId}/share`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ projectId, email, accessLevel }),
+            body: JSON.stringify({ email, accessLevel }),
         });
         if (!response.ok) {
             throw new Error('Failed to share project');

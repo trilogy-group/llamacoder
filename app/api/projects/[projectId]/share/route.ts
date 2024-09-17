@@ -1,8 +1,55 @@
 import { NextResponse } from 'next/server';
 import fgaClient from '@/lib/oktaFGA';
 
-export async function POST(req: Request) {
-  const { projectId, email, accessLevel } = await req.json();
+/**
+ * @swagger
+ * /api/projects/{projectId}/share:
+ *   post:
+ *     summary: Share a project with a user
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project to share
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - accessLevel
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email of the user to share the project with
+ *               accessLevel:
+ *                 type: string
+ *                 enum: [viewer, editor, revoke]
+ *                 description: The access level to grant (or revoke) for the user
+ *     responses:
+ *       200:
+ *         description: Project access updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ */
+export async function POST(req: Request, { params }: { params: { projectId: string } }) {
+  const { email, accessLevel } = await req.json();
+  const projectId = params.projectId;
 
   console.log('projectId', projectId);
   console.log('email', email);
@@ -46,11 +93,11 @@ export async function POST(req: Request) {
     // If there are relations to delete, remove them
     if (deletes.length > 0) {
       await fgaClient.write({ deletes });
+      console.log('deleted relations: ', deletes);
     }
 
     // If the new accessLevel is not 'revoke' and it's different from the current access, add the new relation
     if (accessLevel !== 'revoke') {
-      console.log('adding new relation: ', accessLevel);
       await fgaClient.write({
         writes: [
           {
@@ -60,6 +107,9 @@ export async function POST(req: Request) {
           }
         ]
       });
+      console.log('added new relation: ', accessLevel);
+    } else {
+      console.log('accessLevel is revoke, no new relation to add');
     }
 
     return NextResponse.json({ success: true, message: 'Project access updated successfully' });
