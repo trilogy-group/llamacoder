@@ -10,7 +10,7 @@ export const projectApi = {
     },
 
     getProject: async (id: string): Promise<Project> => {
-        const response = await fetch(`/api/projects?id=${id}`);
+        const response = await fetch(`/api/projects/${id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch project');
         }
@@ -32,12 +32,12 @@ export const projectApi = {
     },
 
     updateProject: async (id: string, projectData: Partial<Project>): Promise<Project> => {
-        const response = await fetch('/api/projects', {
+        const response = await fetch(`/api/projects/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ id, ...projectData }),
+            body: JSON.stringify({ ...projectData }),
         });
         if (!response.ok) {
             throw new Error('Failed to update project');
@@ -46,7 +46,7 @@ export const projectApi = {
     },
 
     deleteProject: async (id: string): Promise<void> => {
-        const response = await fetch(`/api/projects?id=${id}`, {
+        const response = await fetch(`/api/projects/${id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
