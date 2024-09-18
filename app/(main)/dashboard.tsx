@@ -34,7 +34,7 @@ const Dashboard: React.FC = () => {
 	const router = useRouter()
 
 	// useEffect(() => {
-	//   if (!projectsLoading && !projectsError) {
+	//   if (!projectsLoading && !projectsError && projects.length === 0) {
 	//     refreshProjects();
 	//   }
 	// }, [projectsLoading, projectsError, projects.length, refreshProjects]);
@@ -42,7 +42,7 @@ const Dashboard: React.FC = () => {
 	const handleCreateProject = async (description: string) => {
 		setIsCreatingProject(true)
 		try {
-			const titleResponse = await axios.post('/api/generateProjectTitle', {
+			const titleResponse = await axios.post('/api/genai/title', {
 				description,
 			})
 			const generatedTitle = titleResponse.data.title

@@ -1,13 +1,46 @@
 import { Artifact } from '@/types/Artifact'
 import { ddbClient } from '@/utils/ddbClient'
-import { NextResponse } from 'next/server'
-// @ts-ignore
 import { checkAccess } from '@/utils/project'
 import { getSession } from '@auth0/nextjs-auth0'
+import { NextResponse } from 'next/server'
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || 'ti-artifacts'
 
-// Read an artifact by ID
+/**
+ * @swagger
+ * /api/projects/{projectId}/artifacts/{artifactId}:
+ *   get:
+ *     summary: Get an artifact by ID
+ *     tags: [Artifacts]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project
+ *       - in: path
+ *         name: artifactId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the artifact
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Artifact'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Artifact not found
+ *       500:
+ *         description: Server error
+ */
 export async function GET(request: Request, { params }: { params: { projectId: string; artifactId: string } }) {
 	try {
 		const session = await getSession()
@@ -37,7 +70,45 @@ export async function GET(request: Request, { params }: { params: { projectId: s
 	}
 }
 
-// Update an artifact
+/**
+ * @swagger
+ * /api/projects/{projectId}/artifacts/{artifactId}:
+ *   put:
+ *     summary: Update an artifact
+ *     tags: [Artifacts]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project
+ *       - in: path
+ *         name: artifactId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the artifact
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ArtifactUpdateInput'
+ *     responses:
+ *       200:
+ *         description: Artifact updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Artifact'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Server error
+ */
 export async function PUT(request: Request, { params }: { params: { projectId: string; artifactId: string } }) {
 	try {
 		const session = await getSession()
@@ -102,7 +173,42 @@ export async function PUT(request: Request, { params }: { params: { projectId: s
 	}
 }
 
-// Delete an artifact
+/**
+ * @swagger
+ * /api/projects/{projectId}/artifacts/{artifactId}:
+ *   delete:
+ *     summary: Delete an artifact
+ *     tags: [Artifacts]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project
+ *       - in: path
+ *         name: artifactId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the artifact
+ *     responses:
+ *       200:
+ *         description: Artifact deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Server error
+ */
 export async function DELETE(request: Request, { params }: { params: { projectId: string; artifactId: string } }) {
 	try {
 		const session = await getSession()

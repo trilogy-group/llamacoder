@@ -1,4 +1,4 @@
-FROM arm64v8/node:20
+FROM node:20
 # copy code and skip node_modules and .next
 WORKDIR /code
 COPY --chown=node:node . .

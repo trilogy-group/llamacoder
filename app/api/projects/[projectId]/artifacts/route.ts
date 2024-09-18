@@ -4,10 +4,39 @@ import { NextResponse } from 'next/server'
 // @ts-ignore
 import { checkAccess } from '@/utils/project'
 import { getSession } from '@auth0/nextjs-auth0'
+import { v4 as uuidv4 } from 'uuid'
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || 'ti-artifacts'
 
-// Get all artifacts for a project
+/**
+ * @swagger
+ * /api/projects/{projectId}/artifacts:
+ *   get:
+ *     summary: Get all artifacts for a project
+ *     tags: [Artifacts]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Artifact'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Server error
+ */
 export async function GET(request: Request, { params }: { params: { projectId: string } }) {
 	try {
 		const session = await getSession()
@@ -39,7 +68,39 @@ export async function GET(request: Request, { params }: { params: { projectId: s
 	}
 }
 
-// Create a new artifact
+/**
+ * @swagger
+ * /api/projects/{projectId}/artifacts:
+ *   post:
+ *     summary: Create a new artifact
+ *     tags: [Artifacts]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateArtifactInput'
+ *     responses:
+ *       201:
+ *         description: Artifact created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Artifact'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Server error
+ */
 export async function POST(request: Request, { params }: { params: { projectId: string } }) {
 	try {
 		const session = await getSession()
@@ -52,6 +113,7 @@ export async function POST(request: Request, { params }: { params: { projectId: 
 		const now = new Date().toISOString()
 		const artifact: Artifact = {
 			...body,
+			id: body.id || uuidv4(),
 			projectId,
 			createdAt: now,
 			updatedAt: now,

@@ -32,7 +32,8 @@ const AdditionalContext: React.FC<{
           fileType === 'text/plain' ||
           fileType === 'text/markdown' ||
           fileName.endsWith('.md') ||
-          fileType === 'application/pdf'
+          fileType === 'application/pdf' ||
+          fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // Add this line for DOCX
         );
       });
       onAdd(allowedFiles);
@@ -62,7 +63,7 @@ const AdditionalContext: React.FC<{
         onChange={handleFileChange}
         className="hidden"
         multiple
-        accept="image/*,.json,.graphql,.txt,.md,.yaml,.ts,.tsx,.js,.jsx,.py"
+        accept="image/*,.json,.graphql,.txt,.md,.yaml,.ts,.tsx,.js,.jsx,.py,.docx"
       />
       <div className="overflow-y-auto max-h-[60px]">
         {attachments.length > 0 ? (

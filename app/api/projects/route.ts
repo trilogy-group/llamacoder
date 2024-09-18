@@ -1,17 +1,38 @@
+import { handleFGAOperation, listProjects } from '@/lib/fga'
 import { FileContext } from '@/types/FileContext'
-import { Project } from '@/types/Project'
+import { AccessLevel, Project } from '@/types/Project'
 import { ddbClient } from '@/utils/ddbClient'
+import { checkAccess } from '@/utils/project'
+import { getSession } from '@auth0/nextjs-auth0'
 import { NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-// @ts-ignore
-import { handleFGAOperation, listProjects } from '@/lib/fga'
-import { AccessLevel } from '@/types/Project'
-import { checkAccess, fetchContributors } from '@/utils/project'
-import { getSession } from '@auth0/nextjs-auth0'
 
 const TABLE_NAME = process.env.DDB_TABLE_NAME || 'ti-artifacts'
 
-// Create a new project
+/**
+ * @swagger
+ * /api/projects:
+ *   post:
+ *     summary: Create a new project
+ *     tags: [Projects]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectInput'
+ *     responses:
+ *       201:
+ *         description: Project created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CreateProjectResponse'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 export async function POST(request: Request) {
 	try {
 		const session = await getSession()
@@ -56,7 +77,24 @@ export async function POST(request: Request) {
 	}
 }
 
-// Read a project by ID or fetch all projects
+/**
+ * @swagger
+ * /api/projects:
+ *   get:
+ *     summary: Get all projects
+ *     tags: [Projects]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ProjectsResponse'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 export async function GET(request: Request) {
 	try {
 		const session = await getSession()
@@ -64,76 +102,35 @@ export async function GET(request: Request) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 		}
 
-		const { searchParams } = new URL(request.url)
-		const id = searchParams.get('id')
+		// Fetch all projects the user has access to
+		const responses = await listProjects(session.user.email)
 
-		if (id) {
-			// Check if user has access to this project
-			const { allowed, accessLevel } = await checkAccess(id, session.user)
+		const projectPromises = responses.map(async ({ resourceId, relation }) => {
+			const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${resourceId}`, SK: `PROJECT#${resourceId}` })
+			return { ...result, accessLevel: relation }
+		})
 
-			if (!allowed) {
-				return NextResponse.json({ error: 'Access denied' }, { status: 403 })
-			}
+		const projectResults = await Promise.all(projectPromises)
 
-			// Fetch a single project by ID
-			const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` })
+		const projects: Project[] = projectResults
+			.filter((result) => result.Item)
+			.map((result, index) => ({
+				id: result?.Item?.id,
+				title: result?.Item?.title,
+				description: result?.Item?.description,
+				thumbnail: result?.Item?.thumbnail,
+				context: result?.Item?.context as FileContext[],
+				entrypoint: result?.Item?.entrypoint,
+				status: result?.Item?.status,
+				createdAt: result?.Item?.createdAt,
+				updatedAt: result?.Item?.updatedAt,
+				createdBy: result?.Item?.createdBy,
+				updatedBy: result?.Item?.updatedBy,
+				publishedUrl: result?.Item?.publishedUrl,
+				accessLevel: result.accessLevel as AccessLevel,
+			}))
 
-			if (!result.Item) {
-				return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-			}
-
-			// Fetch contributors
-			const contributors = await fetchContributors(id)
-
-			const project: Project = {
-				id: result.Item.id,
-				title: result.Item.title,
-				description: result.Item.description,
-				thumbnail: result.Item.thumbnail,
-				context: result.Item.context as FileContext[],
-				entrypoint: result.Item.entrypoint,
-				status: result.Item.status,
-				createdAt: result.Item.createdAt,
-				updatedAt: result.Item.updatedAt,
-				createdBy: result.Item.createdBy,
-				updatedBy: result.Item.updatedBy,
-				publishedUrl: result.Item.publishedUrl,
-				accessLevel: accessLevel as AccessLevel,
-				contributors: contributors,
-			}
-
-			return NextResponse.json(project)
-		} else {
-			// Fetch all projects the user has access to
-			const responses = await listProjects(session.user.email)
-
-			const projectPromises = responses.map(async ({ resourceId, relation }) => {
-				const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${resourceId}`, SK: `PROJECT#${resourceId}` })
-				return { ...result, accessLevel: relation }
-			})
-
-			const projectResults = await Promise.all(projectPromises)
-
-			const projects: Project[] = projectResults
-				.filter((result) => result.Item)
-				.map((result, index) => ({
-					id: result?.Item?.id,
-					title: result?.Item?.title,
-					description: result?.Item?.description,
-					thumbnail: result?.Item?.thumbnail,
-					context: result?.Item?.context as FileContext[],
-					entrypoint: result?.Item?.entrypoint,
-					status: result?.Item?.status,
-					createdAt: result?.Item?.createdAt,
-					updatedAt: result?.Item?.updatedAt,
-					createdBy: result?.Item?.createdBy,
-					updatedBy: result?.Item?.updatedBy,
-					publishedUrl: result?.Item?.publishedUrl,
-					accessLevel: result.accessLevel as AccessLevel,
-				}))
-
-			return NextResponse.json(projects)
-		}
+		return NextResponse.json(projects)
 	} catch (error) {
 		console.error('Error fetching project(s):', error)
 		return NextResponse.json({ error: 'Failed to fetch project(s)' }, { status: 500 })

@@ -29,7 +29,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
 import { useUser } from '@auth0/nextjs-auth0/client'
-import { useAppContext } from '@/contexts/AppContext'
 
 interface WorkspaceProps {
 	projectId: string
@@ -250,7 +249,6 @@ const WorkspaceComponent: React.FC<WorkspaceProps> = ({ projectId }) => {
 **Description and requirements:**
 ${description}
 `
-
 			// Create a new chat session
 			let chatSession: ChatSession = {
 				id: Date.now().toString(),
