@@ -96,7 +96,13 @@ export async function listUsers(resourceId: string) {
 		// 	relation: data.relation,
 		// })
 		const response = await workos.fga.listWarrants({ resourceId: resourceId, subjectType: 'user', resourceType: 'project' })
-		return response.data
+		const resourceData = await Promise.all(
+			response.data.map(async (item) => {
+				const resourceInfo = await workos.fga.getResource({ resourceType: 'user', resourceId: item.subject.resourceId })
+				return { ...resourceInfo, relation: item.relation }
+			})
+		)
+		return resourceData
 	} catch (error) {
 		console.error(`Error in listing Users via FGA:`, error)
 		throw error

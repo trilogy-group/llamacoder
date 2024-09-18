@@ -3,7 +3,7 @@ import { Contributor } from '@/types/Project'
 
 export const fetchContributors = async (projectId: string) => {
 	const response = await listUsers(projectId)
-	return response.map((tuple) => ({ email: tuple.subject.resourceId, accessLevel: tuple.relation }) as Contributor)
+	return response.map((tuple) => ({ email: tuple.resourceId, accessLevel: tuple.relation, name: tuple.meta?.name }) as Contributor)
 }
 
 export const checkAccess = async (projectId: string, user: any) => {
