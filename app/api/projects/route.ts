@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
 		// Set the creator as the owner in FGA
 		await handleFGAOperation('share', {
-			user: `user:${session.user.sub}`,
+			user: `user:${session.user.email}`,
 			relation: 'owner',
 			object: `project:${project.id}`,
 		})
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
 			return NextResponse.json(project)
 		} else {
 			// Fetch all projects the user has access to
-			const responses = await listProjects(session.user.sub)
+			const responses = await listProjects(session.user.email)
 
 			const projectPromises = responses.map(async ({ resourceId, relation }) => {
 				const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${resourceId}`, SK: `PROJECT#${resourceId}` })
@@ -241,7 +241,7 @@ export async function DELETE(request: Request) {
 		// await fgaClientCall('write', {
 		//   deletes: [
 		//   {
-		//     user: `user:${session.user.sub}`,
+		//     user: `user:${session.user.email}`,
 		//     relation: 'owner',
 		//     object: `project:${id}`,
 		//   }],

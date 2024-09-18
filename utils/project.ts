@@ -11,7 +11,7 @@ export const checkAccess = async (projectId: string, user: any) => {
 	const batchCheckResponse = (await handleFGAOperation(
 		'check',
 		accessLevels.map((level) => ({
-			user: `user:${user.sub}`,
+			user: `user:${user.email}`,
 			relation: level,
 			object: `project:${projectId}`,
 		}))
