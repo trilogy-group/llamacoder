@@ -35,11 +35,11 @@ const Dashboard: React.FC = () => {
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (!projectsLoading && !projectsError && projects.length === 0) {
-      refreshProjects();
-    }
-  }, [projectsLoading, projectsError, projects.length, refreshProjects]);
+  // useEffect(() => {
+  //   if (!projectsLoading && !projectsError && projects.length === 0) {
+  //     refreshProjects();
+  //   }
+  // }, [projectsLoading, projectsError, projects.length, refreshProjects]);
 
   const handleCreateProject = async (description: string) => {
     setIsCreatingProject(true);
