@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 		})
 
 		// Set the creator as the owner in FGA
-		const response = await handleFGAOperation('share', {
+		await handleFGAOperation('share', {
 			user: `user:${session.user.sub}`,
 			relation: 'owner',
 			object: `project:${project.id}`,
@@ -105,15 +105,11 @@ export async function GET(request: Request) {
 			return NextResponse.json(project)
 		} else {
 			// Fetch all projects the user has access to
-			const responses = await Promise.all([listProjects(session.user.email), listProjects(session.user.sub)])
+			const responses = await listProjects(session.user.sub)
 
-			const tuples = responses.flatMap((response) =>
-				response.map(({ resourceId, relation }) => ({ id: resourceId, accessLevel: relation }))
-			)
-
-			const projectPromises = tuples.map(async (projectTuple: any) => {
-				const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${projectTuple.id}`, SK: `PROJECT#${projectTuple.id}` })
-				return { ...result, accessLevel: projectTuple.accessLevel }
+			const projectPromises = responses.map(async ({ resourceId, relation }) => {
+				const result = await ddbClient.get(TABLE_NAME, { PK: `PROJECT#${resourceId}`, SK: `PROJECT#${resourceId}` })
+				return { ...result, accessLevel: relation }
 			})
 
 			const projectResults = await Promise.all(projectPromises)
@@ -133,7 +129,7 @@ export async function GET(request: Request) {
 					createdBy: result?.Item?.createdBy,
 					updatedBy: result?.Item?.updatedBy,
 					publishedUrl: result?.Item?.publishedUrl,
-					accessLevel: result.accessLevel,
+					accessLevel: result.accessLevel as AccessLevel,
 				}))
 
 			return NextResponse.json(projects)
@@ -241,7 +237,7 @@ export async function DELETE(request: Request) {
 
 		await ddbClient.delete(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` })
 
-		// Remove all FGA relationships for this project
+		// Remove all FGA relationships for this project (Not required)
 		// await fgaClientCall('write', {
 		//   deletes: [
 		//   {
