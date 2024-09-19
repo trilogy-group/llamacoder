@@ -1,8 +1,8 @@
 import { Artifact } from '@/types/Artifact'
-import { checkAccess } from '@/utils/access'
 import { ddbClient } from '@/utils/ddbClient'
 import { NextResponse } from 'next/server'
 // @ts-ignore
+import { checkAccess } from '@/utils/project'
 import { getSession } from '@auth0/nextjs-auth0'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -47,7 +47,7 @@ export async function GET(request: Request, { params }: { params: { projectId: s
 		const { projectId } = params
 
 		// Check if user has access to view this project
-		const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, projectId)
+		const { allowed, accessLevel } = await checkAccess(projectId, session.user)
 		if (!allowed) {
 			return NextResponse.json({ error: 'Access denied' }, { status: 403 })
 		}
@@ -120,7 +120,7 @@ export async function POST(request: Request, { params }: { params: { projectId: 
 		}
 
 		// Check if user has access to create artifacts in this project
-		const { allowed, accessLevel } = await checkAccess(session.user.sub, session.user.email, projectId)
+		const { allowed, accessLevel } = await checkAccess(projectId, session.user)
 		if (!allowed || (accessLevel !== 'owner' && accessLevel !== 'editor')) {
 			return NextResponse.json({ error: 'Access denied' }, { status: 403 })
 		}
