@@ -233,17 +233,6 @@ export async function DELETE(request: Request) {
 		}
 
 		await ddbClient.delete(TABLE_NAME, { PK: `PROJECT#${id}`, SK: `PROJECT#${id}` })
-
-		// Remove all FGA relationships for this project (Not required)
-		// await fgaClientCall('write', {
-		//   deletes: [
-		//   {
-		//     user: `user:${session.user.email}`,
-		//     relation: 'owner',
-		//     object: `project:${id}`,
-		//   }],
-		// });
-
 		return NextResponse.json({ message: 'Project deleted successfully' })
 	} catch (error) {
 		console.error('Error deleting project:', error)
