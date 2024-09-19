@@ -4,6 +4,7 @@ import { UserProvider, useUser } from '@auth0/nextjs-auth0/client'
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { Project } from '../types/Project'
 import { projectApi } from '../utils/apiClients/Project'
+import { userApi } from '../utils/apiClients/User'
 
 interface AppContextType {
 	projects: Project[]
@@ -83,6 +84,14 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 		setProjects(updatedProjects)
 	}, [])
 
+	const addUserToFGA = useCallback(async (email: string, name?: string) => {
+		try {
+			await userApi.addUser({ email, name })
+		} catch (error) {
+			console.error('Error adding user to FGA:', error)
+		}
+	}, [])
+
 	useEffect(() => {
 		fetchProjects()
 	}, [fetchProjects])
@@ -92,6 +101,24 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 			fetchContributors()
 		}
 	}, [projects, fetchContributors])
+
+	useEffect(() => {
+		const addUserToFGAIfFirstLogin = async () => {
+			if (user && !isUserLoading) {
+				const isFirstLogin = localStorage.getItem(`fga_user_${user.email}`) !== 'true'
+				if (isFirstLogin && user.email) {
+					try {
+						await addUserToFGA(user.email, user.name || undefined)
+						localStorage.setItem(`fga_user_${user.email}`, 'true')
+					} catch (error) {
+						console.error('Failed to add user to FGA:', error)
+					}
+				}
+			}
+		}
+
+		addUserToFGAIfFirstLogin()
+	}, [user, isUserLoading, addUserToFGA])
 
 	return (
 		<AppContext.Provider

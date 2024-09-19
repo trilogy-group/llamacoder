@@ -81,6 +81,28 @@ export async function handleFGAOperation(action: string, data: FGAData | FGAData
 }
 
 /**
+ * Adds a user to a project with specified access level and metadata.
+ *
+ * @param {string} userId - The ID of the user to be added.
+ * @param {Object} metadata - Additional user metadata.
+ * @returns {Promise<Object>} A promise that resolves to the response from WorkOS FGA.
+ * @throws {Error} If there's an error adding the user via FGA.
+ */
+export async function addUser(email: string, metadata: { name?: string }) {
+	try {
+		// Add user metadata
+		const response = await workos.fga.createResource({
+			resource: { resourceType: 'user', resourceId: email },
+			meta: metadata,
+		})
+		return response
+	} catch (error) {
+		console.error(`Error in adding User via FGA:`, error)
+		throw error
+	}
+}
+
+/**
  * Lists users who have access to a specific project resource.
  *
  * @param {string} resourceId - The ID of the project resource to list users for.
